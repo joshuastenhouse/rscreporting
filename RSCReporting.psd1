@@ -1,12 +1,13 @@
 @{
 	RootModule 		= 'RSCReporting.psm1' 
-	ModuleVersion 		= '1.0.1' 
+	ModuleVersion 		= '1.0.2' 
 	CompatiblePSEditions 	= 'Desktop', 'Core' 
 	GUID 			= 'dc18a919-f4bf-4da2-8c76-24b68fa33ef0' 
 	Author 			= 'Joshua Stenhouse' 
 	CompanyName 		= 'Rubrik Inc' 
 	Copyright 		= '(c) Rubrik. All rights reserved.' 
 	Description 		= 'A module for reporting on your Rubrik Security Cloud instance'
+	PowerShellVersion 	= '5.1'
 
 FunctionsToExport = @(
 "Connect-RSCReporting",
@@ -163,9 +164,7 @@ FunctionsToExport = @(
 "Reports\00-RSCReport.html",
 "Reports\01-GlobalClusterHealth.html",
 "Reports\02-MultiDayStrikes.html",
-"Scripts\RSCWelcomeMessage.ps1",
-"YARARules\TESTING\FindRubrikLinuxAgent.yara",
-"YARARules\TESTING\FindRubrikWindowsAgent.yara"
+"Scripts\RSCWelcomeMessage.ps1"
 )
 	CmdletsToExport 	= @() 
 	VariablesToExport 	= @() 
@@ -173,8 +172,9 @@ FunctionsToExport = @(
 	PrivateData 		= @{
 		PSData 			= @{
 			Tags = "Rubrik"
-			ProjectUri = ""
+			ProjectUri = "https://github.com/joshuastenhouse/rscreporting"
 			IconUri = ""
+			LicenseURI = 'https://github.com/joshuastenhouse/rscreporting?tab=GPL-3.0-1-ov-file' 
 } 
 	} 
 }
