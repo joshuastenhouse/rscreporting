@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>#HTMLReportTitle</title>
+<style>
+
+a {
+    color: black;
+}
+
+a:link {
+    text-decoration: none;
+}
+
+table.table1 {
+  border-collapse: collapse;
+  width: 100%;
+}
+table.table1 th {
+  text-align: center;
+  padding: 8px;
+  border-bottom: 1px solid #ddd;
+  background-color: white;
+  color: #696969;
+  font-size:16px
+}
+table.table1 td {
+  text-align: center;
+  padding: 8px;
+  border-bottom: 1px solid #ddd;
+  font-size:12px
+}
+
+table.table2 {
+  border-collapse: collapse;
+  width: 100%;
+}
+table.table2 th {
+  text-align: center;
+  padding: 8px;
+  border-bottom: 1px solid #ddd;
+  background-color: white;
+  color: #00B2A9;
+  font-size:14px
+}
+table.table2 td {
+  text-align: center;
+  padding: 8px;
+  border-bottom: 1px solid #ddd;
+  font-size:12px
+}
+
+</style>
+</head>
+<body>
+
+<div style="overflow-x:auto;">
+
+<table style="text-align: right; width: 100%;" border="0"; cellpadding="2"; cellspacing="2">
+<tbody>
+<tr>
+<td style="vertical-align: top;"><img style="width: 150px; height: 40px;" alt="Logo" src="https://virtuallysober.com/wp-content/uploads/2024/05/logo-2.png"><br>
+</td>
+</tr>
+</tbody>
+</table>
+
+<br></br>
+
+<!--HTMLSPLIT-HEADER-->
+
+<table class="table1">
+  <tr>
+    <th>#SystemDateTime</th>
+  </tr>
+  <tr>
+	<th>Cluster Summary</th>
+  </tr>
+</table>
+
+<table class="table2">
+  <tr>
+    <th>Clusters</th>
+    <td>#ClusterCount</td>
+    <th>Nodes</th>
+    <td>#ClusterNodeCount</td>
+    <th>CapacityTB</th>
+    <td>#ClusterTotalCapacityTB</td>
+     <th>ProtectedObjects</th>
+    <td>#ClustersTotalProtectedObjects</td>
+  </tr>
+ <tr>
+    <th>Critical</th>
+    <td>#ClusterCriticalCount</td>
+    <th>CriticalNodes</th>
+    <td>#ClusterBadNodeCount</td>
+    <th>UsedTB</th>
+    <td>#ClusterTotalUsedTB</td>
+     <th>DoNotProtectObjects</th>
+    <td>#ClustersTotalDoNotProtectObjects</td>
+ </tr>
+ <tr>
+    <th>Healthy</th>
+    <td>#ClusterHealthyCount</td>
+    <th>HealthyNodes</th>
+    <td>#ClusterHealthyNodeCount</td>
+    <th>FreeTB</th>
+    <td>#ClusterTotalFreeTB</td>
+    <th>UnprotectedObjects</th>
+    <td>#ClustersTotalUnProtectedObjects</td>
+ </tr>
+ </table>
+ <br>
+ 
+<!--HTMLSPLIT-SUMMARYTABLE-->
+ 
+ <table class="table1">
+  <tr>
+    <th>Clusters By Protected Objects</th>
+  </tr>
+</table>
+
+<table class="table2">
+  <tr>
+    <th>Cluster</th>
+	<th>Type</th>
+    <th>Status</th>
+    <th>Version</th>
+    <th>Nodes</th>
+    <th>Bad<br>Nodes</th>
+	<th>Disks</th>
+	<th>Bad<br>Disks</th>
+    <th>Used<br>Space</th>
+    <th>Free<br>Space</th>
+    <th>Capacity<br>TB</th>
+	<th>Used<br>TB</th>
+    <th>Free<br>TB</th>
+    <th>Runway<br>Days</th>
+    <th>Protected<br>Objects</th>
+	<th>Unprotected<br>Objects</th>
+    <th>DoNotProtect<br>Objects</th>
+    <th>Time<br>Zone</th>
+    <th>Location</th>
+    <th>Encrypted</th>
+  </tr>
+  
+<!--HTMLSPLIT-TABLE1START-->
+
+<tr>
+	<td><a href="#HTML1ClusterURL" target="_blank">#HTML1Name</a></td>
+	<td>#HTML1Type</td>
+    <td><font color=#HTMLStatusColor>#HTML1Status</font></td>
+    <td><font color=#HTMLVersionStatusColor>#HTML1Version</font></td>
+    <td>#HTML1Nodes</td>
+    <td>#HTML1BadNodes</td>
+	<td>#HTML1Disks</td>
+	<td>#HTML1BadDisks</td>
+    <td><font color=#HTMLSpaceStatusColor>#HTML1Used</font></td>
+    <td><font color=#HTMLSpaceStatusColor>#HTML1Free</font></td>
+    <td>#HTML1TBCapacity</td>
+    <td>#HTML1TBUsed</td>
+    <td>#HTML1TBFree</td>
+    <td>#HTML1Runwaydays</td>
+    <td>#HTML1Protected</td>
+	<td>#HTML1Unprotected</td>
+	<td>#HTML1DoNotProtect</td>
+    <td>#HTML1TimeZone</td>
+    <td>#HTML1Location</td>
+    <td>#HTML1Encrypted</td>
+  </tr>
+  
+<!--HTMLSPLIT-TABLE1ROW-->
+
+ </table>
+<br>
+
+<!--HTMLSPLIT-TABLE1END-->
+ 
+ </div>
+
+</body>
+</html>
+
+<!--HTMLSPLIT-END-->
+ 

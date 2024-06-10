@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>#HTMLReportTitle</title>
+<style>
+
+a {
+    color: black;
+}
+
+a:link {
+    text-decoration: none;
+}
+
+table.table1 {
+  border-collapse: collapse;
+  width: 100%;
+}
+table.table1 th {
+  text-align: center;
+  padding: 8px;
+  border-bottom: 1px solid #ddd;
+  background-color: white;
+  color: #696969;
+  font-size:16px
+}
+table.table1 td {
+  text-align: center;
+  padding: 8px;
+  border-bottom: 1px solid #ddd;
+  font-size:12px
+}
+
+table.table2 {
+  background-color: white;
+  border-collapse: collapse;
+  width: 100%;
+  padding:5px;
+}
+table.table2 th {
+  text-align: center;
+  padding: 8px;
+  border-bottom: 1px solid #ddd;
+  background-color: white;
+  color: #00B2A9;
+  font-size:14px
+}
+table.table2 td {
+  text-align: center;
+  padding: 8px;
+  border-bottom: 1px solid #ddd;
+  background-color: white;
+  font-size:12px
+}
+table.table2 td.green {
+  text-align: center;
+  padding: 8px;
+  border-bottom: 1px solid #ddd;
+  border-right: 1px solid white;
+  background-color: #8BD83D;
+  font-size:12px
+}
+table.table2 td.white {
+  text-align: center;
+  padding: 8px;
+  border-bottom: 1px solid #ddd;
+  border-right: 1px solid white;
+  background-color: #FFFFFF;
+  font-size:12px
+}
+table.table2 td.red {
+  text-align: center;
+  padding: 8px;
+  border-bottom: 1px solid #ddd;
+  border-right: 1px solid white;
+  background-color: #e60000;
+  font-size:12px
+}
+
+</style>
+</head>
+<body>
+
+<div style="overflow-x:auto;">
+
+<table style="text-align: right; width: 100%;" border="0"; cellpadding="2"; cellspacing="2">
+<tbody>
+<tr>
+<td style="vertical-align: top;"><img style="width: 150px; height: 40px;" alt="Logo" src="https://virtuallysober.com/wp-content/uploads/2024/05/logo-2.png"><br>
+</td>
+</tr>
+</tbody>
+</table>
+
+<br></br>
+
+<!--HTMLSPLIT-HEADER-->
+
+<table class="table1">
+  <tr>
+    <th>#SystemDateTime</th>
+  </tr>
+  <tr>
+    <th>#DaysToReport-Day Strike Summary</th>
+  </tr>
+</table>
+
+<table class="table2">
+  <tr>
+    <th>Objects</th>
+    <td>#ObjectCount</td>
+    <th>24-Hour Backups</th>
+    <td>#LastDayBackups</td>
+    <th>Total Backups</th>
+    <td>#TotalBackups</td>
+  </tr>
+ <tr>
+    <th>With Strikes</th>
+    <td>#ObjectsWithStrikes</td>
+    <th>24-Hour Strikes</th>
+    <td>#LastDayStrikes</td>
+    <th>Total Strikes</th>
+    <td>#TotalStrikes</td>
+ </tr>
+ <tr>
+    <th>Without Strikes</th>
+    <td>#ObjectsWithoutStrikes</td>
+    <th>24-Hour Success</th>
+    <td>#LastDaySuccessRate</td>
+    <th>Total Success</th>
+    <td>#ObjectSuccessRate</td>
+ </tr>
+ </table>
+ <br>
+ 
+<!--HTMLSPLIT-SUMMARYTABLE-->
+
+<table class="table1">
+  <tr>
+    <th>#HTMLTableTitle (#HTMLTableObjectCount)</th>
+  </tr>
+</table>
+
+<table class="table2">
+  <tr>
+    <th>Object</th>
+    <th>Location</th>
+    <th>Rubrik<br>Cluster</th>
+    <th>SLA<br>Domain</th>
+	<th>Last<br>Backup</th>
+	<th>Hours<br>Since</th>
+
+<!--HTMLSPLIT-TABLE1START-->
+
+<th>#HTMLDay<br>#HTMLDate</th>
+
+<!--HTMLSPLIT-TABLE1COLUMNSTART-->
+
+</tr>
+
+<!--HTMLSPLIT-TABLE1COLUMNEND-->
+
+<tr>
+	<td style=""border-right:0""><a href="#HTML1ObjectURL" target="_blank"><font color=#HTMLStatusColor>#HTML1Object</font></td>
+    <td style=""border-right:0""><font color=#HTMLStatusColor>#HTML1Location</font></td>
+    <td style=""border-right:0""><a href="#HTML1ClusterURL" target="_blank"><font color=#HTMLStatusColor>#HTML1Cluster</font></td>
+    <td><a href="#HTML1SLAURL" target="_blank"><font color=#HTMLStatusColor>#HTML1SLADomain</font></td>
+	<td style=""border-right:0""><font color=#HTMLStatusColor>#HTML1LastBackup</font></td>
+	<td style=""border-right:0""><font color=#HTMLStatusColor>#HTML1HoursSince</font></td>
+ 
+<!--HTMLSPLIT-TABLE1ROW-->
+
+<td title="#HTML1Date" class="#HTML1BackupStatus" style=""border-right:0"">#HTML1Symbol</td>
+
+<!--HTMLSPLIT-TABLE1COLUMN-->
+ 
+    </tr>
+</table>
+<br>
+
+<!--HTMLSPLIT-TABLE1END-->
+ 
+  </div>
+
+</body>
+</html>
+
+<!--HTMLSPLIT-END-->
