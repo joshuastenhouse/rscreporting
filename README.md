@@ -183,4 +183,5 @@ Write-RSCEventsBackup
 Write-RSCEventsBackupOnDemand
 Write-RSCEventsRecovery
 Write-RSCEventsReplication
-Write-RSCObjectStorageUsage```
+Write-RSCObjectStorageUsage
+```
