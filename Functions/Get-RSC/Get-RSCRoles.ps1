@@ -32,24 +32,27 @@ Date: 05/11/2023
 Import-Module RSCReporting
 # Checking connectivity, exiting function with error if not connected
 Test-RSCConnection
+# Getting role assignments
+$RSCRoleAssignments = Get-RSCUserRoleAssignments
 ################################################
 # Querying RSC GraphQL API
 ################################################
 # Creating array for objects
 $RSCList = @()
 # Building GraphQL query
-$RSCGraphQL = @{"operationName" = "getAllRolesInOrgConnection";
+$RSCGraphQL = @{"operationName" = "RolesQuery";
 
 "variables" = @{
 "first" = 1000
 };
 
-"query" = "query getAllRolesInOrgConnection(`$after: String, `$first: Int) {
-  getAllRolesInOrgConnection(after: `$after, first: `$first) {
+"query" = "query RolesQuery(`$after: String, `$first: Int, `$sortBy: RoleFieldEnum, `$sortOrder: SortOrder, `$nameSearch: String) {
+  getAllRolesInOrgConnection(after: `$after, first: `$first, sortBy: `$sortBy, sortOrder: `$sortOrder, nameFilter: `$nameSearch) {
     edges {
       cursor
       node {
         id
+        isReadOnly
         name
         description
         explicitlyAssignedPermissions {
@@ -58,23 +61,6 @@ $RSCGraphQL = @{"operationName" = "getAllRolesInOrgConnection";
         }
         isOrgAdmin
         __typename
-        effectivePermissions {
-          objectsForHierarchyTypes {
-            objectIds
-            snappableType
-          }
-          operation
-        }
-        isReadOnly
-        orgId
-        protectableClusters
-        permissions {
-          objectsForHierarchyTypes {
-            objectIds
-            snappableType
-          }
-          operation
-        }
       }
       __typename
     }
@@ -97,8 +83,7 @@ fragment PermissionsFragment on Permission {
     __typename
   }
   __typename
-}
-"
+}"
 }
 ################################################
 # API Call To RSC GraphQL URI
@@ -128,8 +113,11 @@ $RoleName = $Role.name
 $RoleDescription = $Role.description
 $RoleIsOrgAdmin = $Role.isOrgAdmin
 $RoleOrgID = $Role.orgId
-$RolePermissions = $Role.effectivePermissions
+$RolePermissions = $Role.explicitlyAssignedPermissions
 $RoleExplicitPermissions = $Role.explicitlyAssignedPermissions
+# Counting users assigned
+$RoleAssignments = $RSCRoleAssignments | Where-Object {$_.RoleID -eq $RoleID}
+$RoleAssignmentsCount = $RoleAssignments | Measure-Object | Select-Object -ExpandProperty Count
 # SLA permissions
 IF($RolePermissions | Where-Object {$_.operation -match "VIEW_SLA"}){$RoleCanViewSLAs = $TRUE}ELSE{$RoleCanViewSLAs = $FALSE}
 IF($RolePermissions | Where-Object {$_.operation -match "CREATE_SLA"}){$RoleCanCreateSLAs = $TRUE}ELSE{$RoleCanCreateSLAs = $FALSE}
@@ -208,6 +196,7 @@ $Object | Add-Member -MemberType NoteProperty -Name "RSCInstance" -Value $RSCIns
 $Object | Add-Member -MemberType NoteProperty -Name "Role" -Value $RoleName
 $Object | Add-Member -MemberType NoteProperty -Name "Description" -Value $RoleDescription
 $Object | Add-Member -MemberType NoteProperty -Name "RoleID" -Value $RoleID
+$Object | Add-Member -MemberType NoteProperty -Name "Users" -Value $RoleAssignmentsCount
 $Object | Add-Member -MemberType NoteProperty -Name "IsOrgAdmin" -Value $RoleIsOrgAdmin
 # SLA permissions
 $Object | Add-Member -MemberType NoteProperty -Name "ViewSLAs" -Value $RoleCanViewSLAs
@@ -278,7 +267,7 @@ $Object | Add-Member -MemberType NoteProperty -Name "ExportDataClassification" -
 $Object | Add-Member -MemberType NoteProperty -Name "ViewLicensing" -Value $RoleCanViewLicensing
 $Object | Add-Member -MemberType NoteProperty -Name "ViewDashboard" -Value $RoleCanViewDashboard
 $Object | Add-Member -MemberType NoteProperty -Name "RefreshDataSource" -Value $RoleCanRefreshDataSource
-$Object | Add-Member -MemberType NoteProperty -Name "RolePermissions" -Value $RolePermissions
+# $Object | Add-Member -MemberType NoteProperty -Name "RolePermissions" -Value $RolePermissions
 $Object | Add-Member -MemberType NoteProperty -Name "RoleExplicitPermissions" -Value $RoleExplicitPermissions
 # URL
 $Object | Add-Member -MemberType NoteProperty -Name "URL" -Value $RoleURL

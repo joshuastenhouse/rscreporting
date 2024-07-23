@@ -194,7 +194,7 @@ $Object | Add-Member -MemberType NoteProperty -Name "EULAAccepted" -Value $UserE
 $Object | Add-Member -MemberType NoteProperty -Name "IsHidden" -Value $UserIsHidden
 $Object | Add-Member -MemberType NoteProperty -Name "IsAccountOwner" -Value $UserIsAccountOwner
 $Object | Add-Member -MemberType NoteProperty -Name "RoleCount" -Value $UserRoleCount
-$Object | Add-Member -MemberType NoteProperty -Name "Roles" -Value $UserRoles
+# $Object | Add-Member -MemberType NoteProperty -Name "Roles" -Value $UserRoles
 $Object | Add-Member -MemberType NoteProperty -Name "URL" -Value $UserURL
 # Adding
 $RSCUsers.Add($Object) | Out-Null

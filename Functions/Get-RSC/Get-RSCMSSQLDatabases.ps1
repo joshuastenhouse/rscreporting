@@ -24,7 +24,14 @@ This example returns an array of all the information returned by the GraphQL end
 Author: Joshua Stenhouse
 Date: 05/11/2023
 #>
-
+################################################
+# Paramater Config
+################################################
+Param
+    (
+        [Parameter(ParameterSetName="User")][switch]$DisableLogging,
+        [Parameter(Mandatory=$false)]$ObjectQueryLimit
+    )
 ################################################
 # Importing Module & Running Required Functions
 ################################################
@@ -34,6 +41,8 @@ Import-Module RSCReporting
 Test-RSCConnection
 # Getting SLA domains
 $RSCSLADomains = Get-RSCSLADomains
+# Setting first value if null
+IF($ObjectQueryLimit -eq $null){$ObjectQueryLimit = 1000}
 ################################################
 # Getting All RSCMSSQLDatabases 
 ################################################
@@ -142,26 +151,44 @@ $RSCGraphQL = @{"operationName" = "MssqlDatabaseListQuery";
 ################################################
 # API Call To RSC GraphQL URI
 ################################################
+# Logging
+Write-Host "QueryingAPI: MssqlDatabaseListQuery"
 # Querying API
 $RSCObjectListResponse = Invoke-RestMethod -Method POST -Uri $RSCGraphqlURL -Body $($RSCGraphQL | ConvertTo-JSON -Depth 20) -Headers $RSCSessionHeader
 # Setting variable
 $RSCObjectList += $RSCObjectListResponse.data.mssqlDatabases.edges.node
+# Counters
+$ObjectCount = 0
+$ObjectCounter = $ObjectCount + $ObjectQueryLimit
 # Getting all results from paginations
 While ($RSCObjectListResponse.data.mssqlDatabases.pageInfo.hasNextPage) 
 {
+# Logging
+IF($DisableLogging){}ELSE{Write-Host "GettingObjects: $ObjectCount-$ObjectCounter"}
 # Getting next set
 $RSCGraphQL.variables.after = $RSCObjectListResponse.data.mssqlDatabases.pageInfo.endCursor
 $RSCObjectListResponse = Invoke-RestMethod -Method POST -Uri $RSCGraphqlURL -Body $($RSCGraphQL | ConvertTo-JSON -Depth 20) -Headers $RSCSessionHeader
 $RSCObjectList += $RSCObjectListResponse.data.mssqlDatabases.edges.node
+# Incrementing
+$ObjectCount = $ObjectCount + $ObjectQueryLimit
+$ObjectCounter = $ObjectCounter + $ObjectQueryLimit
 }
+# Processing VMs
+Write-Host "Processing MSSQL DBs.."
 ################################################
 # Processing DBs
 ################################################
 # Creating array
 $RSCDBs = [System.Collections.ArrayList]@()
+# Counting
+$RSCObjectsCount = $RSCObjectList | Measure-Object | Select-Object -ExpandProperty Count
+$RSCObjectsCounter = 0
 # For Each Object Getting Data
 ForEach ($RSCDB in $RSCObjectList)
 {
+# Logging
+$RSCObjectsCounter ++
+IF($DisableLogging){}ELSE{Write-Host "ProcessingObject: $RSCObjectsCounter/$RSCObjectsCount"}
 # Setting variables
 $DBName = $RSCDB.name
 $DBID = $RSCDB.id

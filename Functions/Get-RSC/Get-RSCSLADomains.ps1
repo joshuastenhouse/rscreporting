@@ -48,7 +48,7 @@ $RSCGraphQL = @{"operationName" = "SLAListQuery";
 "sortBy" = "NAME"
 "sortOrder" = "ASC"
 "shouldShowProtectedObjectCount" = $true
-"first" = 1000
+"first" = 500
 };
 
 

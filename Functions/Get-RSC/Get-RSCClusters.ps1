@@ -26,14 +26,26 @@ Date: 05/11/2023
 #>
 
 ################################################
+# Paramater Config
+################################################
+Param
+    (
+        [Parameter(ParameterSetName="User")][switch]$GetObjectStats
+    )
+################################################
 # Importing Module & Running Required Functions
 ################################################
 # Importing the module is it needs other modules
 Import-Module RSCReporting
 # Checking connectivity, exiting function with error if not connected
 Test-RSCConnection
-# Getting objects
-$RSCObjects = Get-RSCObjects -Logging
+# Getting objects if enabled
+IF($GetObjectStats)
+{
+# Getting objects list if not already pulled as a global variable in this session
+IF($RSCGlobalObjects -eq $null){$RSCObjects = Get-RSCObjects -Logging;$Global:RSCGlobalObjects = $RSCObjects}ELSE{$RSCObjects = $RSCGlobalObjects}
+Write-Host "Warning: Including object stats can take a long time, up to 30 minutes in a 100,000 object environment"
+}
 ################################################
 # Getting All Clusters 
 ################################################
@@ -151,8 +163,13 @@ $RSCClusterList += $RSCClusterListResponse.data.clusterConnection.edges.node
 # Starting For Each Cluster
 ############################
 $RSCClusters = [System.Collections.ArrayList]@()
+$ClusterCounter = 0
+$ClusterCount = $RSCClusterList | Measure-Object | Select-Object -ExpandProperty Count
 ForEach ($RSCCluster in $RSCClusterList)
 {
+# Logging processing clusters if getting object stats, as otherwise it appears to hang to the user even though it's just counting per cluster
+$ClusterCounter ++
+IF($GetObjectStats){Write-Host "ProcessingCluster:$ClusterCounter/$ClusterCount"}
 # Setting variables
 $Cluster = $RSCCluster.name
 $ClusterID = $RSCCluster.id
@@ -239,11 +256,14 @@ $ClusterBadDisksCount = $ClusterDisks | Where-Object {$_.status -ne "ACTIVE"} | 
 ############################
 # Cluster Protected Objects
 ############################
+IF($GetObjectStats)
+{
 $RSCClusterObjects = $RSCObjects | Where-Object {$_.RubrikClusterID -eq $ClusterID}
 # Getting protected object count
 $RSCClusterProtectedObjects = $RSCClusterObjects | Where-Object {$_.ProtectionStatus -eq "Protected"} | Measure-Object | Select-Object -ExpandProperty Count
 $RSCClusterUnProtectedObjects = $RSCClusterObjects | Where-Object {$_.ProtectionStatus -eq "NoSla"} | Measure-Object | Select-Object -ExpandProperty Count
 $RSCClusterDoNotProtectedObjects = $RSCClusterObjects | Where-Object {$_.ProtectionStatus -eq "DoNotProtect"} | Measure-Object | Select-Object -ExpandProperty Count
+}
 # Creating URL
 $ClusterClusterURL = $RSCURL + "/clusters/" + $ClusterID + "/overview"
 ############################
@@ -279,9 +299,12 @@ $Object | Add-Member -MemberType NoteProperty -Name "Product" -Value $ClusterPro
 $Object | Add-Member -MemberType NoteProperty -Name "Encrypted" -Value $ClusterEncrypted
 $Object | Add-Member -MemberType NoteProperty -Name "Snapshots" -Value $ClusterSnapshots
 # Objects
+IF($GetObjectStats)
+{
 $Object | Add-Member -MemberType NoteProperty -Name "ProtectedObjects" -Value $RSCClusterProtectedObjects
 $Object | Add-Member -MemberType NoteProperty -Name "UnProtectedObjects" -Value $RSCClusterUnProtectedObjects
 $Object | Add-Member -MemberType NoteProperty -Name "DoNotProtectObjects" -Value $RSCClusterDoNotProtectedObjects
+}
 # Location
 $Object | Add-Member -MemberType NoteProperty -Name "Location" -Value $ClusterAddress
 $Object | Add-Member -MemberType NoteProperty -Name "Latitude" -Value $ClusterLatitude
