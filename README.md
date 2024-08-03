@@ -67,7 +67,7 @@ Send-RSCReport -Array $Array -EmailTo "joshua@lab.local" -EmailFrom "reports@lab
 	[LastSnapshot] [datetime] NULL,
 	[PendingFirstFull] [varchar](50) NULL
 
-2. Added new write to SQL function to map all objects to SLA domains and object the above 4 columns will now be in the object table vs object storage usage table:
+2. Added new write to SQL function to map all objects to SLA domains, also, the above 4 columns will now be in the object table vs object storage usage table:
 
 Write-RSCObjects
 
