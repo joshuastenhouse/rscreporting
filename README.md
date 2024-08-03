@@ -2,19 +2,27 @@ Welcome to the Rubrik Security Cloud (RSC) PowerShell Module For Reporting. To g
 
 ```Install-Module RSCReporting```
 
+Import the module into your current session:
+
+```Import-Module RSCReporting```
+
 The current build is: 
 
 ```1.0.5```
 
-Import the module into your current session:
+To see which build you are on:
 
-```Import-Module RSCReporting```
+```Get-Module -Name RSCReporting```
+
+To update to the latest build from the PowerShell gallery use:
+
+```Update-Module -Name RSCReporting```
 
 Connect to your RSC instance (recommended to create and use a read only admin role service account):
 
 ```Connect-RSCReporting -ScriptDirectory 'C:\Scripts\'```
 
-You'll be prompted for your RSC URL, secret and access key, which are all then encrypted and stored for subsequent runs by repeating the above connection function. Now check out all the functions available with:
+You'll be prompted for your RSC URL, ClientID (user) and ClientSecret (password), which are all then encrypted and stored for subsequent runs by repeating the above connection function. Ensure you enter the clientID in the user field without "User|" as this is hard coded (PowerShell won't accept the pipe in a credentials input field). Now check out all the functions available with:
 
 ```Get-Command -Module RSCReporting```
 
