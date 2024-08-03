@@ -53,9 +53,9 @@ Date: 05/11/2023
     (
         [Parameter(Mandatory=$true)]$SQLInstance,
 		[Parameter(Mandatory=$true)]$SQLDB,$SQLTable,
+        [Parameter(Mandatory=$false)]$RubrikClusterID,
         [switch]$DropExistingRows,
         [switch]$DontUseTempDB,
-        [switch]$SampleFirst10Objects,
 		[switch]$LogProgress
     )
 	
@@ -66,8 +66,8 @@ Date: 05/11/2023
 Import-Module RSCReporting
 # Checking connectivity, exiting function with error if not connected
 Test-RSCConnection
-# Getting list of objects
-$RSCObjects = Get-RSCObjects
+# Getting objects list if not already pulled as a global variable in this session
+# IF($RSCGlobalObjects -eq $null){$RSCObjects = Get-RSCObjects -Logging;$Global:RSCGlobalObjects = $RSCObjects}ELSE{$RSCObjects = $RSCGlobalObjects}
 ################################################
 # Getting times required
 ################################################
@@ -132,10 +132,6 @@ CREATE TABLE [dbo].[$SQLTable](
 	[SLADomainID] [varchar](max) NULL,
 	[Org] [varchar](50) NULL,
 	[SLADomainRetentionLock] [varchar](50) NULL,
-	[TotalSnapshots] [int] NULL,
-	[ProtectedOn] [datetime] NULL,
-	[LastSnapshot] [datetime] NULL,
-	[PendingFirstFull] [varchar](50) NULL,
 	[DataReduction] [decimal](18, 2) NULL,
 	[LogicalDataReduction] [decimal](18, 2) NULL,
 	[TotalUsedGB] [decimal](18, 2) NULL,
@@ -249,6 +245,7 @@ $RSCGraphQL = @{"operationName" = "CapacityTableQuery";
 
 "variables" = @{
 "first" = 1000
+"filters" = @{}
 };
 
 "query" = "query CapacityTableQuery(`$first: Int!, `$after: String) {
@@ -309,17 +306,26 @@ $RSCGraphQL = @{"operationName" = "CapacityTableQuery";
 }"
 }
 ################################################
+# Adding Variables to GraphQL Query
+################################################
+# Converting to JSON
+$RSCJSON = $RSCGraphQL | ConvertTo-Json -Depth 32
+# Converting back to PS object for editing of variables
+$RSCJSONObject = $RSCJSON | ConvertFrom-Json
+# Adding variables specified
+IF($RubrikClusterID -ne $null){$RSCJSONObject.variables.filters | Add-Member -MemberType NoteProperty "clusterId" -Value $RubrikClusterID}
+################################################
 # API Call To RSC GraphQL URI
 ################################################
 # Querying API
-$ObjectStorageResponse = Invoke-RestMethod -Method POST -Uri $RSCGraphqlURL -Body $($RSCGraphQL | ConvertTo-JSON -Depth 32) -Headers $RSCSessionHeader
+$ObjectStorageResponse = Invoke-RestMethod -Method POST -Uri $RSCGraphqlURL -Body $($RSCJSONObject | ConvertTo-JSON -Depth 32) -Headers $RSCSessionHeader
 $ObjectStorageList += $ObjectStorageResponse.data.snappableConnection.edges.node
 # Getting all results from paginations
 While ($ObjectStorageResponse.data.snappableConnection.pageInfo.hasNextPage) 
 {
 # Getting next set
-$RSCGraphQL.variables.after = $ObjectStorageResponse.data.snappableConnection.pageInfo.endCursor
-$ObjectStorageResponse = Invoke-RestMethod -Method POST -Uri $RSCGraphqlURL -Body $($RSCGraphQL | ConvertTo-JSON -Depth 20) -Headers $RSCSessionHeader
+$RSCJSONObject.variables | Add-Member -MemberType NoteProperty "after" -Value $ObjectStorageResponse.data.snappableConnection.pageInfo.endCursor -Force
+$ObjectStorageResponse = Invoke-RestMethod -Method POST -Uri $RSCGraphqlURL -Body $($RSCJSONObject | ConvertTo-JSON -Depth 20) -Headers $RSCSessionHeader
 $ObjectStorageList += $ObjectStorageResponse.data.snappableConnection.edges.node
 }
 # Counting
@@ -348,11 +354,11 @@ $SLADomainIsRetentionLocked = $ObjectListed.slaDomain.isRetentionLockedSla
 $LastUpdatedUNIX = $ObjectListed.pullTime
 $OrgName = $ObjectListed.orgName
 # Getting data from object list
-$ObjectListData = $RSCObjects | Where-Object {$_.ObjectID -eq $ObjectID}
-$ProtectedOn = $ObjectListData.ProtectedOn
-$LastSnapshot = $ObjectListData.LastSnapshot
-$PendingFirstFull = $ObjectListData.PendingFirstFull
-$TotalSnapshots = $ObjectListData.TotalSnapshots;IF($TotalSnapshots -eq $null){$TotalSnapshots = 0}
+# $ObjectListData = $RSCObjects | Where-Object {$_.ObjectID -eq $ObjectID}
+# $ProtectedOn = $ObjectListData.ProtectedOn
+# $LastSnapshot = $ObjectListData.LastSnapshot
+# $PendingFirstFull = $ObjectListData.PendingFirstFull
+# $TotalSnapshots = $ObjectListData.TotalSnapshots;IF($TotalSnapshots -eq $null){$TotalSnapshots = 0}
 # Getting URL
 $ObjectURL = $ObjectListData.URL
 # Fixing cluster name
@@ -422,12 +428,12 @@ $Object | Add-Member -MemberType NoteProperty -Name "SLADomain" -Value $SLADomai
 $Object | Add-Member -MemberType NoteProperty -Name "SLADomainID" -Value $SLADomainID
 $Object | Add-Member -MemberType NoteProperty -Name "Org" -Value $OrgName
 $Object | Add-Member -MemberType NoteProperty -Name "SLADomainRetentionLock" -Value $SLADomainIsRetentionLocked
-$Object | Add-Member -MemberType NoteProperty -Name "TotalSnapshots" -Value $TotalSnapshots
 # Other useful info
-$Object | Add-Member -MemberType NoteProperty -Name "LastUpdatedUTC" -Value $LastUpdatedUTC
-$Object | Add-Member -MemberType NoteProperty -Name "ProtectedOn" -Value $ProtectedOn
-$Object | Add-Member -MemberType NoteProperty -Name "LastSnapshot" -Value $LastSnapshot
-$Object | Add-Member -MemberType NoteProperty -Name "PendingFirstFull" -Value $PendingFirstFull
+# $Object | Add-Member -MemberType NoteProperty -Name "TotalSnapshots" -Value $TotalSnapshots
+# $Object | Add-Member -MemberType NoteProperty -Name "LastUpdatedUTC" -Value $LastUpdatedUTC
+# $Object | Add-Member -MemberType NoteProperty -Name "ProtectedOn" -Value $ProtectedOn
+# $Object | Add-Member -MemberType NoteProperty -Name "LastSnapshot" -Value $LastSnapshot
+# $Object | Add-Member -MemberType NoteProperty -Name "PendingFirstFull" -Value $PendingFirstFull
 # Data reduction
 $Object | Add-Member -MemberType NoteProperty -Name "DataReduction" -Value $DataReduction
 $Object | Add-Member -MemberType NoteProperty -Name "LogicalDataReduction" -Value $LogicalDataReduction
@@ -512,7 +518,7 @@ DateUTC, RSCInstance, Object, ObjectID, ObjectCDMID, Type, Location,
 RubrikCluster, RubrikClusterID, SLADomain, SLADomainID, Org,
 
 -- Retention lock and snapshots
-SLADomainRetentionLock, TotalSnapshots, ProtectedOn, LastSnapshot, PendingFirstFull,
+SLADomainRetentionLock,
 
 -- Data Reduction
 DataReduction, LogicalDataReduction,
@@ -548,7 +554,7 @@ VALUES(
 '$RubrikCluster', '$RubrikClusterID', '$SLADomain', '$SLADomainID', '$OrgName',
 
 -- Retention lock and snapshots
-'$SLADomainIsRetentionLocked', '$TotalSnapshots', '$ProtectedOn', '$LastSnapshot', '$PendingFirstFull',
+'$SLADomainIsRetentionLocked',
 
 -- Data Reduction
 '$DataReduction', '$LogicalDataReduction',
@@ -600,7 +606,7 @@ DateUTC, RSCInstance, Object, ObjectID, ObjectCDMID, Type, Location,
 RubrikCluster, RubrikClusterID, SLADomain, SLADomainID,Org,
 
 -- Retention lock and snapshots
-SLADomainRetentionLock, TotalSnapshots, ProtectedOn, LastSnapshot, PendingFirstFull,
+SLADomainRetentionLock,
 
 -- Data Reduction
 DataReduction, LogicalDataReduction,
@@ -636,7 +642,7 @@ VALUES(
 '$RubrikCluster', '$RubrikClusterID', '$SLADomain', '$SLADomainID', '$OrgName',
 
 -- Retention lock and snapshots
-'$SLADomainIsRetentionLocked', '$TotalSnapshots', '$ProtectedOn', '$LastSnapshot', '$PendingFirstFull',
+'$SLADomainIsRetentionLocked',
 
 -- Data Reduction
 '$DataReduction', '$LogicalDataReduction',
@@ -715,7 +721,7 @@ ON (Target.RowID = Source.RowID)
 WHEN NOT MATCHED BY TARGET
 THEN INSERT (DateUTC, RSCInstance, Object, ObjectID, ObjectCDMID, Type, Location,
             RubrikCluster, RubrikClusterID, SLADomain, SLADomainID, Org,
-            SLADomainRetentionLock, TotalSnapshots, ProtectedOn, LastSnapshot, PendingFirstFull,
+            SLADomainRetentionLock,
             DataReduction, LogicalDataReduction, TotalUsedGB,
             ProtectedGB, LocalStorageGB, TransferredGB,
             LogicalGB, ReplicaStorageGB, ArchiveStorageGB,
@@ -727,7 +733,7 @@ THEN INSERT (DateUTC, RSCInstance, Object, ObjectID, ObjectCDMID, Type, Location
             UsedBytes, ProvisionedBytes, LocalProtectedBytes, LocalEffectiveStorageBytes, Exported, URL)
      VALUES (Source.DateUTC, Source.RSCInstance, Source.Object, Source.ObjectID, Source.ObjectCDMID, Source.Type, Source.Location,
             Source.RubrikCluster, Source.RubrikClusterID, Source.SLADomain, Source.SLADomainID, Source.Org,
-            Source.SLADomainRetentionLock, Source.TotalSnapshots, Source.ProtectedOn, Source.LastSnapshot, Source.PendingFirstFull,
+            Source.SLADomainRetentionLock,
             Source.DataReduction, Source.LogicalDataReduction, Source.TotalUsedGB,
             Source.ProtectedGB, Source.LocalStorageGB, Source.TransferredGB,
             Source.LogicalGB, Source.ReplicaStorageGB, Source.ArchiveStorageGB,
