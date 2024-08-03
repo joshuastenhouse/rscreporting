@@ -2,6 +2,10 @@ Welcome to the Rubrik Security Cloud (RSC) PowerShell Module For Reporting. To g
 
 ```Install-Module RSCReporting```
 
+The current build is: 
+
+```1.0.5```
+
 Import the module into your current session:
 
 ```Import-Module RSCReporting```
@@ -45,8 +49,7 @@ $Array = Get-RSCMSSQLDatabases | Where {$_.IsRelic -eq $False} | Select URL,DB,I
 Send-RSCReport -Array $Array -EmailTo "joshua@lab.local" -EmailFrom "reports@lab.local" -SMTPServer "localhost" -ReportName "MSSQL DBs" -SortByColumnName "DB" -ColumnOrder "DB,Instance,Host,RubrikCluster,SLADomain,Online,InDag,DAG,HasPermissions"
 ```
 
-Latest Version: 1.0.5
-Changelist:
+1.0.5 Changelist:
 
 ```
 1. Removed the following columns from the RSCObjectStorageUsage Table to speed up collection (was using Get-RSCObjects for these causing massive overheads):
