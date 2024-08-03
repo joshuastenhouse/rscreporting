@@ -12,7 +12,7 @@ The current build is:
 
 To see which build you are on:
 
-```Get-Module -Name RSCReporting```
+```Get-Module RSCReporting```
 
 To update to the latest build from the PowerShell gallery use:
 
