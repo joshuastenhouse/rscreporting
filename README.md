@@ -8,7 +8,7 @@ Import the module into your current session:
 
 The current build is: 
 
-```1.0.5```
+```1.0.6```
 
 To see which build you are on:
 
