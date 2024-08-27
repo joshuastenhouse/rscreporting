@@ -224,7 +224,7 @@ $Object | Add-Member -MemberType NoteProperty -Name "Cloud" -Value "AWS"
 $Object | Add-Member -MemberType NoteProperty -Name "Tag" -Value $DBTag.value
 $Object | Add-Member -MemberType NoteProperty -Name "TagKey" -Value $DBTag.key
 $Object | Add-Member -MemberType NoteProperty -Name "ObjectType" -Value "RDS"
-$Object | Add-Member -MemberType NoteProperty -Name "Object" -Value $DBName
+$Object | Add-Member -MemberType NoteProperty -Name "Object" -Value $DBInstance
 $Object | Add-Member -MemberType NoteProperty -Name "ObjectID" -Value $DBID
 $Object | Add-Member -MemberType NoteProperty -Name "Account" -Value $DBAccountName
 $Object | Add-Member -MemberType NoteProperty -Name "AccountID" -Value $DBAccountID
