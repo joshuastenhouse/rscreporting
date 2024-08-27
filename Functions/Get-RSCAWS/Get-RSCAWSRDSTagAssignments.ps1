@@ -223,7 +223,7 @@ $Object | Add-Member -MemberType NoteProperty -Name "RSCInstance" -Value $RSCIns
 $Object | Add-Member -MemberType NoteProperty -Name "Cloud" -Value "AWSRDS"
 $Object | Add-Member -MemberType NoteProperty -Name "Tag" -Value $DBTag.value
 $Object | Add-Member -MemberType NoteProperty -Name "TagKey" -Value $DBTag.key
-$Object | Add-Member -MemberType NoteProperty -Name "DB" -Value $DBName
+$Object | Add-Member -MemberType NoteProperty -Name "DB" -Value $DBInstance
 $Object | Add-Member -MemberType NoteProperty -Name "DBID" -Value $DBID
 $Object | Add-Member -MemberType NoteProperty -Name "Account" -Value $DBAccountName
 $Object | Add-Member -MemberType NoteProperty -Name "AccountID" -Value $DBAccountID
