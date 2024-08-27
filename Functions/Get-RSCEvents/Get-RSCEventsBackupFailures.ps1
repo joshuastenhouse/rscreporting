@@ -1,11 +1,11 @@
 ################################################
-# Function - Get-RSCEvents - Getting all RSC events
+# Function - Get-RSCEventsBackupFailures - Getting all RSC Failed Backup events
 ################################################
-Function Get-RSCEvents {
+Function Get-RSCEventsBackupFailures {
 
 <#
 .SYNOPSIS
-Returns all RSC events within the time frame specified, default is 24 hours with no parameters.
+Returns all RSC backup events within the time frame specified, default is 24 hours with no parameters.
 
 .DESCRIPTION
 Makes the required GraphQL API calls to RSC via Invoke-RestMethod to get the data as described, then creates a usable array of the returned information, removing the need for the PowerShell user to understand GraphQL in order to interact with RSC.
@@ -24,30 +24,26 @@ The number of minutes to get events from, use instead of hours if you want to be
 Alternative to Days/Hours/Minutes, specicy a from date in the format 08/14/2023 23:00:00 to only collect events from AFTER this date.
 .PARAMETER ToDate
 Alternative to Days/Hours/Minutes, specicy a To date in the format 08/14/2023 23:00:00 to only collect events from BEFORE this date. Will always be UTCNow if null.
-.PARAMETER LastActivityType
-Set the required type of events, has to be from the schema link, you can also try not specifying this, then use EventType on the array to get a valid list of LastActivityTypes.
-.PARAMETER LastActivityStatus
-Set the required status of events, accepted values are UNKNOWN_EVENT_STATUS, SUCCESS, FAILURE, INFO, CANCELED, RUNNING, WARNING, CANCELING, TASK_SUCCESS, QUEUED, TASK_FAILURE, PARTIAL_SUCCESS.
 .PARAMETER ObjectType
 Set the required object type of the events, has to be be a valid object type from the schema link, you can also try not specifying this, then use ObjectType on the array to get a valid list of ObjectType.
 .PARAMETER ObjectName
 Set the required object name of the events, has to be be a valid object name, you can also try not specifying this, then use Object on the array to get a valid list of ObjectName.
-.PARAMETER ObjectID
-A post filter for the required objectID, can't be used during the API call as it's not supported as of 05/15/23
+.PARAMETER ExcludeLogBackups
+Removes all log backup events.
 
 .OUTPUTS
 Returns an array of all the available information on the GraphQL endpoint in a uniform and usable format.
 
 .EXAMPLE
-Get-RSCEvents
-This example returns all events within a 24 hour period as no paramters were set.
+Get-RSCEventsBackup
+This example returns all backup events within a 24 hour period as no paramters were set.
 
 .EXAMPLE
-Get-RSCEvents -DaysToCapture 30
-This example returns all events within a 30 day period.
+Get-RSCEventsBackup -DaysToCapture 30
+This example returns all backup events within a 30 day period.
 
 .EXAMPLE
-Get-RSCEvents -DaysToCapture 30 -LastActivityType "BACKUP" -LastActivityStatus "FAILED" -ObjectType "VMwareVirtualMachine"
+Get-RSCEventsBackup -DaysToCapture 30 -LastActivityStatus "FAILED" -ObjectType "VMwareVirtualMachine"
 This example returns all failed backup events within 30 days for VMwareVirtualMachines.
 
 .NOTES
@@ -63,14 +59,12 @@ Date: 05/11/2023
         [Parameter(Mandatory=$false)]$DaysToCapture,
         [Parameter(Mandatory=$false)]$HoursToCapture,
         [Parameter(Mandatory=$false)]$MinutesToCapture,
-        [Parameter(Mandatory=$false)]$LastActivityType,
-        [Parameter(Mandatory=$false)]$LastActivityStatus,
         [Parameter(Mandatory=$false)]$ObjectType,
         [Parameter(Mandatory=$false)]$ObjectName,
         [Parameter(Mandatory=$false)]$FromDate,
         [Parameter(Mandatory=$false)]$ToDate,
-        [Parameter(Mandatory=$false)]$ObjectID,
         [Parameter(Mandatory=$false)]$EventLimit,
+        [switch]$ExcludeLogBackups,
         [switch]$Logging
     )
 
@@ -81,8 +75,6 @@ Date: 05/11/2023
 Import-Module RSCReporting
 # Checking connectivity, exiting function with error if not connected
 Test-RSCConnection
-# Getting RSC clusters
-$RSCClusters = Get-RSCClusters
 # If event limit null, setting to value
 IF($EventLimit -eq $null){$EventLimit = 999}ELSE{$EventLimit = [int]$EventLimit}
 ################################################
@@ -92,7 +84,7 @@ $ScriptStart = Get-Date
 $MachineDateTime = Get-Date
 $UTCDateTime = [System.DateTime]::UtcNow
 # If null, setting to 24 hours
-IF(($MinutesToCapture -eq $null) -and ($HoursToCapture -eq $null))
+IF(([string]::IsNullOrEmpty($MinutesToCapture)) -and ([string]::IsNullOrEmpty($HoursToCapture)))
 {
 $HoursToCapture = 24
 }
@@ -178,6 +170,10 @@ Start-Sleep 1
 ################################################
 # Getting RSC Events
 ################################################
+# Hard coding event type 
+$lastActivityType = "BACKUP"
+# Hard coding event status
+$LastActivityStatus = "FAILURE"
 # Creating array for events
 $RSCEventsList = @()
 # Building GraphQL query
@@ -240,15 +236,6 @@ fragment EventSeriesFragment on ActivitySeries {
   isCancelable
   isPolarisEventSeries
   startTime
-  location
-  effectiveThroughput
-  dataTransferred
-  logicalSize
-  organizations {
-    id
-    name
-    __typename
-  }
   __typename
 }"
 }
@@ -260,16 +247,16 @@ $RSCEventsJSON = $RSCGraphQL | ConvertTo-Json -Depth 32
 # Converting back to PS object for editing of variables
 $RSCEventsJSONObject = $RSCEventsJSON | ConvertFrom-Json
 # Adding variables specified
-IF($lastActivityType -ne $null){$RSCEventsJSONObject.variables.filters | Add-Member -MemberType NoteProperty "lastActivityType" -Value $LastActivityType}
-IF($lastActivityStatus -ne $null){$RSCEventsJSONObject.variables.filters | Add-Member -MemberType NoteProperty "lastActivityStatus" -Value $LastActivityStatus}
-IF($objectType -ne $null){$RSCEventsJSONObject.variables.filters | Add-Member -MemberType NoteProperty "objectType" -Value $ObjectType}
-IF($objectName -ne $null){$RSCEventsJSONObject.variables.filters | Add-Member -MemberType NoteProperty "objectName" -Value $ObjectName}
+IF($lastActivityType -ne $null){$RSCEventsJSONObject.variables.filters | Add-Member -MemberType NoteProperty "lastActivityType" -Value $lastActivityType}
+IF($lastActivityStatus -ne $null){$RSCEventsJSONObject.variables.filters | Add-Member -MemberType NoteProperty "lastActivityStatus" -Value $lastActivityStatus}
+IF($objectType -ne $null){$RSCEventsJSONObject.variables.filters | Add-Member -MemberType NoteProperty "objectType" -Value $objectType}
+IF($objectName -ne $null){$RSCEventsJSONObject.variables.filters | Add-Member -MemberType NoteProperty "objectName" -Value $objectName}
 ################################################
 # API Call To RSC GraphQL URI
 ################################################
 # Querying API
 $RSCEventsResponse = Invoke-RestMethod -Method POST -Uri $RSCGraphqlURL -Body $($RSCEventsJSONObject | ConvertTo-JSON -Depth 32) -Headers $RSCSessionHeader
-$RSCEventsList += $RSCEventsResponse.data.activitySeriesConnection.edges
+$RSCEventsList += $RSCEventsResponse.data.activitySeriesConnection.edges.node
 # Counters
 $RSCEventsListCountStart = 0
 $RSCEventsListCountEnd = $EventLimit
@@ -278,18 +265,20 @@ IF($Logging){Write-Host "CollectingEvents: $RSCEventsListCountStart-$RSCEventsLi
 # Getting all results from paginations
 While($RSCEventsResponse.data.activitySeriesConnection.pageInfo.hasNextPage) 
 {
+# Incrementing
+$RSCEventsListCountStart = $RSCEventsListCountStart + $EventLimit
+$RSCEventsListCountEnd = $RSCEventsListCountEnd + $EventLimit
 # Logging
 IF($Logging){Write-Host "CollectingEvents: $RSCEventsListCountStart-$RSCEventsListCountEnd"}
 # Setting after variable, querying API again, adding to array
 $RSCEventsJSONObject.variables | Add-Member -MemberType NoteProperty "after" -Value $RSCEventsResponse.data.activitySeriesConnection.pageInfo.endCursor -Force
 $RSCEventsResponse = Invoke-RestMethod -Method POST -Uri $RSCGraphqlURL -Body $($RSCEventsJSONObject | ConvertTo-JSON -Depth 20) -Headers $RSCSessionHeader
-$RSCEventsList += $RSCEventsResponse.data.activitySeriesConnection.edges
-# Counting
-$RSCEventsListCountStart = $RSCEventsListCountStart + $EventLimit
-$RSCEventsListCountEnd = $RSCEventsListCountEnd + $EventLimit
+$RSCEventsList += $RSCEventsResponse.data.activitySeriesConnection.edges.node
 }
-# Selecting data
-$RSCEventsList = $RSCEventsList.node
+# Removing queued events
+$RSCEventsList = $RSCEventsList | Where-Object {$_.lastActivityStatus -ne "Queued"}
+# Removing running - logging this to SQL will then fail to update when complete as the event ID is the same
+$RSCEventsList = $RSCEventsList | Where-Object {$_.lastActivityStatus -ne "Running"}
 # Counting
 $RSCEventsCount = $RSCEventsList | Measure-Object | Select-Object -ExpandProperty Count
 $RSCObjectsList = $RSCEventsList | Select-Object ObjectId -Unique
@@ -297,15 +286,22 @@ $RSCObjectsList = $RSCEventsList | Select-Object ObjectId -Unique
 IF($Logging)
 {
 Write-Host "----------------------------------
-EventsReturnedByAPI: $RSCEventsCount"
+EventsReturnedByAPI: $RSCEventsCount
+----------------------------------
+Processing.."
 }
 ################################################
 # Processing Events
 ################################################
+# Creating array
 $RSCEvents = [System.Collections.ArrayList]@()
+$RSCEventsCounter = 0
 # For Each Getting info
 ForEach ($Event in $RSCEventsList)
 {
+# Incrementing & Logging
+$RSCEventsCounter ++
+IF($Logging){$Date = Get-Date; Write-Host "$Date - ProcessingEvents: $RSCEventsCounter/$RSCEventsCount"}
 # Setting variables
 $EventID = $Event.activitySeriesId
 $EventObjectID = $Event.fid
@@ -329,15 +325,6 @@ $EventClusterID = $EventCluster.id
 $EventClusterVersion = $EventCluster.version
 $EventClusterName = $EventCluster.name
 }
-# Overriding object type and name to be more descriptive, it labels a Rubrik cluster as just Cluster which could be anything with no object name
-IF($EventObjectType -eq "Cluster")
-{
-$EventObjectType = "RubrikCluster"
-$EventObject = $EventClusterName
-$EventObjectID = $EventClusterID
-$EventObjectCDMID = $EventClusterID
-$EventLocation = $RSCClusters | Where-Object {$_.ClusterID -eq $EventClusterID} | Select-Object -ExpandProperty Location -First 1
-}
 # Overriding Polaris in cluster name
 IF($EventClusterName -eq "Polaris"){$EventClusterName = "RSC-Native"}
 # Getting message
@@ -346,7 +333,7 @@ $EventMessage = $EventInfo.message
 # Getting error detail
 $EventDetail = $Event | Select-Object -ExpandProperty activityConnection -First 1 | Select-Object -ExpandProperty nodes | Select-Object -ExpandProperty activityInfo | ConvertFrom-JSON
 $EventCDMInfo = $EventDetail.CdmInfo 
-IF($EventCDMInfo -ne $null){$EventCDMInfo = $EventCDMInfo | ConvertFrom-JSON}
+IF ($EventCDMInfo -ne $null){$EventCDMInfo = $EventCDMInfo | ConvertFrom-JSON}
 $EventErrorCause = $EventCDMInfo.cause
 $EventErrorCode = $EventErrorCause.errorCode
 $EventErrorMessage = $EventErrorCause.message
@@ -362,7 +349,7 @@ $EventRuntime = New-TimeSpan -Start $EventStartUTC -End $EventEndUTC
 $EventMinutes = $EventRuntime | Select-Object -ExpandProperty TotalMinutes
 $EventSeconds = $EventRuntime | Select-Object -ExpandProperty TotalSeconds
 $EventDuration = "{0:g}" -f $EventRuntime
-IF ($EventDuration -match "."){$EventDuration = $EventDuration.split('.')[0]}
+IF($EventDuration -match "."){$EventDuration = $EventDuration.split('.')[0]}
 }
 ELSE
 {
@@ -384,6 +371,10 @@ $IsLogBackup = $FALSE
 IF($EventMessage -match "transaction log"){$IsLogBackup = $TRUE}
 # Deciding if log backup or not
 IF($EventMessage -match "log backup"){$IsLogBackup = $TRUE}
+# Enabling insert
+$InsertRow = $TRUE
+# If exclude log backups disabling insert
+IF(($ExcludeLogBackups) -and ($IsLogBackup -eq $TRUE)){$InsertRow = $FALSE}
 ############################
 # Adding To Array
 ############################
@@ -417,17 +408,12 @@ $Object | Add-Member -MemberType NoteProperty -Name "RubrikCluster" -Value $Even
 $Object | Add-Member -MemberType NoteProperty -Name "RubrikClusterID" -Value $EventClusterID
 $Object | Add-Member -MemberType NoteProperty -Name "Version" -Value $EventClusterVersion
 $Object | Add-Member -MemberType NoteProperty -Name "ObjectCDMID" -Value $EventObjectCDMID
-# Adding to array (optional, not needed)
-$RSCEvents.Add($Object) | Out-Null
+# Adding to array
+IF($InsertRow -eq $TRUE){$RSCEvents.Add($Object) | Out-Null}
+# $RSCEvents.Add($Object) | Out-Null
 # End of for each event below
 }
 # End of for each event above
-
-# Post API call filter override for ObjectID
-IF($ObjectID)
-{
-$RSCEvents = $RSCEvents | Where-Object {$_.ObjectID -eq $ObjectID}
-}
 
 # Returning array
 Return $RSCEvents
