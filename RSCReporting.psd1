@@ -1,6 +1,6 @@
 @{
 	RootModule 		= 'RSCReporting.psm1' 
-	ModuleVersion 		= '1.0.5' 
+	ModuleVersion 		= '1.0.6' 
 	CompatiblePSEditions 	= 'Desktop', 'Core' 
 	GUID 			= 'dc18a919-f4bf-4da2-8c76-24b68fa33ef0' 
 	Author 			= 'Joshua Stenhouse' 
@@ -54,6 +54,7 @@ FunctionsToExport = @(
 "Get-RSCEventsArchive",
 "Get-RSCEventsAudit",
 "Get-RSCEventsBackup",
+"Get-RSCEventsBackupFailures",
 "Get-RSCEventsBackupOnDemand",
 "Get-RSCEventsHardware",
 "Get-RSCEventsLogBackup",
@@ -89,9 +90,12 @@ FunctionsToExport = @(
 "Get-RSCNewProtectedVMs",
 "Get-RSCObjectCompliance",
 "Get-RSCObjectComplianceAll",
+"Get-RSCObjectDetail",
+"Get-RSCObjectIDs",
 "Get-RSCObjectLastBackup",
 "Get-RSCObjects",
 "Get-RSCObjectSnapshots",
+"Get-RSCObjectsPendingFirstFull",
 "Get-RSCObjectStorageUsage",
 "Get-RSCObjectStorageUsageByOrg",
 "Get-RSCObjectStorageUsageByVMwareTag",
