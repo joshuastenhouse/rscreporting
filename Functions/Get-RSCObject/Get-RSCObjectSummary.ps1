@@ -37,19 +37,19 @@ Test-RSCConnection
 ################################################
 IF($RSCGlobalObjects -eq $null)
 {
-Write-Error "ERROR: Run Get-RSCObjects first to generate the data to summarize.."
+Write-Error "ERROR: Run Get-RSCObjectIDs first to generate the data to summarize.."
 Start-Sleep 2
 Break
 }
 # Selecting unique objects
-$UniqueObjectTypes = $RSCGlobalObjects | Sort-Object Type | Select-Object -ExpandProperty Type -Unique
+$UniqueObjectTypes = $RSCGlobalObjectIDs | Sort-Object Type | Select-Object -ExpandProperty Type -Unique
  # Creating array
 $RSCObjectSummary = [System.Collections.ArrayList]@()
 # For each type getting counts
 ForEach($UniqueObjectType in $UniqueObjectTypes)
 {
 # Selecting objects
-$UniqueObjects = $RSCGlobalObjects | Where-Object {$_.Type -eq $UniqueObjectType}
+$UniqueObjects = $RSCGlobalObjectIDs | Where-Object {$_.Type -eq $UniqueObjectType}
 # Counting
 $UniqueObjectsCount = $UniqueObjects | Measure-Object | Select-Object -ExpandProperty Count
 $UniqueProtectedObjects = $UniqueObjects | Where-Object {$_.ProtectionStatus -eq "Protected"} | Measure-Object| Select-Object -ExpandProperty Count
@@ -69,12 +69,12 @@ $Object | Add-Member -MemberType NoteProperty -Name "PendingFirstFull" -Value $U
 $RSCObjectSummary.Add($Object) | Out-Null
 }
 # Summarizing all
-$UniqueObjectsCount = $RSCObjects | Measure-Object | Select-Object -ExpandProperty Count
-$UniqueProtectedObjects = $RSCObjects | Where-Object {$_.ProtectionStatus -eq "Protected"} | Measure-Object| Select-Object -ExpandProperty Count
-$UniqueUnProtectedObjects = $RSCObjects | Where-Object {$_.ProtectionStatus -eq "NoSla"} | Measure-Object | Select-Object -ExpandProperty Count
-$UniqueDoNotProtectObjects = $RSCObjects | Where-Object {$_.ProtectionStatus -ne "DoNotProtect"} | Measure-Object | Select-Object -ExpandProperty Count
-$UniquePendingFirstFullObjects = $RSCObjects | Where-Object {$_.PendingFirstFull -eq "True"} | Measure-Object | Select-Object -ExpandProperty Count
-$UniqueRubrikClusters = $RSCObjects | Select-Object -ExpandProperty RubrikClusterID -Unique | Measure-Object | Select-Object -ExpandProperty Count
+$UniqueObjectsCount = $RSCGlobalObjectIDs | Measure-Object | Select-Object -ExpandProperty Count
+$UniqueProtectedObjects = $RSCGlobalObjectIDs | Where-Object {$_.ProtectionStatus -eq "Protected"} | Measure-Object| Select-Object -ExpandProperty Count
+$UniqueUnProtectedObjects = $RSCGlobalObjectIDs | Where-Object {$_.ProtectionStatus -eq "NoSla"} | Measure-Object | Select-Object -ExpandProperty Count
+$UniqueDoNotProtectObjects = $RSCGlobalObjectIDs | Where-Object {$_.ProtectionStatus -ne "DoNotProtect"} | Measure-Object | Select-Object -ExpandProperty Count
+$UniquePendingFirstFullObjects = $RSCGlobalObjectIDs | Where-Object {$_.PendingFirstFull -eq "True"} | Measure-Object | Select-Object -ExpandProperty Count
+$UniqueRubrikClusters = $RSCGlobalObjectIDs | Select-Object -ExpandProperty RubrikClusterID -Unique | Measure-Object | Select-Object -ExpandProperty Count
 # Adding to array
 $Object = New-Object PSObject
 $Object | Add-Member -MemberType NoteProperty -Name "Type" -Value "ALL"

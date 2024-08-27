@@ -44,96 +44,10 @@ Test-RSCConnection
 # Using default list unless told to query all
 IF($GetLiveViaObjectQuery)
 {
-# Creating array for objects
-$RSCObjectsList = @()
-# Building GraphQL query
-$RSCGraphQL = @{"operationName" = "snappableConnection";
-
-"variables" = @{
-"first" = 1000
-};
-
-"query" = "query snappableConnection(`$after: String`$first: Int) {
-  snappableConnection(after: `$after, first: `$first) {
-    edges {
-      node {
-        archivalComplianceStatus
-        archivalSnapshotLag
-        archiveSnapshots
-        archiveStorage
-        awaitingFirstFull
-        complianceStatus
-        dataReduction
-        fid
-        id
-        lastSnapshot
-        latestArchivalSnapshot
-        latestReplicationSnapshot
-        localOnDemandSnapshots
-        location
-        localSnapshots
-        logicalBytes
-        logicalDataReduction
-        missedSnapshots
-        name
-        objectType
-        physicalBytes
-        protectedOn
-        protectionStatus
-        pullTime
-        replicaSnapshots
-        replicaStorage
-        replicationComplianceStatus
-        slaDomain {
-          id
-          name
-          version
-        }
-        replicationSnapshotLag
-        totalSnapshots
-        transferredBytes
-        cluster {
-          id
-          name
-        }
-      }
-    }
-        pageInfo {
-      endCursor
-      hasNextPage
-      hasPreviousPage
-      __typename
-    }
-  }
-}"
-}
-################################################
-# API Call To RSC GraphQL URI
-################################################
-# Querying API
-$RSCResponse = Invoke-RestMethod -Method POST -Uri $RSCGraphqlURL -Body $($RSCGraphQL | ConvertTo-JSON -Depth 20) -Headers $RSCSessionHeader
-# Setting variable
-$RSCObjectsList += $RSCResponse.data.snappableConnection.edges.node
-# Counters
-$ObjectCount = 0
-$ObjectCounter = $ObjectCount + 1000
-# Getting all results from paginations
-While ($RSCResponse.data.snappableConnection.pageInfo.hasNextPage) 
-{
-# Logging
-Write-Host "GettingObjects: $ObjectCount-$ObjectCounter"
-# Getting next set
-$RSCGraphQL.variables.after = $RSCResponse.data.snappableConnection.pageInfo.endCursor
-$RSCResponse = Invoke-RestMethod -Method POST -Uri $RSCGraphqlURL -Body $($RSCGraphQL | ConvertTo-JSON -Depth 20) -Headers $RSCSessionHeader
-$RSCObjectsList += $RSCResponse.data.snappableConnection.edges.node
-# Incrementing
-$ObjectCount = $ObjectCount + 1000
-$ObjectCounter = $ObjectCounter + 1000
-}
-
+# Getting object ID list
+$RSCObjectsList = Get-RSCObjectIDs
 # Selecting unique objects
-$RSCObjectTypes = $RSCObjectsList | Select-Object -ExpandProperty objectType -Unique | Sort-Object
-
+$RSCObjectTypes = $RSCObjectsList | Select-Object -ExpandProperty Type -Unique | Sort-Object
 }
 ELSE
 {
