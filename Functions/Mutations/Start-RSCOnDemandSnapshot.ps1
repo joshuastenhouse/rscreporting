@@ -30,7 +30,7 @@ This example prompts for the RSC URL, user ID and secret, then connects to RSC a
 
 .NOTES
 Author: Joshua Stenhouse
-Date: 05/11/2023
+Date: 08/20/24
 #>
 ################################################
 # Paramater Config
@@ -39,7 +39,7 @@ Date: 05/11/2023
     Param (
         [Parameter(ValueFromPipeline=$true)]
         [array]$PipelineArray,
-        [Parameter(Mandatory=$false)]
+        [Parameter(Mandatory=$true)]
         [string]$ObjectID,
         [Parameter(Mandatory=$false)]
         [string]$SLADomainID,
@@ -57,19 +57,8 @@ IF($PipelineArray -ne $null){$ObjectID = $PipelineArray | Select-Object -ExpandP
 Import-Module RSCReporting
 # Checking connectivity, exiting function with error if not
 Test-RSCConnection
-# Getting protected objects to validate IDs and get SLADomainID if null
-$RSCObjects = Get-RSCObjects
-# Getting all SLA domains to validate SLA domain ID
-$RSCSLADomains = Get-RSCSLADomains
 # Validating object ID exists
-$RSCObjectInfo = $RSCObjects | Where-Object {$_.ObjectID -eq $ObjectID}
-# If null, checking it's not K8S (not on snappableConnection as of 08/16/23)
-IF($RSCObjectInfo -eq $null)
-{
-$K8Namespaces = Get-RSCK8SNamespaces
-$RSCObjectInfo = $K8Namespaces | Where-Object {$_.NamespaceID -eq $ObjectID}
-$OverrideObjecttype = $TRUE
-}
+$RSCObjectInfo = Get-RSCObjectDetail -ObjectID $ObjectID
 # Breaking if not
 IF($RSCObjectInfo -eq $null)
 {
@@ -77,13 +66,15 @@ Write-Error "ERROR: ObjectID specified not found, check and try again.."
 Break
 }
 # Getting SLA Domain ID if not already specified
-IF($SLADomainID -eq "")
+IF($SLADomainID -eq $null)
 {
 $SLADomainID = $RSCObjectInfo.SLADomainID
 $SLADomain = $RSCObjectInfo.SLADomain
 }
 ELSE
 {
+# Getting all SLA domains to validate SLA domain ID
+$RSCSLADomains = Get-RSCSLADomains
 $SLADomainInfo = $RSCSLADomains | Where-Object {$_.SLADomainID -eq $SLADomainID}
 $SLADomainID = $SLADomainInfo.SLADomainID
 $SLADomain = $SLADomainInfo.SLADomain
@@ -96,7 +87,7 @@ Break
 }
 # Getting object type, as not all objects use the generic on-demand snapshot call
 $ObjectType = $RSCObjectInfo.Type
-IF($OverrideObjecttype -eq $TRUE){$ObjectType = "K8Namespace"}
+# IF($OverrideObjecttype -eq $TRUE){$ObjectType = "K8Namespace"}
 # Getting other useful info
 $RSCObjectName = $RSCObjectInfo.Object
 $RSCObjectRubrikCluster = $RSCObjectInfo.RubrikCluster
