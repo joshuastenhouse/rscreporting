@@ -89,13 +89,20 @@ $RSCGraphQL = @{"operationName" = "SLAListQuery";
             unit
             __typename
           }
-          archivalSpecs {
-            archivalLocationName
-            __typename
-          }
           archivalSpec {
+            archivalLocationId
             archivalLocationName
-            __typename
+            archivalLocationType
+            frequencies
+            threshold
+            thresholdUnit
+            threshold
+            archivalTieringSpec {
+              coldStorageClass
+              isInstantTieringEnabled
+              minAccessibleDurationInSeconds
+              shouldTierExistingSnapshots
+            }
           }
           replicationSpecsV2 {
             ...DetailedReplicationSpecsV2ForSlaDomainFragment
@@ -568,12 +575,16 @@ $GlobalSLAClustersCount = $GlobalSLAClusters | Measure-Object | Select-Object -E
 # Counting object types
 $GlobalSLAObjectTypesCount = $GlobalSLAObjectTypes | Measure-Object | Select-Object -ExpandProperty Count
 # Archive settings
-$GlobalSLAArchiveSpecs = $GlobalSLA.archivalSpecs.storagesetting
-$GlobalSLAArchiveName = $GlobalSLAArchiveSpecs.name
-$GlobalSLAArchiveTarget = $GlobalSLAArchiveSpecs.targetType
-$GlobalSLAArchiveType = $GlobalSLAArchiveSpecs.groupType
-$GlobalSLAArchiveID = $GlobalSLAArchiveSpecs.id
+$GlobalSLAArchiveSpecs = $GlobalSLA.archivalSpec
+$GlobalSLAArchiveName = $GlobalSLAArchiveSpecs.archivalLocationName
+$GlobalSLAArchiveTarget = $GlobalSLAArchiveSpecs.archivalLocationType
+$GlobalSLAArchiveType = $GlobalSLAArchiveSpecs.archivalLocationType
+$GlobalSLAArchiveID = $GlobalSLAArchiveSpecs.archivalLocationId
 IF($GlobalSLAArchiveName -eq $null){$GlobalSLAArchiveEnabled = $FALSE}ELSE{$GlobalSLAArchiveEnabled = $TRUE}
+# Overriding type
+IF($GlobalSLAArchiveTarget -match "AWS"){$GlobalSLAArchiveType = "S3"}
+IF($GlobalSLAArchiveTarget -match "Azure"){$GlobalSLAArchiveType = "Blob"}
+IF($GlobalSLAArchiveTarget -match "Goole"){$GlobalSLAArchiveType = "GS"}
 # Replication settings
 $GlobalSLAReplicationSpecs = $GlobalSLA.replicationSpecsV2
 $GlobalSLAReplicationRetention = $GlobalSLAReplicationSpecs.retentionDuration
