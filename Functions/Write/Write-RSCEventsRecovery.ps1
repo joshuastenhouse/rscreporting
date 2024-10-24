@@ -158,8 +158,10 @@ CREATE TABLE [dbo].[$SQLTable](
 	[JobEndUTC] [datetime] NULL,
 	[Duration] [varchar](50) NULL,
 	[DurationSeconds] [varchar](50) NULL,
-    [ThroughputMB] [varchar](50) NULL,
-    [TransferredMB] [varchar](50) NULL,
+	[TransferredMB] [int] NULL,
+	[ThroughputMB] [int] NULL,
+    [TransferredBytes] [bigint] NULL,
+	[ThroughputBytes] [bigint] NULL,
 	[Exported] [varchar](50) NULL,
  CONSTRAINT [PK_$SQLTable] PRIMARY KEY CLUSTERED 
 (
@@ -361,6 +363,8 @@ fragment EventSeriesFragment on ActivitySeries {
   objectId
   objectName
   location
+  effectiveThroughput
+  dataTransferred
   objectType
   severity
   progress
@@ -431,22 +435,12 @@ $EventStatus = $Event.lastActivityStatus
 $EventDateUNIX = $Event.lastUpdated
 $EventStartUNIX = $Event.startTime
 $EventEndUNIX = $EventDateUNIX
-# Getting transfer info
+# Job metrics
+$EventTransferredBytes = $Event.dataTransferred
 $EventThroughputBytes = $Event.effectiveThroughput
-$EventDataTransferredBytes = $Event.dataTransferred
-# If not null converting to MB
-IF($EventThroughputBytes -ne $null)
-{
-$EventThroughputMB = $EventThroughputBytes / 1000 / 1000
-$EventThroughputMB = [Math]::Round($EventThroughputMB,2)
-}
-ELSE{$EventThroughputMB = $null}
-IF($EventDataTransferredBytes -ne $null)
-{
-$EventDataTransferredMB = $EventDataTransferredBytes / 1000 / 1000
-$EventDataTransferredMB = [Math]::Round($EventDataTransferredMB,2)
-}
-ELSE{$EventDataTransferredMB = $null}
+# Converting bytes to MB
+IF($EventTransferredBytes -ne $null){$EventTransferredMB = $EventTransferredBytes / 1000 / 1000; $EventTransferredMB = [Math]::Round($EventTransferredMB)}ELSE{$EventTransferredMB = $null}
+IF($EventThroughputBytes -ne $null){$EventThroughputMB = $EventThroughputBytes / 1000 / 1000; $EventThroughputMB = [Math]::Round($EventThroughputMB)}ELSE{$EventThroughputMB = $null}
 # Getting cluster info
 $EventCluster = $Event.cluster
 # Only processing if not null, could be cloud native
@@ -530,8 +524,10 @@ $Object | Add-Member -MemberType NoteProperty -Name "EndUTC" -Value $EventEndUTC
 $Object | Add-Member -MemberType NoteProperty -Name "Duration" -Value $EventDuration
 $Object | Add-Member -MemberType NoteProperty -Name "DurationSeconds" -Value $EventSeconds
 # Data transferred
+$Object | Add-Member -MemberType NoteProperty -Name "TransferredMB" -Value $EventTransferredMB
 $Object | Add-Member -MemberType NoteProperty -Name "ThroughputMB" -Value $EventThroughputMB
-$Object | Add-Member -MemberType NoteProperty -Name "TransferredMB" -Value $EventDataTransferredMB
+$Object | Add-Member -MemberType NoteProperty -Name "TransferredBytes" -Value $EventTransferredBytes
+$Object | Add-Member -MemberType NoteProperty -Name "ThroughputBytes" -Value $EventThroughputBytes
 # Failure detail
 $Object | Add-Member -MemberType NoteProperty -Name "ErrorCode" -Value $EventErrorCode
 $Object | Add-Member -MemberType NoteProperty -Name "ErrorMessage" -Value $EventErrorMessage
@@ -560,8 +556,8 @@ DateUTC, Type, Status, Message,
 -- Job timing
 JobStartUTC, JobEndUTC, Duration, DurationSeconds,
 
--- Data stats
-ThroughputMB, TransferredMB,
+-- Job metrics
+TransferredMB, ThroughputMB, TransferredBytes, ThroughputBytes,
 
 -- Job error info, if failure, on-demand 
 Exported)
@@ -578,8 +574,8 @@ VALUES(
 -- Job timing
 '$EventStartUTC', '$EventEndUTC', '$EventDuration', '$EventSeconds',
 
--- Data
-'$EventThroughputMB', '$EventDataTransferredMB',
+-- Job metrics
+'$EventLogicalSizeMB', '$EventTransferredMB', '$EventThroughputMB', '$EventLogicalSizeBytes', '$EventTransferredBytes', '$EventThroughputBytes',
 
 -- Job export default
 'FALSE');"
@@ -612,8 +608,8 @@ DateUTC, Type, Status, Message,
 -- Job timing
 JobStartUTC, JobEndUTC, Duration, DurationSeconds,
 
--- Data stats
-ThroughputMB, TransferredMB,
+-- Job metrics
+LogicalSizeMB, TransferredMB, ThroughputMB, LogicalSizeBytes, TransferredBytes, ThroughputBytes,
 
 -- Job error info, if failure, on-demand 
 Exported)
@@ -630,8 +626,8 @@ VALUES(
 -- Job timing
 '$EventStartUTC', '$EventEndUTC', '$EventDuration', '$EventSeconds',
 
--- Data
-'$EventThroughputMB', '$EventDataTransferredMB',
+-- Job metrics
+'$EventLogicalSizeMB', '$EventTransferredMB', '$EventThroughputMB', '$EventLogicalSizeBytes', '$EventTransferredBytes', '$EventThroughputBytes',
 
 -- Job export default
 'FALSE');"
@@ -684,6 +680,22 @@ ELSE
 ############################
 # Merging if using TempDB
 ############################
+# Logging
+Write-Host "RemovingDuplicatEventsFrom: $TempTableName
+----------------------------------"
+# Creating SQL query
+$SQLQuery = "WITH cte AS (SELECT EventID, ROW_NUMBER() OVER (PARTITION BY EventID ORDER BY EventID) rownum FROM tempdb.dbo.$TempTableName)
+DELETE FROM cte WHERE rownum>1;"
+# Run SQL query
+Try
+{
+Invoke-SQLCmd -Query $SQLQuery -ServerInstance $SQLInstance -QueryTimeout 300 | Out-Null
+}
+Catch
+{
+$Error[0] | Format-List -Force
+}
+# Merging
 Write-Host "MergingTableInTempDB: $TempTableName"
 Start-Sleep 3
 # Creating SQL query
@@ -699,21 +711,23 @@ WHEN MATCHED
             Target.JobEndUTC = Source.JobEndUTC, 
             Target.Duration = Source.Duration,
             Target.DurationSeconds = Source.DurationSeconds,
-            Target.ThroughputMB = Source.ThroughputMB,
             Target.TransferredMB = Source.TransferredMB,
+            Target.ThroughputMB = Source.ThroughputMB,
+            Target.TransferredBytes = Source.TransferredBytes,
+            Target.ThroughputBytes = Source.ThroughputBytes,
             Target.Exported = Source.Exported
 WHEN NOT MATCHED BY TARGET
 THEN INSERT (RSCInstance, EventID, RubrikCluster, RubrikClusterID,
             Object, ObjectID, ObjectCDMID, ObjectType, Location,
             DateUTC, Type, Status, Message,
             JobStartUTC, JobEndUTC, Duration, DurationSeconds,
-            ThroughputMB, TransferredMB,
+            TransferredMB, ThroughputMB, TransferredBytes, ThroughputBytes,
             Exported)
      VALUES (Source.RSCInstance, Source.EventID, Source.RubrikCluster, Source.RubrikClusterID,
             Source.Object, Source.ObjectID, Source.ObjectCDMID, Source.ObjectType, Source.Location,
             Source.DateUTC, Source.Type, Source.Status, Source.Message,
             Source.JobStartUTC, Source.JobEndUTC, Source.Duration, Source.DurationSeconds,
-            Source.ThroughputMB, Source.TransferredMB,
+            Source.TransferredMB, Source.ThroughputMB, Source.TransferredBytes, Source.ThroughputBytes,
             Source.Exported);"
 # Run SQL query
 Try

@@ -432,6 +432,8 @@ IF($ExcludeRunningJobs)
 {
 $RSCEventsList = $RSCEventsList | Where-Object {$_.lastActivityStatus -ne "Running"}
 }
+# Removing duplicate events
+
 # Counting
 $RSCEventsCount = $RSCEventsList | Measure-Object | Select-Object -ExpandProperty Count
 $RSCObjectsList = $RSCEventsList | Select-Object ObjectId -Unique
@@ -720,8 +722,24 @@ ELSE
 ############################
 # Merging if using TempDB
 ############################
-$Date = Get-Date
-Write-Host "$Date - MergingTableInTempDB: $TempTableName"
+# Logging
+$Date = Get-Date; Write-Host "$Date - RemovingDuplicatEventsFrom: $TempTableName
+----------------------------------"
+# Creating SQL query
+$SQLQuery = "WITH cte AS (SELECT EventID, ROW_NUMBER() OVER (PARTITION BY EventID ORDER BY EventID) rownum FROM tempdb.dbo.$TempTableName)
+DELETE FROM cte WHERE rownum>1;"
+# Run SQL query
+Try
+{
+Invoke-SQLCmd -Query $SQLQuery -ServerInstance $SQLInstance -QueryTimeout 300 | Out-Null
+}
+Catch
+{
+$Error[0] | Format-List -Force
+}
+# Merging
+$Date = Get-Date; Write-Host "MergingTableInTempDB: $TempTableName
+----------------------------------"
 Start-Sleep 3
 # Creating SQL query
 $SQLMergeTable = "MERGE $SQLDB.dbo.$SQLTable Target
@@ -741,7 +759,7 @@ WHEN MATCHED
             Target.ThroughputMB = Source.ThroughputMB,
             Target.LogicalSizeBytes = Source.LogicalSizeBytes,
             Target.TransferredBytes = Source.TransferredBytes,
-            Target.ThroughputBytes = Source.DurationSeconds,
+            Target.ThroughputBytes = Source.ThroughputBytes,
             Target.ErrorCode = Source.ErrorCode, 
             Target.ErrorMessage = Source.ErrorMessage,
             Target.ErrorReason = Source.ErrorReason, 
@@ -806,9 +824,6 @@ Start-Sleep 2
 # End of bypass for using tempDB below
 }
 # End of bypass for using tempDB above
-##########################
-# Benching
-##########################
 ##########################
 # Benching
 ##########################

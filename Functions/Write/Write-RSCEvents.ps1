@@ -663,7 +663,24 @@ ELSE
 ############################
 # Merging if using TempDB
 ############################
-Write-Host "MergingTableInTempDB: $TempTableName"
+# Logging
+Write-Host "RemovingDuplicatEventsFrom: $TempTableName
+----------------------------------"
+# Creating SQL query
+$SQLQuery = "WITH cte AS (SELECT EventID, ROW_NUMBER() OVER (PARTITION BY EventID ORDER BY EventID) rownum FROM tempdb.dbo.$TempTableName)
+DELETE FROM cte WHERE rownum>1;"
+# Run SQL query
+Try
+{
+Invoke-SQLCmd -Query $SQLQuery -ServerInstance $SQLInstance -QueryTimeout 300 | Out-Null
+}
+Catch
+{
+$Error[0] | Format-List -Force
+}
+# Merging
+Write-Host "MergingTableInTempDB: $TempTableName
+----------------------------------"
 Start-Sleep 3
 # Creating SQL query
 $SQLMergeTable = "MERGE $SQLDB.dbo.$SQLTable Target
