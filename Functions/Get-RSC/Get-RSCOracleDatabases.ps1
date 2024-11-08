@@ -26,17 +26,30 @@ Date: 05/11/2023
 #>
 
 ################################################
+# Paramater Config
+################################################
+Param
+    (
+        [Parameter(ParameterSetName="User")][switch]$GetSLADomainLogSettings,
+        [Parameter(ParameterSetName="User")][switch]$DisableLogging,
+        [Parameter(Mandatory=$false)]$ObjectQueryLimit
+    )
+################################################
 # Importing Module & Running Required Functions
 ################################################
 # Importing the module is it needs other modules
 Import-Module RSCReporting
 # Checking connectivity, exiting function with error if not connected
 Test-RSCConnection
-# Getting SLA domains
-$RSCSLADomains = Get-RSCSLADomains
+# Getting SLA domains if required
+IF($DisableLogging){$RSCSLADomains = Get-RSCSLADomains}
+# Setting first value if null
+IF($ObjectQueryLimit -eq $null){$ObjectQueryLimit = 1000}
 ################################################
 # Getting All Objects 
 ################################################
+# Logging
+Write-Host "QueryingAPI: OracleDatabasesListQuery"
 # Creating array for objects
 $RSCObjectList = @()
 # Building GraphQL query
@@ -296,6 +309,11 @@ fragment DatabaseTablespacesColumnFragment on OracleDatabase {
 ################################################
 # API Call To RSC GraphQL URI
 ################################################
+# Counters
+$ObjectCount = 0
+$ObjectCounter = $ObjectCount + $ObjectQueryLimit
+#Logging
+IF($DisableLogging){}ELSE{Write-Host "GettingObjects: $ObjectCount-$ObjectCounter"}
 # Querying API
 $RSCObjectListResponse = Invoke-RestMethod -Method POST -Uri $RSCGraphqlURL -Body $($RSCGraphQL | ConvertTo-JSON -Depth 20) -Headers $RSCSessionHeader
 # Setting variable
@@ -303,14 +321,23 @@ $RSCObjectList += $RSCObjectListResponse.data.oracleDatabases.edges.node
 # Getting all results from paginations
 While ($RSCObjectListResponse.data.oracleDatabases.pageInfo.hasNextPage) 
 {
+# Incrementing
+$ObjectCount = $ObjectCount + $ObjectQueryLimit; $ObjectCounter = $ObjectCounter + $ObjectQueryLimit
+# Logging
+IF($DisableLogging){}ELSE{Write-Host "GettingObjects: $ObjectCount-$ObjectCounter"}
 # Getting next set
 $RSCGraphQL.variables.after = $RSCObjectListResponse.data.oracleDatabases.pageInfo.endCursor
 $RSCObjectListResponse = Invoke-RestMethod -Method POST -Uri $RSCGraphqlURL -Body $($RSCGraphQL | ConvertTo-JSON -Depth 20) -Headers $RSCSessionHeader
 $RSCObjectList += $RSCObjectListResponse.data.oracleDatabases.edges.node
 }
+# Logging
+Write-Host "Processing Oracle Databases.."
 ################################################
 # Processing DBs
 ################################################
+# Counting
+$RSCObjectsCount = $RSCObjectList | Measure-Object | Select-Object -ExpandProperty Count
+$RSCObjectsCounter = 0
 # Creating array
 $RSCDBs = [System.Collections.ArrayList]@()
 $RSCPDBs = [System.Collections.ArrayList]@()
@@ -318,6 +345,9 @@ $RSCTableSpaces = [System.Collections.ArrayList]@()
 # For Each Object Getting Data
 ForEach ($RSCDB in $RSCObjectList)
 {
+# Logging
+$RSCObjectsCounter ++
+IF($DisableLogging){}ELSE{Write-Host "ProcessingDatabase: $RSCObjectsCounter/$RSCObjectsCount"}
 # Setting variables
 $DBName = $RSCDB.name
 $DBID = $RSCDB.id
@@ -342,6 +372,9 @@ $DBLogRetentionFrequency = $RSCDB.logRetentionHours
 $DBLogRetentionFrequencyUnit = "HOURS"
 $DBHostLogRetentionFrequency = $RSCDB.hostLogRetentionHours
 $DBHostLogRetentionFrequencyUnit = "HOURS"
+# Getting SLA domain config settings if configured
+IF($DisableLogging)
+{
 # Overriding log backup with SLA settings, if present
 $DBSLADomainLogBackupSettings = $RSCSLADomains | Where-Object {$_.SLADomainID -eq $DBSLADomainID} 
 IF($DBSLADomainLogBackupSettings -ne $null)
@@ -363,13 +396,15 @@ $DBLogBackupRetention = $DBSLADomainLogBackupSettings.OracleLogRetention
 $DBLogBackupRetentionUnit = $DBSLADomainLogBackupSettings.OracleLogRetentionUnit
 }
 }
+}
 # Rubrik cluster info
 $DBRubrikClusterInfo = $RSCDB.primaryClusterLocation
 $DBRubrikCluster = $DBRubrikClusterInfo.name
 $DBRubrikClusterID = $DBRubrikClusterInfo.id
 # Dataguard info
 $DBDataGuardType = $RSCDB.dataGuardType
-$DBDataGuardGroup = $RSCDB.dataGuardGroup
+$DBDataGuardGroup = $RSCDB.dataGuardGroup.dbUniqueName
+$DBDataGuardGroupID = $RSCDB.dataGuardGroup.id
 # User note info
 $DBNoteInfo = $RSCDB.latestUserNote
 $DbNote = $DBNoteInfo.userNote
@@ -381,6 +416,13 @@ $DBPhysicalPaths = $RSCDB.physicalPath
 $DBHostInfo = $DBPhysicalPaths | Where-Object {$_.objectType -eq "OracleHost"} | Select-Object -First 1
 $DBHostName = $DBHostInfo.name
 $DBHostID = $DBHostInfo.fid
+# If still null, must be RAC
+IF($DBHostName -eq $null)
+{
+$DBHostInfo = $DBPhysicalPaths | Where-Object {$_.objectType -eq "OracleRac"} | Select-Object -First 1
+$DBHostName = $DBHostInfo.name
+$DBHostID = $DBHostInfo.fid
+}
 # PDBs
 $DBPDBs = $RSCDB.pdbs
 $DBPDBCount = $DBPDBs | Measure-Object | Select-Object -ExpandProperty Count
@@ -462,6 +504,7 @@ $Object | Add-Member -MemberType NoteProperty -Name "DBCDMID" -Value $DBCDMID
 $Object | Add-Member -MemberType NoteProperty -Name "Role" -Value $DBRole
 $Object | Add-Member -MemberType NoteProperty -Name "DataGuard" -Value $DBDataGuardType
 $Object | Add-Member -MemberType NoteProperty -Name "DataGuardGroup" -Value $DBDataGuardGroup
+$Object | Add-Member -MemberType NoteProperty -Name "DataGuardGroupID" -Value $DBDataGuardGroupID
 $Object | Add-Member -MemberType NoteProperty -Name "IsLiveMount" -Value $DBIsLiveMount
 $Object | Add-Member -MemberType NoteProperty -Name "Replicas" -Value $DBReplicas
 $Object | Add-Member -MemberType NoteProperty -Name "Instances" -Value $DBInstances
@@ -509,8 +552,9 @@ $RSCDBs.Add($Object) | Out-Null
 # End of for each object above
 
 # Assigning useful global variables
-$Global:RSCPDBs = $RSCPDBs
-$Global:RSCTableSpaces = $RSCTableSpaces
+$Global:RSCOracleDatabases = $RSCDBs
+$Global:RSCOraclePDBs = $RSCPDBs
+$Global:RSCOracleTableSpaces = $RSCTableSpaces
 
 # Returning array
 Return $RSCDBs
