@@ -536,6 +536,17 @@ IF($EventMessage -match "log backup"){$IsLogBackup = $TRUE}
 $InsertRow = $TRUE
 # If exclude log backups disabling insert
 IF(($ExcludeLogBackups) -and ($IsLogBackup -eq $TRUE)){$InsertRow = $FALSE}
+# Location override if null and Get-RSCOracleDatabases has been run
+IF(($EventLocation -eq "") -and ($RSCOracleDatabases -ne $null))
+{
+$EventLocation = $RSCOracleDatabases | Where-Object {$_.DataGuardGroupID -eq $EventObjectID} | Select-Object -ExpandProperty Host
+}
+# Overriding canceled spelling error on API
+IF($EventStatus -eq "Canceled")
+{
+$EventStatus = "Cancelled"
+$EventMessage = $EventMessage.Replace('Canceled','Cancelled')
+}
 ############################
 # Adding To Array
 ############################
@@ -807,8 +818,7 @@ $Error[0] | Format-List -Force
 }
 # Logging
 $Date = Get-Date
-Write-Host "----------------------------------
-$Date - DroppedTableInTempDB: $TempTableName
+Write-Host "$Date - DroppedTableInTempDB: $TempTableName
 ----------------------------------"
 }
 ELSE
