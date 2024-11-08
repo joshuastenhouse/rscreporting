@@ -1,6 +1,6 @@
 @{
 	RootModule 		= 'RSCReporting.psm1' 
-	ModuleVersion 		= '1.1.0' 
+	ModuleVersion 		= '1.1.1' 
 	CompatiblePSEditions 	= 'Desktop', 'Core' 
 	GUID 			= 'dc18a919-f4bf-4da2-8c76-24b68fa33ef0' 
 	Author 			= 'Joshua Stenhouse' 
