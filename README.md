@@ -8,7 +8,7 @@ Import the module into your current session:
 
 The current build is: 
 
-```1.0.6```
+```1.1.2```
 
 To see which build you are on:
 
@@ -55,27 +55,5 @@ Send-RSCReport -Array $Array -EmailTo "joshua@lab.local" -EmailFrom "reports@lab
 #Email a list of MS SQL DBs
 $Array = Get-RSCMSSQLDatabases | Where {$_.IsRelic -eq $False} | Select URL,DB,Instance,Host,RubrikCluster,SLADomain,Online,InDag,DAG,HasPermissions
 Send-RSCReport -Array $Array -EmailTo "joshua@lab.local" -EmailFrom "reports@lab.local" -SMTPServer "localhost" -ReportName "MSSQL DBs" -SortByColumnName "DB" -ColumnOrder "DB,Instance,Host,RubrikCluster,SLADomain,Online,InDag,DAG,HasPermissions"
-```
-
-1.0.5 Changelist:
-
-```
-1. Removed the following columns from the RSCObjectStorageUsage Table to speed up collection (was using Get-RSCObjects for these causing massive overheads):
-
-	[TotalSnapshots] [int] NULL,
-	[ProtectedOn] [datetime] NULL,
-	[LastSnapshot] [datetime] NULL,
-	[PendingFirstFull] [varchar](50) NULL
-
-2. Added new write to SQL function to map all objects to SLA domains, also, the above 4 columns will now be in the object table vs object storage usage table:
-
-Write-RSCObjects
-
-3. Fixed bugs in the following functions:
-
-Write-RSCTagAssignments (forcing dates as tag to strings to stop newer powershell versions treating it as a date object)
-Get-RSCSSOGroups (was throwing an error on efffective permissions graphql call on some RSC instances, was unused anyway so removed)
-Get-RSCSSOGroupUsers (as above)
-Get-RSCSSOGroupRoleAssignments (as above)
 ```
 
