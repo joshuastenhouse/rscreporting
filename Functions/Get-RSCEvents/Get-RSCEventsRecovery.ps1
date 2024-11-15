@@ -220,16 +220,15 @@ fragment EventSeriesFragment on ActivitySeries {
   objectId
   objectName
   location
+  logicalSize
+  effectiveThroughput
+  dataTransferred
   objectType
   severity
   progress
   isCancelable
   isPolarisEventSeries
   startTime
-  location
-  effectiveThroughput
-  dataTransferred
-  logicalSize
   organizations {
     id
     name
@@ -289,22 +288,14 @@ $EventStatus = $Event.lastActivityStatus
 $EventDateUNIX = $Event.lastUpdated
 $EventStartUNIX = $Event.startTime
 $EventEndUNIX = $EventDateUNIX
-# Getting transfer info
+# Job metrics
+$EventTransferredBytes = $Event.dataTransferred
 $EventThroughputBytes = $Event.effectiveThroughput
-$EventDataTransferredBytes = $Event.dataTransferred
-# If not null converting to MB
-IF($EventThroughputBytes -ne $null)
-{
-$EventThroughputMB = $EventThroughputBytes / 1000 / 1000
-IF($EventThroughputMB -lt 10){$EventThroughputMB = [Math]::Round($EventThroughputMB,2)}ELSE{$EventThroughputMB = [Math]::Round($EventThroughputMB)}
-}
-ELSE{$EventThroughputMB = $null}
-IF($EventDataTransferredBytes -ne $null)
-{
-$EventDataTransferredMB = $EventDataTransferredBytes / 1000 / 1000
-IF($EventDataTransferredMB -lt 10){$EventDataTransferredMB = [Math]::Round($EventDataTransferredMB,2)}ELSE{$EventDataTransferredMB = [Math]::Round($EventDataTransferredMB)}
-}
-ELSE{$EventDataTransferredMB = $null}
+$EventLogicalSizeBytes = $Event.logicalSize
+# Converting bytes to MB
+IF($EventTransferredBytes -ne $null){$EventTransferredMB = $EventTransferredBytes / 1000 / 1000; $EventTransferredMB = [Math]::Round($EventTransferredMB)}ELSE{$EventTransferredMB = $null}
+IF($EventThroughputBytes -ne $null){$EventThroughputMB = $EventThroughputBytes / 1000 / 1000; $EventThroughputMB = [Math]::Round($EventThroughputMB)}ELSE{$EventThroughputMB = $null}
+IF($EventLogicalSizeBytes -ne $null){$EventLogicalSizeMB = $EventLogicalSizeBytes / 1000 / 1000; $EventLogicalSizeMB = [Math]::Round($EventLogicalSizeMB)}ELSE{$EventLogicalSizeMB = $null}
 # Getting cluster info
 $EventCluster = $Event.cluster
 # Only processing if not null, could be cloud native
@@ -383,8 +374,12 @@ $Object | Add-Member -MemberType NoteProperty -Name "EndUTC" -Value $EventEndUTC
 $Object | Add-Member -MemberType NoteProperty -Name "Duration" -Value $EventDuration
 $Object | Add-Member -MemberType NoteProperty -Name "DurationSeconds" -Value $EventSeconds
 # Data transferred
+$Object | Add-Member -MemberType NoteProperty -Name "LogicalSizeMB" -Value $EventLogicalSizeMB
+$Object | Add-Member -MemberType NoteProperty -Name "TransferredMB" -Value $EventTransferredMB
 $Object | Add-Member -MemberType NoteProperty -Name "ThroughputMB" -Value $EventThroughputMB
-$Object | Add-Member -MemberType NoteProperty -Name "TransferredMB" -Value $EventDataTransferredMB
+$Object | Add-Member -MemberType NoteProperty -Name "LogicalSizeBytes" -Value $EventLogicalSizeBytes
+$Object | Add-Member -MemberType NoteProperty -Name "TransferredBytes" -Value $EventTransferredBytes
+$Object | Add-Member -MemberType NoteProperty -Name "ThroughputBytes" -Value $EventThroughputBytes
 # Failure detail
 $Object | Add-Member -MemberType NoteProperty -Name "ErrorCode" -Value $EventErrorCode
 $Object | Add-Member -MemberType NoteProperty -Name "ErrorMessage" -Value $EventErrorMessage

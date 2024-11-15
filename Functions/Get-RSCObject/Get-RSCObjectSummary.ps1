@@ -35,7 +35,7 @@ Test-RSCConnection
 ################################################
 # Getting All Objects 
 ################################################
-IF($RSCGlobalObjects -eq $null)
+IF($RSCGlobalObjectIDs -eq $null)
 {
 Write-Error "ERROR: Run Get-RSCObjectIDs first to generate the data to summarize.."
 Start-Sleep 2
@@ -56,7 +56,7 @@ $UniqueProtectedObjects = $UniqueObjects | Where-Object {$_.ProtectionStatus -eq
 $UniqueUnProtectedObjects = $UniqueObjects | Where-Object {$_.ProtectionStatus -eq "NoSla"} | Measure-Object | Select-Object -ExpandProperty Count
 $UniqueDoNotProtectObjects = $UniqueObjects | Where-Object {$_.ProtectionStatus -eq "DoNotProtect"} | Measure-Object | Select-Object -ExpandProperty Count
 $UniquePendingFirstFullObjects = $UniqueObjects | Where-Object {$_.PendingFirstFull -eq "True"} | Measure-Object | Select-Object -ExpandProperty Count
-$UniqueRubrikClusters = $UniqueObjects | Select-Object -ExpandProperty RubrikClusterID -Unique | Measure-Object | Select-Object -ExpandProperty Count
+# $UniqueRubrikClusters = $UniqueObjects | Select-Object -ExpandProperty RubrikClusterID -Unique | Measure-Object | Select-Object -ExpandProperty Count
 # Adding to array
 $Object = New-Object PSObject
 $Object | Add-Member -MemberType NoteProperty -Name "Type" -Value $UniqueObjectType
@@ -74,7 +74,7 @@ $UniqueProtectedObjects = $RSCGlobalObjectIDs | Where-Object {$_.ProtectionStatu
 $UniqueUnProtectedObjects = $RSCGlobalObjectIDs | Where-Object {$_.ProtectionStatus -eq "NoSla"} | Measure-Object | Select-Object -ExpandProperty Count
 $UniqueDoNotProtectObjects = $RSCGlobalObjectIDs | Where-Object {$_.ProtectionStatus -ne "DoNotProtect"} | Measure-Object | Select-Object -ExpandProperty Count
 $UniquePendingFirstFullObjects = $RSCGlobalObjectIDs | Where-Object {$_.PendingFirstFull -eq "True"} | Measure-Object | Select-Object -ExpandProperty Count
-$UniqueRubrikClusters = $RSCGlobalObjectIDs | Select-Object -ExpandProperty RubrikClusterID -Unique | Measure-Object | Select-Object -ExpandProperty Count
+# $UniqueRubrikClusters = $RSCGlobalObjectIDs | Select-Object -ExpandProperty RubrikClusterID -Unique | Measure-Object | Select-Object -ExpandProperty Count
 # Adding to array
 $Object = New-Object PSObject
 $Object | Add-Member -MemberType NoteProperty -Name "Type" -Value "ALL"

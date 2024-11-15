@@ -388,9 +388,9 @@ $InsertRow = $TRUE
 # If exclude log backups disabling insert
 IF(($ExcludeLogBackups) -and ($IsLogBackup -eq $TRUE)){$InsertRow = $FALSE}
 # Location override if null and Get-RSCOracleDatabases has been run
-IF(($EventLocation -eq $null) -and ($RSCOracleDatabases -ne $null))
+IF(($EventLocation -eq "") -and ($RSCOracleDatabases -ne $null))
 {
-$EventLocation = $RSCOracleDatabases | Where-Object {$_.DBID -eq $EventObjectID} | Select-Object -ExpandProperty Host
+$EventLocation = $RSCOracleDatabases | Where-Object {(($_.DataGuardGroupID -eq $EventObjectID) -and ($_.DB -eq $EventObject))} | Select-Object -ExpandProperty Host -First 1
 }
 # Overriding canceled spelling error on API
 IF($EventStatus -eq "Canceled")

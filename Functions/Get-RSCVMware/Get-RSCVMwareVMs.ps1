@@ -194,7 +194,7 @@ ForEach ($RSCVM in $RSCVMList)
 {
 # Logging
 $RSCObjectsCounter ++
-IF($DisableLogging){}ELSE{Write-Host "ProcessingObject: $RSCObjectsCounter/$RSCObjectsCount"}
+IF($DisableLogging){}ELSE{Write-Host "ProcessingVM: $RSCObjectsCounter/$RSCObjectsCount"}
 # Setting variables
 $VMID = $RSCVM.id
 $VMName = $RSCVM.name

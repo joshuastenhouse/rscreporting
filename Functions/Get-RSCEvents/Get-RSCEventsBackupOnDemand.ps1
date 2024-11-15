@@ -220,6 +220,9 @@ fragment EventSeriesFragment on ActivitySeries {
   objectId
   objectName
   location
+  effectiveThroughput
+  dataTransferred
+  logicalSize
   objectType
   severity
   progress
@@ -283,6 +286,14 @@ $EventStatus = $Event.lastActivityStatus
 $EventDateUNIX = $Event.lastUpdated
 $EventStartUNIX = $Event.startTime
 $EventEndUNIX = $EventDateUNIX
+# Job metrics
+$EventTransferredBytes = $Event.dataTransferred
+$EventThroughputBytes = $Event.effectiveThroughput
+$EventLogicalSizeBytes = $Event.logicalSize
+# Converting bytes to MB
+IF($EventTransferredBytes -ne $null){$EventTransferredMB = $EventTransferredBytes / 1000 / 1000; $EventTransferredMB = [Math]::Round($EventTransferredMB)}ELSE{$EventTransferredMB = $null}
+IF($EventThroughputBytes -ne $null){$EventThroughputMB = $EventThroughputBytes / 1000 / 1000; $EventThroughputMB = [Math]::Round($EventThroughputMB)}ELSE{$EventThroughputMB = $null}
+IF($EventLogicalSizeBytes -ne $null){$EventLogicalSizeMB = $EventLogicalSizeBytes / 1000 / 1000; $EventLogicalSizeMB = [Math]::Round($EventLogicalSizeMB)}ELSE{$EventLogicalSizeMB = $null}
 # Getting cluster info
 $EventCluster = $Event.cluster
 # Only processing if not null, could be cloud native
@@ -362,6 +373,13 @@ $Object | Add-Member -MemberType NoteProperty -Name "StartUTC" -Value $EventStar
 $Object | Add-Member -MemberType NoteProperty -Name "EndUTC" -Value $EventEndUTC
 $Object | Add-Member -MemberType NoteProperty -Name "Duration" -Value $EventDuration
 $Object | Add-Member -MemberType NoteProperty -Name "DurationSeconds" -Value $EventSeconds
+# Job metrics
+$Object | Add-Member -MemberType NoteProperty -Name "LogicalSizeMB" -Value $EventLogicalSizeMB
+$Object | Add-Member -MemberType NoteProperty -Name "TransferredMB" -Value $EventTransferredMB
+$Object | Add-Member -MemberType NoteProperty -Name "ThroughputMB" -Value $EventThroughputMB
+$Object | Add-Member -MemberType NoteProperty -Name "LogicalSizeBytes" -Value $EventLogicalSizeBytes
+$Object | Add-Member -MemberType NoteProperty -Name "TransferredBytes" -Value $EventTransferredBytes
+$Object | Add-Member -MemberType NoteProperty -Name "ThroughputBytes" -Value $EventThroughputBytes
 # Failure detail
 $Object | Add-Member -MemberType NoteProperty -Name "ErrorCode" -Value $EventErrorCode
 $Object | Add-Member -MemberType NoteProperty -Name "ErrorMessage" -Value $EventErrorMessage
