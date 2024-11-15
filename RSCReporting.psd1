@@ -1,12 +1,12 @@
 @{
 	RootModule 		= 'RSCReporting.psm1' 
-	ModuleVersion 		= '1.1.1' 
+	ModuleVersion 		= '1.1.2' 
 	CompatiblePSEditions 	= 'Desktop', 'Core' 
 	GUID 			= 'dc18a919-f4bf-4da2-8c76-24b68fa33ef0' 
 	Author 			= 'Joshua Stenhouse' 
 	CompanyName 		= 'Rubrik Inc' 
 	Copyright 		= '(c) Rubrik. All rights reserved.' 
-	Description 		= 'A module for reporting on your Rubrik Security Cloud instance'
+	Description 		= 'A module for reporting and interacting with your Rubrik Security Cloud instance'
 	PowerShellVersion 	= '5.1'
 
 FunctionsToExport = @(
@@ -108,7 +108,7 @@ FunctionsToExport = @(
 "Get-RSCOraclePDBs",
 "Get-RSCOracleTableSpaces",
 "Get-RSCProtectedObjects",
-"Get-RSCReplicationTargets",
+"Get-RSCReplicationPairings",
 "Get-RSCReportTemplates",
 "Get-RSCRoleObjects",
 "Get-RSCRoles",
@@ -151,8 +151,16 @@ FunctionsToExport = @(
 "Get-RSCVMwareVMsDetail",
 "Get-RSCWebhooks",
 "Import-RSCReportTemplate",
+"Pause-RSCArchiveTarget",
+"Pause-RSCCluster",
+"Pause-RSCReplicationPair",
+"Pause-RSCReplicationPairsOnTarget",
 "Protect-RSCObject",
 "Register-RSCHost",
+"Resume-RSCArchiveTarget",
+"Resume-RSCCluster",
+"Resume-RSCReplicationPair",
+"Resume-RSCReplicationPairsOnTarget",
 "Save-RSCReport",
 "Save-RSCReport02MultiDayStrikes",
 "Send-RSCEmail",
@@ -182,6 +190,7 @@ FunctionsToExport = @(
 "Write-RSCEventsAudit",
 "Write-RSCEventsBackup",
 "Write-RSCEventsBackupOnDemand",
+"Write-RSCEventsLogBackup",
 "Write-RSCEventsRecovery",
 "Write-RSCEventsReplication",
 "Write-RSCObjects",
