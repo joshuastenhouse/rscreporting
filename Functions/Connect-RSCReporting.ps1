@@ -314,9 +314,15 @@ $Global:RSCInstance = $RSCInstance
 $Global:RSCScriptDirectory = $ScriptDirectory
 # Global variable to combine RSCReporting with Official RSC SDK
 $Global:RSCReportingModule = $TRUE
+# Getting PowerShell version
+$PSVersion = $PSVersionTable.values | Sort-Object Major -Desc | Where-Object {$_.Major -ne 10} | Select-Object -ExpandProperty Major -First 1
+$Global:PSVersion = $PSVersion
+# If greater than 7, use Parallel
+IF($PSVersion -ge 7){$UseParallel = $TRUE}ELSE{$UseParallel = $FALSE}
+$Global:UseParallel = $UseParallel
 # If running on Josh PC, hard coding some defaults to make my life easier
 $hostname = hostname 
-IF($hostname -eq "SURFACESTUDIO2MAY21")
+IF($hostname -eq "Studio2Plus")
 {
 $Global:EmailTo = "joshua@rubrik.local"
 $Global:EmailFrom = "reporting@rubrik.local"
@@ -342,6 +348,8 @@ $Return | Add-Member -MemberType NoteProperty -Name "PingSuccess" -Value $RSCPin
 $Return | Add-Member -MemberType NoteProperty -Name "ScriptDirectory" -Value $ScriptDirectory
 $Return | Add-Member -MemberType NoteProperty -Name "CredentialsFile" -Value $RSCCredentialsFile
 $Return | Add-Member -MemberType NoteProperty -Name "URLFile" -Value $RSCURLFile
+$Return | Add-Member -MemberType NoteProperty -Name "PowerShellVersion" -Value $PSVersion
+$Return | Add-Member -MemberType NoteProperty -Name "UseParallel" -Value $UseParallel
 $Return | Add-Member -MemberType NoteProperty -Name "GlobalVariableForRSCInstance" -Value "RSCInstance"
 $Return | Add-Member -MemberType NoteProperty -Name "GlobalVariableForSessionStatus" -Value "RSCSessionStatus"
 $Return | Add-Member -MemberType NoteProperty -Name "GlobalVariableForSessionHeader" -Value "RSCSessionHeader"

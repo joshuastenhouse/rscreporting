@@ -207,7 +207,15 @@ $RSCGraphQL = @{"operationName" = "StartThreatHuntMutation";
 }"
 }
 # Querying API
+Try
+{
 $RSCResponse = Invoke-RestMethod -Method POST -Uri $RSCGraphqlURL -Body $($RSCGraphQL | ConvertTo-JSON -Depth 20) -Headers $RSCSessionHeader
+$RSCRequest = "SUCCESS"
+}
+Catch
+{
+$RSCRequest = "FAILED"
+}
 # Checking for errors
 IF($RSCResponse.errors.message){$RSCResponse.errors.message}
 # Getting result
@@ -218,6 +226,8 @@ $ThreatHuntID = $RSCResponse.data.startThreatHunt.huntId
 ################################################
 $Object = New-Object PSObject
 $Object | Add-Member -MemberType NoteProperty -Name "RSCInstance" -Value $RSCInstance
+$Object | Add-Member -MemberType NoteProperty -Name "Mutation" -Value "StartThreatHuntMutation"
+$Object | Add-Member -MemberType NoteProperty -Name "RequestStatus" -Value $RSCRequest
 $Object | Add-Member -MemberType NoteProperty -Name "RubrikClusterID" -Value $RubrikClusterID
 $Object | Add-Member -MemberType NoteProperty -Name "ObjectIDs" -Value $ObjectIDs
 $Object | Add-Member -MemberType NoteProperty -Name "ThreatHuntStarted" -Value $ThreatHuntStarted

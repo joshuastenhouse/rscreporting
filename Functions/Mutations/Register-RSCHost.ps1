@@ -86,7 +86,15 @@ $RSCGraphQL = @{"operationName" = "AddPhysicalHostMutation";
   }"
 }
 # Querying API
+Try
+{
 $RSCResponse = Invoke-RestMethod -Method POST -Uri $RSCGraphqlURL -Body $($RSCGraphQL | ConvertTo-JSON -Depth 20) -Headers $RSCSessionHeader
+$RSCRequest = "SUCCESS"
+}
+Catch
+{
+$RSCRequest = "FAILED"
+}
 # Checking for permission errors
 IF($RSCResponse.errors.message){$RSCResponse.errors.message}
 # Setting timestamp
@@ -94,11 +102,11 @@ $UTCDateTime = [System.DateTime]::UtcNow
 ################################################
 # Returing Job Info
 ################################################
-# Deciding outcome if no error messages
-IF($RSCResponse.errors.message -eq $null){$RequestStatus = "SUCCESS"}ELSE{$RequestStatus = "FAILED"}
 # Adding To Array
 $Object = New-Object PSObject
 $Object | Add-Member -MemberType NoteProperty -Name "RSCInstance" -Value $RSCInstance
+$Object | Add-Member -MemberType NoteProperty -Name "Mutation" -Value "AddPhysicalHostMutation"
+$Object | Add-Member -MemberType NoteProperty -Name "RequestStatus" -Value $RSCRequest
 $Object | Add-Member -MemberType NoteProperty -Name "Hostname" -Value $IPAddressOrHostname
 $Object | Add-Member -MemberType NoteProperty -Name "RubrikCluster" -Value $RubrikClusterName
 $Object | Add-Member -MemberType NoteProperty -Name "RubrikClusterID" -Value $RubrikClusterID

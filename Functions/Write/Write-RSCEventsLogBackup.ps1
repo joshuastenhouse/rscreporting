@@ -1,7 +1,7 @@
 ################################################
-# Function - Write-RSCEventsBackup - Inserting all RSC Backup events into SQL
+# Function - Write-RSCEventsLogBackup - Inserting all RSC Log Backup events into SQL
 ################################################
-Function Write-RSCEventsBackup {
+Function Write-RSCEventsLogBackup {
 
 <#
 .SYNOPSIS
@@ -42,28 +42,28 @@ Set the required object name of the events, has to be be a valid object name, yo
 None, all the events are written into the MS SQL DB specified.
 
 .EXAMPLE
-Write-RSCEventsBackup -SQLInstance "localhost" -SQLDB "YourDBName"
+Write-RSCEventsLogBackup -SQLInstance "localhost" -SQLDB "YourDBName"
 This example collects all events from the default last 24 hours and writes them into a table named RSCEventsBackup that it will create on first run with the required structure in the database RSCReprting.
 
 .EXAMPLE
-Write-RSCEventsBackup -SQLInstance "localhost" -SQLDB "YourDBName" -DaysToCapture 30
+Write-RSCEventsLogBackup -SQLInstance "localhost" -SQLDB "YourDBName" -DaysToCapture 30
 This example collects all events from the default last 30 days and writes them into a table named RSCEventsBackup that it will create on first run with the required structure in the database RSCReprting.
 
 .EXAMPLE
-Write-RSCEventsBackup -SQLInstance "localhost" -SQLDB "YourDBName" -DaysToCapture 30 -SQLTable "YourTableName"
+Write-RSCEventsLogBackup -SQLInstance "localhost" -SQLDB "YourDBName" -DaysToCapture 30 -SQLTable "YourTableName"
 This example collects all events from the default last 30 days and writes them into a table named MyTableName that it will create on first run with the required structure in the database RSCReprting.
 
 .EXAMPLE
-Write-RSCEventsBackup -SQLInstance "localhost" -SQLDB "YourDBName" -DaysToCapture 30 -SQLTable "YourTableName" -DontUseTempDB
+Write-RSCEventsLogBackup -SQLInstance "localhost" -SQLDB "YourDBName" -DaysToCapture 30 -SQLTable "YourTableName" -DontUseTempDB
 As above, but doesn't use regular tables in TempDB if you don't have permission to create/drop tables in TempDB. Events are written straight into the table then duplicate EventIDs are removed.
 
 .EXAMPLE
-Write-RSCEventsBackup -SQLInstance "localhost" -SQLDB "YourDBName" -DaysToCapture 30 -SQLTable "YourTableName" -LastActivityStatus "FAILED"
+Write-RSCEventsLogBackup -SQLInstance "localhost" -SQLDB "YourDBName" -DaysToCapture 30 -SQLTable "YourTableName" -LastActivityStatus "FAILED"
 This example collects all failed events from the default last 30 days and writes them into a table named MyTableName that it will create on first run with the required structure in the database RSCReprting.
 
 .NOTES
 Author: Joshua Stenhouse
-Date: 05/11/2023
+Date: 11/11/2024
 #>
 
 ################################################
@@ -83,7 +83,6 @@ Date: 05/11/2023
         [Parameter(Mandatory=$false)]$FromDate,
         [Parameter(Mandatory=$false)]$ToDate,
         [Parameter(Mandatory=$false)]$EventLimit,
-        [Switch]$ExcludeLogBackups,
         [Switch]$ExcludeRunningJobs,
         [Switch]$DontUseTempDB
     )
@@ -113,7 +112,7 @@ IF($SQLModuleCheck -eq $null){Import-Module $SQLModuleName -ErrorAction Silently
 # SQL - Checking Table Exists
 ##########################
 # Manually setting SQL table name if not specified
-IF($SQLTable -eq $null){$SQLTable = "RSCEventsBackup"}
+IF($SQLTable -eq $null){$SQLTable = "RSCEventsLogBackup"}
 # Creating query
 $SQLTableListQuery = "USE $SQLDB;
 SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES;"
@@ -320,7 +319,7 @@ Start-Sleep 1
 # Getting RSC Events
 ################################################
 # Hard coding event type 
-$lastActivityType = "BACKUP"
+$lastActivityType = "LOG_BACKUP"
 # Creating array for events
 $RSCEventsList = @()
 # Building GraphQL query
@@ -432,8 +431,6 @@ IF($ExcludeRunningJobs)
 {
 $RSCEventsList = $RSCEventsList | Where-Object {$_.lastActivityStatus -ne "Running"}
 }
-# Removing duplicate events
-
 # Counting
 $RSCEventsCount = $RSCEventsList | Measure-Object | Select-Object -ExpandProperty Count
 $RSCObjectsList = $RSCEventsList | Select-Object ObjectId -Unique
@@ -534,8 +531,6 @@ IF($EventMessage -match "transaction log"){$IsLogBackup = $TRUE}
 IF($EventMessage -match "log backup"){$IsLogBackup = $TRUE}
 # Enabling insert
 $InsertRow = $TRUE
-# If exclude log backups disabling insert
-IF(($ExcludeLogBackups) -and ($IsLogBackup -eq $TRUE)){$InsertRow = $FALSE}
 # Location override if null and Get-RSCOracleDatabases has been run
 IF(($EventLocation -eq "") -and ($RSCOracleDatabases -ne $null))
 {

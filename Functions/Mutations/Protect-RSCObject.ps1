@@ -118,7 +118,15 @@ $RSCGraphQL = @{"operationName" = "AssignSlasForSnappableHierarchiesMutation";
   }"
 }
 # Querying API
+Try
+{
 $RSCResponse = Invoke-RestMethod -Method POST -Uri $RSCGraphqlURL -Body $($RSCGraphQL | ConvertTo-JSON -Depth 20) -Headers $RSCSessionHeader
+$RSCRequest = "SUCCESS"
+}
+Catch
+{
+$RSCRequest = "FAILED"
+}
 # Checking for permission errors
 IF($RSCResponse.errors.message){$RSCResponse.errors.message}
 # Getting response
@@ -126,8 +134,6 @@ $JobResponse = $RSCResponse.data.assignSlasForSnappableHierarchies.success
 ################################################
 # Returing Job Info
 ################################################
-# Deciding outcome if no error messages
-IF($RSCResponse.errors.message -eq $null){$RequestStatus = "SUCCESS"}ELSE{$RequestStatus = "FAILED"}
 # Overring if not success on response
 IF($JobResponse -ne $TRUE){$RequestStatus = "FAILED"}
 # Adding ErrorReason
@@ -136,6 +142,8 @@ IF($RSCResponse.errors.message -eq "INTERNAL: Archival location is not specified
 # Adding To Array
 $Object = New-Object PSObject
 $Object | Add-Member -MemberType NoteProperty -Name "RSCInstance" -Value $RSCInstance
+$Object | Add-Member -MemberType NoteProperty -Name "Mutation" -Value "AssignSlasForSnappableHierarchiesMutation"
+$Object | Add-Member -MemberType NoteProperty -Name "RequestStatus" -Value $RSCRequest
 $Object | Add-Member -MemberType NoteProperty -Name "Object" -Value $RSCObjectName
 $Object | Add-Member -MemberType NoteProperty -Name "ObjectType" -Value $RSCObjectType
 $Object | Add-Member -MemberType NoteProperty -Name "ObjectID" -Value $ObjectID

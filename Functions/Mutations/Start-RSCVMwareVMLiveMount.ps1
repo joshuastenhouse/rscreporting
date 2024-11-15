@@ -127,7 +127,15 @@ IF($TargetVMName -ne $null){$RSCJSONObject.variables | Add-Member -MemberType No
 IF($TargetHostID -ne $null){$RSCJSONObject.variables | Add-Member -MemberType NoteProperty "hostId" -Value $TargetHostID}
 IF($TargetClusterID -ne $null){$RSCJSONObject.variables | Add-Member -MemberType NoteProperty "clusterId" -Value $TargetClusterID}
 # Querying API
-$RSCResponse = Invoke-RestMethod -Method POST -Uri $RSCGraphqlURL -Body $($RSCJSONObject | ConvertTo-JSON -Depth 20) -Headers $RSCSessionHeader
+Try
+{
+$RSCResponse = Invoke-RestMethod -Method POST -Uri $RSCGraphqlURL -Body $($RSCGraphQL | ConvertTo-JSON -Depth 20) -Headers $RSCSessionHeader
+$RSCRequest = "SUCCESS"
+}
+Catch
+{
+$RSCRequest = "FAILED"
+}
 # $RequestStatus = "FAILED"
 # Checking for permission errors
 IF($RSCResponse.errors.message){$RequestStatus = $RSCResponse.errors.message}ELSE{$RequestStatus = "Success"}
@@ -140,6 +148,8 @@ $JobID = $RSCResponse.data.vsphereVmInitiateLiveMountV2.id
 # Adding To Array
 $Object = New-Object PSObject
 $Object | Add-Member -MemberType NoteProperty -Name "RSCInstance" -Value $RSCInstance
+$Object | Add-Member -MemberType NoteProperty -Name "Mutation" -Value "vSphereLiveMountMutation"
+$Object | Add-Member -MemberType NoteProperty -Name "RequestStatus" -Value $RSCRequest
 $Object | Add-Member -MemberType NoteProperty -Name "SourceVM" -Value $VMName
 $Object | Add-Member -MemberType NoteProperty -Name "SourceVMID" -Value $VMID
 $Object | Add-Member -MemberType NoteProperty -Name "TargetVMName" -Value $TargetVMName

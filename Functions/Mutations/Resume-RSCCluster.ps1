@@ -1,31 +1,27 @@
 ################################################
-# Function - Unregister-RSCHost - Unregister a physical/database host with RSC (no need to specify the Rubrik cluster)
+# Function - Resume-RSCCluster - Resumes all new jobs from starting on the Rubrik cluster ID specified via RSC
 ################################################
-Function Unregister-RSCHost {
+Function Resume-RSCCluster {
 	
 <#
 .SYNOPSIS
-Unregister a physical/database host with RSC (no need to specify the Rubrik cluster).
+Resumes all new jobs from starting on the specified Rubrik cluster ID.
 
 .DESCRIPTION
-Specify the host ID which you want to unregsiter from RSC.
+Resumes all jobs on the cluster including backup, replication and archiving jobs.
 
 .LINK
 GraphQL schema reference: https://rubrikinc.github.io/rubrik-api-documentation/schema/reference
 
-.PARAMETER HostID
-The HostID you want to unregister from RSC. Use Get-RSCHosts to obtain this.
-
-.OUTPUTS
-Returns an array with the status of the unregister host request.
+.PARAMETER ClusterID
+The cluster ID which you want to perform the mutation on.
 
 .EXAMPLE
-Unregister-RSCHost -HostID "fd3da41d-6cba-5c74-81a9-27490a02c55d"
-This unregisters the host with the ID specified. It doesn't need to know the Rubrik cluster.
+Resume-RSCCluster -ClusterID "dcb308e8-819e-4782-9952-b978b9441f7e"
 
 .NOTES
 Author: Joshua Stenhouse
-Date: 08/16/2023
+Date: 11/14/2024
 #>
 ################################################
 # Paramater Config
@@ -33,7 +29,7 @@ Date: 08/16/2023
 [CmdletBinding()]
     Param (
         [Parameter(Mandatory=$true)]
-        [string]$HostID
+        [string]$ClusterID
     )
 
 ################################################
@@ -43,34 +39,29 @@ Date: 08/16/2023
 Import-Module RSCReporting
 # Checking connectivity, exiting function with error if not
 Test-RSCConnection
-# Getting a list of Rubrik clusters to validate the ID specified
-$RSCHosts = Get-RSCHosts
-$RSCHostInfo = $RSCHosts | Where-Object {$_.HostID -eq $HostID}
-# Breaking if not found
-IF($RSCHostInfo -eq $null)
-{
-Write-Error "ERROR: HostID specified not found, check and try again.."
-Break
-}
-# Getting addition info
-$RSCHostName = $RSCHostInfo.Host
-$RubrikClusterName = $RSCHostInfo.RubrikCluster
-$RubrikClusterID = $RSCHostInfo.RubrikClusterID
 ################################################
 # API Call To RSC GraphQL URI
 ################################################
 # Building GraphQL query
-$RSCGraphQL = @{"operationName" = "DeletePhysicalHostMutation";
+$RSCGraphQL = @{"operationName" = "PauseResumeClusterProtectionMutation";
 
 "variables" = @{
-    "ids" = "$HostID"
+        "input" = @{
+            "clusterUuids" = $ClusterID
+            "togglePauseStatus" = $False
+            }
 };
 
-"query" = "mutation DeletePhysicalHostMutation(`$ids: [String!]!) {
-    bulkDeleteHost(input: {ids: `$ids}) {
+"query" = "mutation PauseResumeClusterProtectionMutation(`$input: UpdateClusterPauseStatusInput!) {
+  updateClusterPauseStatus(input: `$input) {
+    pauseStatuses {
+      clusterUuid
       success
+      __typename
     }
-  }"
+    __typename
+  }
+}"
 }
 # Querying API
 Try
@@ -92,14 +83,10 @@ $UTCDateTime = [System.DateTime]::UtcNow
 # Adding To Array
 $Object = New-Object PSObject
 $Object | Add-Member -MemberType NoteProperty -Name "RSCInstance" -Value $RSCInstance
-$Object | Add-Member -MemberType NoteProperty -Name "Mutation" -Value "DeletePhysicalHostMutation"
+$Object | Add-Member -MemberType NoteProperty -Name "Mutation" -Value "PauseResumeClusterProtectionMutation"
 $Object | Add-Member -MemberType NoteProperty -Name "RequestStatus" -Value $RSCRequest
-$Object | Add-Member -MemberType NoteProperty -Name "Hostname" -Value $RSCHostName
-$Object | Add-Member -MemberType NoteProperty -Name "HostID" -Value $HostID
-$Object | Add-Member -MemberType NoteProperty -Name "RubrikCluster" -Value $RubrikClusterName
-$Object | Add-Member -MemberType NoteProperty -Name "RubrikClusterID" -Value $RubrikClusterID
+$Object | Add-Member -MemberType NoteProperty -Name "ClusterID" -Value $ClusterID
 $Object | Add-Member -MemberType NoteProperty -Name "RequestDateUTC" -Value $UTCDateTime
-$Object | Add-Member -MemberType NoteProperty -Name "RequestStatus" -Value $RequestStatus
 $Object | Add-Member -MemberType NoteProperty -Name "ErrorMessage" -Value $RSCResponse.errors.message
 
 # Returning array

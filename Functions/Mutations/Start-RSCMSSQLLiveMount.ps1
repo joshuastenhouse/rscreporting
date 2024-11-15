@@ -124,6 +124,8 @@ $JobID = $RSCResponse.data.createMssqlLiveMount.id
 # Adding To Array
 $Object = New-Object PSObject
 $Object | Add-Member -MemberType NoteProperty -Name "RSCInstance" -Value $RSCInstance
+$Object | Add-Member -MemberType NoteProperty -Name "Mutation" -Value "MssqlDatabaseMountMutation"
+$Object | Add-Member -MemberType NoteProperty -Name "RequestStatus" -Value $RSCRequest
 $Object | Add-Member -MemberType NoteProperty -Name "DBID" -Value $DBID
 $Object | Add-Member -MemberType NoteProperty -Name "TargetInstanceID" -Value $TargetInstanceID
 $Object | Add-Member -MemberType NoteProperty -Name "TargetDBName" -Value $TargetDBName

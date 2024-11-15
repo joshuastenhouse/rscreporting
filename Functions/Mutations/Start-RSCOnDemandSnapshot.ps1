@@ -128,6 +128,8 @@ IF($ObjectType -eq "ManagedVolume"){$BypassGenericAPI = $TRUE}
 # Requesting Generic On Demand Snapshot
 ################################################
 # As of 08/16/23 used by the following object types:
+# Setting mutation type for return
+$RSCMutation = "TakeOnDemandSnapshot"
 # GcpNativeGCEInstance
 IF($BypassGenericAPI -eq $FALSE)
 {
@@ -151,7 +153,15 @@ $RSCGraphQL = @{"operationName" = "TakeOnDemandSnapshot";
 }"
 }
 # Querying API
+Try
+{
 $RSCResponse = Invoke-RestMethod -Method POST -Uri $RSCGraphqlURL -Body $($RSCGraphQL | ConvertTo-JSON -Depth 20) -Headers $RSCSessionHeader
+$RSCRequest = "SUCCESS"
+}
+Catch
+{
+$RSCRequest = "FAILED"
+}
 # Checking for permission errors
 IF($RSCResponse.errors.message){$RSCResponse.errors.message}
 }
@@ -160,6 +170,8 @@ IF($RSCResponse.errors.message){$RSCResponse.errors.message}
 ################################################
 IF($ObjectType -eq "VmwareVirtualMachine")
 {
+# Setting mutation type for return
+$RSCMutation = "TakeVSphereSnapshotMutation"
 # Building GraphQL query
 $RSCGraphQL = @{"operationName" = "TakeVSphereSnapshotMutation";
 
@@ -180,7 +192,15 @@ $RSCGraphQL = @{"operationName" = "TakeVSphereSnapshotMutation";
 }"
 }
 # Querying API
+Try
+{
 $RSCResponse = Invoke-RestMethod -Method POST -Uri $RSCGraphqlURL -Body $($RSCGraphQL | ConvertTo-JSON -Depth 20) -Headers $RSCSessionHeader
+$RSCRequest = "SUCCESS"
+}
+Catch
+{
+$RSCRequest = "FAILED"
+}
 # Checking for permission errors
 IF($RSCResponse.errors.message){$RSCResponse.errors.message}
 # Getting response
@@ -192,6 +212,8 @@ $JobStatus = $RSCResponse.data.vsphereOnDemandSnapshot.status
 ################################################
 IF($ObjectType -eq "HypervVirtualMachine")
 {
+# Setting mutation type for return
+$RSCMutation = "HypervOnDemandSnapshotMutation"
 # Building GraphQL query
 $RSCGraphQL = @{"operationName" = "HypervOnDemandSnapshotMutation";
 
@@ -212,7 +234,15 @@ $RSCGraphQL = @{"operationName" = "HypervOnDemandSnapshotMutation";
 }"
 }
 # Querying API
+Try
+{
 $RSCResponse = Invoke-RestMethod -Method POST -Uri $RSCGraphqlURL -Body $($RSCGraphQL | ConvertTo-JSON -Depth 20) -Headers $RSCSessionHeader
+$RSCRequest = "SUCCESS"
+}
+Catch
+{
+$RSCRequest = "FAILED"
+}
 # Checking for permission errors
 IF($RSCResponse.errors.message){$RSCResponse.errors.message}
 # Getting response
@@ -223,6 +253,8 @@ $JobStatus = $RSCResponse.data.hypervOnDemandSnapshot.status
 ################################################
 IF($ObjectType -eq "NutanixVirtualMachine")
 {
+# Setting mutation type for return
+$RSCMutation = "NutanixAHVSnapshotMutation"
 # Building GraphQL query
 $RSCGraphQL = @{"operationName" = "NutanixAHVSnapshotMutation";
 
@@ -243,7 +275,15 @@ $RSCGraphQL = @{"operationName" = "NutanixAHVSnapshotMutation";
 }"
 }
 # Querying API
+Try
+{
 $RSCResponse = Invoke-RestMethod -Method POST -Uri $RSCGraphqlURL -Body $($RSCGraphQL | ConvertTo-JSON -Depth 20) -Headers $RSCSessionHeader
+$RSCRequest = "SUCCESS"
+}
+Catch
+{
+$RSCRequest = "FAILED"
+}
 # Checking for permission errors
 IF($RSCResponse.errors.message){$RSCResponse.errors.message}
 # Getting response
@@ -254,6 +294,8 @@ $JobStatus = $RSCResponse.data.createOnDemandNutanixBackup.status
 ################################################
 IF($ObjectType -eq "WindowsFileset")
 {
+# Setting mutation type for return
+$RSCMutation = "TakeFilesetSnapshotMutation"
 # Building GraphQL query - note there's no input in the variable
 $RSCGraphQL = @{"operationName" = "TakeFilesetSnapshotMutation";
 
@@ -273,7 +315,15 @@ $RSCGraphQL = @{"operationName" = "TakeFilesetSnapshotMutation";
 }"
 }
 # Querying API
+Try
+{
 $RSCResponse = Invoke-RestMethod -Method POST -Uri $RSCGraphqlURL -Body $($RSCGraphQL | ConvertTo-JSON -Depth 20) -Headers $RSCSessionHeader
+$RSCRequest = "SUCCESS"
+}
+Catch
+{
+$RSCRequest = "FAILED"
+}
 # Checking for permission errors
 IF($RSCResponse.errors.message){$RSCResponse.errors.message}
 # Getting response
@@ -284,6 +334,8 @@ $JobStatus = $RSCResponse.data.createFilesetSnapshot.status
 ################################################
 IF($ObjectType -eq "LinuxFileset")
 {
+# Setting mutation type for return
+$RSCMutation = "TakeFilesetSnapshotMutation"
 # Building GraphQL query - note there's no input in the variable
 $RSCGraphQL = @{"operationName" = "TakeFilesetSnapshotMutation";
 
@@ -303,7 +355,15 @@ $RSCGraphQL = @{"operationName" = "TakeFilesetSnapshotMutation";
 }"
 }
 # Querying API
+Try
+{
 $RSCResponse = Invoke-RestMethod -Method POST -Uri $RSCGraphqlURL -Body $($RSCGraphQL | ConvertTo-JSON -Depth 20) -Headers $RSCSessionHeader
+$RSCRequest = "SUCCESS"
+}
+Catch
+{
+$RSCRequest = "FAILED"
+}
 # Checking for permission errors
 IF($RSCResponse.errors.message){$RSCResponse.errors.message}
 # Getting response
@@ -314,6 +374,8 @@ $JobStatus = $RSCResponse.data.createFilesetSnapshot.status
 ################################################
 IF($ObjectType -eq "Db2Database")
 {
+# Setting mutation type for return
+$RSCMutation = "Db2OnDemandSnapshotMutation"
 # Building GraphQL query - note there's no input in the variable
 $RSCGraphQL = @{"operationName" = "Db2OnDemandSnapshotMutation";
 
@@ -332,7 +394,15 @@ $RSCGraphQL = @{"operationName" = "Db2OnDemandSnapshotMutation";
 }"
 }
 # Querying API
+Try
+{
 $RSCResponse = Invoke-RestMethod -Method POST -Uri $RSCGraphqlURL -Body $($RSCGraphQL | ConvertTo-JSON -Depth 20) -Headers $RSCSessionHeader
+$RSCRequest = "SUCCESS"
+}
+Catch
+{
+$RSCRequest = "FAILED"
+}
 # Checking for permission errors
 IF($RSCResponse.errors.message){$RSCResponse.errors.message}
 # Getting response
@@ -343,6 +413,8 @@ $JobID = $RSCResponse.data.createOnDemandDb2Backup.id
 ################################################
 IF($ObjectType -eq "K8Namespace")
 {
+# Setting mutation type for return
+$RSCMutation = "TakeK8NamespaceSnapshotMutation"
 # Building GraphQL query - note there's no input in the variable
 $RSCGraphQL = @{"operationName" = "TakeK8NamespaceSnapshotMutation";
 
@@ -363,7 +435,15 @@ $RSCGraphQL = @{"operationName" = "TakeK8NamespaceSnapshotMutation";
 }"
 }
 # Querying API
+Try
+{
 $RSCResponse = Invoke-RestMethod -Method POST -Uri $RSCGraphqlURL -Body $($RSCGraphQL | ConvertTo-JSON -Depth 20) -Headers $RSCSessionHeader
+$RSCRequest = "SUCCESS"
+}
+Catch
+{
+$RSCRequest = "FAILED"
+}
 # Checking for permission errors
 IF($RSCResponse.errors.message){$RSCResponse.errors.message}
 # Getting response
@@ -374,6 +454,8 @@ $JobID = $RSCResponse.data.createK8sNamespaceSnapshots.taskchainId
 ################################################
 IF($ObjectType -eq "Mssql")
 {
+# Setting mutation type for return
+$RSCMutation = "MssqlTakeOnDemandSnapshotMutation"
 # Building GraphQL query
 $RSCGraphQL = @{"operationName" = "MssqlTakeOnDemandSnapshotMutation";
 
@@ -398,7 +480,15 @@ $RSCGraphQL = @{"operationName" = "MssqlTakeOnDemandSnapshotMutation";
 }"
 }
 # Querying API
+Try
+{
 $RSCResponse = Invoke-RestMethod -Method POST -Uri $RSCGraphqlURL -Body $($RSCGraphQL | ConvertTo-JSON -Depth 20) -Headers $RSCSessionHeader
+$RSCRequest = "SUCCESS"
+}
+Catch
+{
+$RSCRequest = "FAILED"
+}
 # Checking for permission errors
 IF($RSCResponse.errors.message){$RSCResponse.errors.message}
 # Getting response
@@ -411,6 +501,8 @@ IF($RSCResponse.errors.message){$RSCResponse.errors.message}
 ################################################
 IF($ObjectType -eq "OracleDatabase")
 {
+# Setting mutation type for return
+$RSCMutation = "TakeOracleDatabaseBackupMutation"
 # Getting Oracle switch
 IF($ForceOracleFull){$ForceOracleFull = $TRUE}ELSE{$ForceOracleFull = $FALSE}
 # Building GraphQL query
@@ -437,7 +529,15 @@ $RSCGraphQL = @{"operationName" = "TakeOracleDatabaseBackupMutation";
 }"
 }
 # Querying API
+Try
+{
 $RSCResponse = Invoke-RestMethod -Method POST -Uri $RSCGraphqlURL -Body $($RSCGraphQL | ConvertTo-JSON -Depth 20) -Headers $RSCSessionHeader
+$RSCRequest = "SUCCESS"
+}
+Catch
+{
+$RSCRequest = "FAILED"
+}
 # Checking for permission errors
 IF($RSCResponse.data.message){$RSCResponse.errors.message}
 # Getting response
@@ -450,6 +550,8 @@ IF($RSCResponse.data.message){$RSCResponse.errors.message}
 ################################################
 IF($ObjectType -eq "ExchangeDatabase")
 {
+# Setting mutation type for return
+$RSCMutation = "TakeOnDemandSnapshot"
 # Building GraphQL query
 $RSCGraphQL = @{"operationName" = "CreateOnDemandExchangeBackupMutation";
 
@@ -471,7 +573,15 @@ $RSCGraphQL = @{"operationName" = "CreateOnDemandExchangeBackupMutation";
 }"
 }
 # Querying API
+Try
+{
 $RSCResponse = Invoke-RestMethod -Method POST -Uri $RSCGraphqlURL -Body $($RSCGraphQL | ConvertTo-JSON -Depth 20) -Headers $RSCSessionHeader
+$RSCRequest = "SUCCESS"
+}
+Catch
+{
+$RSCRequest = "FAILED"
+}
 # Checking for permission errors
 IF($RSCResponse.errors.message){$RSCResponse.errors.message}
 # Getting response
@@ -482,6 +592,8 @@ $JobID = $RSCResponse.data.createOnDemandExchangeBackup.id
 ################################################
 IF($ObjectType -eq "AzureNativeVm")
 {
+# Setting mutation type for return
+$RSCMutation = "TakeAzureVMSnapshotMutation"
 # Building GraphQL query
 $RSCGraphQL = @{"operationName" = "TakeAzureVMSnapshotMutation";
 
@@ -504,7 +616,15 @@ $RSCGraphQL = @{"operationName" = "TakeAzureVMSnapshotMutation";
 }"
 }
 # Querying API
+Try
+{
 $RSCResponse = Invoke-RestMethod -Method POST -Uri $RSCGraphqlURL -Body $($RSCGraphQL | ConvertTo-JSON -Depth 20) -Headers $RSCSessionHeader
+$RSCRequest = "SUCCESS"
+}
+Catch
+{
+$RSCRequest = "FAILED"
+}
 # Checking for permission errors
 IF($RSCResponse.errors.message){$RSCResponse.errors.message}
 # Getting response
@@ -515,6 +635,8 @@ $JobID = $RSCResponse.data.startCreateAzureNativeVirtualMachineSnapshotsJob.jobI
 ################################################
 IF($ObjectType -eq "Ec2Instance")
 {
+# Setting mutation type for return
+$RSCMutation = "TakeEC2InstanceSnapshotMutation"
 # Building GraphQL query
 $RSCGraphQL = @{"operationName" = "TakeEC2InstanceSnapshotMutation";
 
@@ -538,7 +660,15 @@ $RSCGraphQL = @{"operationName" = "TakeEC2InstanceSnapshotMutation";
 }"
 }
 # Querying API
+Try
+{
 $RSCResponse = Invoke-RestMethod -Method POST -Uri $RSCGraphqlURL -Body $($RSCGraphQL | ConvertTo-JSON -Depth 20) -Headers $RSCSessionHeader
+$RSCRequest = "SUCCESS"
+}
+Catch
+{
+$RSCRequest = "FAILED"
+}
 # Checking for permission errors
 IF($RSCResponse.errors.message){$RSCResponse.errors.message}
 # Getting response
@@ -549,6 +679,8 @@ $JobID = $RSCResponse.data.startAwsNativeEc2InstanceSnapshotsJob.jobIds.jobId
 ################################################
 IF($ObjectType -eq "AwsNativeRdsInstance")
 {
+# Setting mutation type for return
+$RSCMutation = "TakeRDSInstanceSnapshotMutation"
 # Building GraphQL query
 $RSCGraphQL = @{"operationName" = "TakeRDSInstanceSnapshotMutation";
 
@@ -572,7 +704,15 @@ $RSCGraphQL = @{"operationName" = "TakeRDSInstanceSnapshotMutation";
 }"
 }
 # Querying API
+Try
+{
 $RSCResponse = Invoke-RestMethod -Method POST -Uri $RSCGraphqlURL -Body $($RSCGraphQL | ConvertTo-JSON -Depth 20) -Headers $RSCSessionHeader
+$RSCRequest = "SUCCESS"
+}
+Catch
+{
+$RSCRequest = "FAILED"
+}
 # Checking for permission errors
 IF($RSCResponse.errors.message){$RSCResponse.errors.message}
 # Getting response
@@ -583,6 +723,8 @@ $JobID = $RSCResponse.data.startAwsNativeRdsInstanceSnapshotsJob.jobIds.jobId
 ################################################
 IF($ObjectType -eq "ManagedVolume")
 {
+# Setting mutation type for return
+$RSCMutation = "SlaManagedVolumeOnDemandSnapshotMutation"
 # Building GraphQL query
 $RSCGraphQL = @{"operationName" = "SlaManagedVolumeOnDemandSnapshotMutation";
 
@@ -604,7 +746,15 @@ $RSCGraphQL = @{"operationName" = "SlaManagedVolumeOnDemandSnapshotMutation";
   }"
 }
 # Querying API
+Try
+{
 $RSCResponse = Invoke-RestMethod -Method POST -Uri $RSCGraphqlURL -Body $($RSCGraphQL | ConvertTo-JSON -Depth 20) -Headers $RSCSessionHeader
+$RSCRequest = "SUCCESS"
+}
+Catch
+{
+$RSCRequest = "FAILED"
+}
 # Checking for permission errors
 IF($RSCResponse.errors.message){$RSCResponse.errors.message}
 # Getting response
@@ -619,7 +769,8 @@ IF($RSCResponse.errors.message -eq $null){$RequestStatus = "SUCCESS"}ELSE{$Reque
 # Adding To Array
 $Object = New-Object PSObject
 $Object | Add-Member -MemberType NoteProperty -Name "RSCInstance" -Value $RSCInstance
-$Object | Add-Member -MemberType NoteProperty -Name "RequestStatus" -Value $RequestStatus
+$Object | Add-Member -MemberType NoteProperty -Name "Mutation" -Value $RSCMutation
+$Object | Add-Member -MemberType NoteProperty -Name "RequestStatus" -Value $RSCRequest
 $Object | Add-Member -MemberType NoteProperty -Name "Object" -Value $RSCObjectName
 $Object | Add-Member -MemberType NoteProperty -Name "ObjectType" -Value $ObjectType
 $Object | Add-Member -MemberType NoteProperty -Name "ObjectID" -Value $ObjectID

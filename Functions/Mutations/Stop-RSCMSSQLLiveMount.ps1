@@ -84,11 +84,11 @@ $RSCGraphQL = @{"operationName" = "MssqlLiveMountUnmountMutation";
 Try
 {
 $RSCResponse = Invoke-RestMethod -Method POST -Uri $RSCGraphqlURL -Body $($RSCGraphQL | ConvertTo-JSON -Depth 20) -Headers $RSCSessionHeader
-$RequestStatus = "SUCCESS"
+$RSCRequest = "SUCCESS"
 }
 Catch
 {
-$RequestStatus = "FAILED"
+$RSCRequest = "FAILED"
 }
 # Checking for permission errors
 IF($RSCResponse.errors.message){$RSCResponse.errors.message}
@@ -101,6 +101,8 @@ $JobID = $RSCResponse.data.createMssqlLiveMount.id
 # Adding To Array
 $Object = New-Object PSObject
 $Object | Add-Member -MemberType NoteProperty -Name "RSCInstance" -Value $RSCInstance
+$Object | Add-Member -MemberType NoteProperty -Name "Mutation" -Value "MssqlLiveMountUnmountMutation"
+$Object | Add-Member -MemberType NoteProperty -Name "RequestStatus" -Value $RSCRequest
 $Object | Add-Member -MemberType NoteProperty -Name "TargetDBName" -Value $TargetDBName
 $Object | Add-Member -MemberType NoteProperty -Name "SourceDBID" -Value $SourceDBID
 $Object | Add-Member -MemberType NoteProperty -Name "RequestStatus" -Value $RequestStatus
