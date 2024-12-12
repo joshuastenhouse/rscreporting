@@ -1,6 +1,6 @@
 @{
 	RootModule 		= 'RSCReporting.psm1' 
-	ModuleVersion 		= '1.1.2' 
+	ModuleVersion 		= '1.1.3' 
 	CompatiblePSEditions 	= 'Desktop', 'Core' 
 	GUID 			= 'dc18a919-f4bf-4da2-8c76-24b68fa33ef0' 
 	Author 			= 'Joshua Stenhouse' 
@@ -123,6 +123,7 @@ FunctionsToExport = @(
 "Get-RSCSensitiveDataPolicyObjects",
 "Get-RSCServiceAccounts",
 "Get-RSCSLADomains",
+"Get-RSCSLADomainsByCluster",
 "Get-RSCSLADomainsLogSettings",
 "Get-RSCSLAManagedVolumes",
 "Get-RSCSSOGroupRoleAssignments",
@@ -151,10 +152,6 @@ FunctionsToExport = @(
 "Get-RSCVMwareVMsDetail",
 "Get-RSCWebhooks",
 "Import-RSCReportTemplate",
-"Pause-RSCArchiveTarget",
-"Pause-RSCCluster",
-"Pause-RSCReplicationPair",
-"Pause-RSCReplicationPairsOnTarget",
 "Protect-RSCObject",
 "Register-RSCHost",
 "Resume-RSCArchiveTarget",
@@ -175,6 +172,10 @@ FunctionsToExport = @(
 "Stop-RSCMSSQLLiveMount",
 "Stop-RSCMVSnapshot",
 "Stop-RSCVMwareVMLiveMount",
+"Suspend-RSCArchiveTarget",
+"Suspend-RSCCluster",
+"Suspend-RSCReplicationPair",
+"Suspend-RSCReplicationPairsOnTarget",
 "Test-RSCConnection",
 "Test-RSCEmail",
 "Test-RSCSQLConnection",
@@ -195,7 +196,8 @@ FunctionsToExport = @(
 "Write-RSCEventsReplication",
 "Write-RSCObjects",
 "Write-RSCObjectStorageUsage",
-"Write-RSCSLADomains"
+"Write-RSCSLADomains",
+"Write-RSCSLADomainsByCluster"
 )
 	FileList = @(
 "Reports\00-RSCReport.html",
