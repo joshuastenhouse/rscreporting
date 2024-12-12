@@ -542,6 +542,10 @@ $GlobalSLAArchiveTarget = $GlobalSLAArchiveSpecs.targetType
 $GlobalSLAArchiveType = $GlobalSLAArchiveSpecs.groupType
 $GlobalSLAArchiveID = $GlobalSLAArchiveSpecs.id
 IF($GlobalSLAArchiveName -eq $null){$GlobalSLAArchiveEnabled = $FALSE}ELSE{$GlobalSLAArchiveEnabled = $TRUE}
+# Overriding archive name to that of the 1st cluster added with this target
+$GlobalSLAClusterArchiveSpecs = $GlobalSLA.archivalSpecs.archivalLocationToClusterMapping
+$GlobalSLAClusterArchivesCount = $GlobalSLAClusterArchiveSpecs | Measure-Object | Select-Object -ExpandProperty Count
+$GlobalSLAArchiveName = $GlobalSLAClusterArchiveSpecs.location | Select-Object -ExpandProperty Name -First 1
 # Replication settings
 $GlobalSLAReplicationSpecs = $GlobalSLA.replicationSpecsV2
 $GlobalSLAReplicationRetention = $GlobalSLAReplicationSpecs.retentionDuration
@@ -694,6 +698,7 @@ $Object | Add-Member -MemberType NoteProperty -Name "RetentionLocked" -Value $Gl
 $Object | Add-Member -MemberType NoteProperty -Name "APIVersion" -Value $GlobalSLAAPIVersion
 # Archiving
 $Object | Add-Member -MemberType NoteProperty -Name "Archive" -Value $GlobalSLAArchiveEnabled
+$Object | Add-Member -MemberType NoteProperty -Name "ArchiveClusters" -Value $GlobalSLAClusterArchivesCount
 $Object | Add-Member -MemberType NoteProperty -Name "ArchiveTarget" -Value $GlobalSLAArchiveTarget
 $Object | Add-Member -MemberType NoteProperty -Name "ArchiveName" -Value $GlobalSLAArchiveName
 $Object | Add-Member -MemberType NoteProperty -Name "ArchiveType" -Value $GlobalSLAArchiveType
