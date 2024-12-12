@@ -1,5 +1,5 @@
 ################################################
-# Function - Write-RSCClusterSLADomains - Getting all cluster SLA domains visible to the RSC instance and writing them to a SQL database table
+# Function - Write-RSCClusterSLADomains -- Getting all cluster SLA domains visible to the RSC instance and writing them to a SQL database table
 ################################################
 Function Write-RSCClusterSLADomains {
 
