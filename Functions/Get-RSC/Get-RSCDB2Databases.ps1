@@ -26,26 +26,36 @@ Date: 05/11/2023
 #>
 
 ################################################
+# Paramater Config
+################################################
+Param
+    (
+        [Parameter(ParameterSetName="User")][switch]$DisableLogging,
+        [Parameter(Mandatory=$false)]$ObjectQueryLimit
+    )
+################################################
 # Importing Module & Running Required Functions
 ################################################
 # Importing the module is it needs other modules
 Import-Module RSCReporting
 # Checking connectivity, exiting function with error if not connected
 Test-RSCConnection
-# Getting SLA domains
-$RSCSLADomains = Get-RSCSLADomains
 # Getting DB2 instances
 $RSCDB2Instances = Get-RSCDB2Instances
+# Setting first value if null
+IF($ObjectQueryLimit -eq $null){$ObjectQueryLimit = 1000}
 ################################################
 # Getting Objects 
 ################################################
+# Logging
+Write-Host "QueryingAPI: Db2DatabaseListQuery"
 # Creating array for objects
 $RSCObjectList = @()
 # Building GraphQL query
 $RSCGraphQL = @{"operationName" = "Db2DatabaseListQuery";
 
 "variables" = @{
-"first" = 1000
+"first" = $ObjectQueryLimit
 };
 
 "query" = "query Db2DatabaseListQuery(`$first: Int!, `$after: String) {
@@ -274,6 +284,11 @@ fragment SlaAssignmentColumnFragment on HierarchyObject {
 ################################################
 # API Call To RSC GraphQL URI
 ################################################
+# Counters
+$ObjectCount = 0
+$ObjectCounter = $ObjectCount + $ObjectQueryLimit
+#Logging
+IF($DisableLogging){}ELSE{Write-Host "GettingObjects: $ObjectCount-$ObjectCounter"}
 # Querying API
 $RSCObjectListResponse = Invoke-RestMethod -Method POST -Uri $RSCGraphqlURL -Body $($RSCGraphQL | ConvertTo-JSON -Depth 20) -Headers $RSCSessionHeader
 # Setting variable
@@ -281,6 +296,10 @@ $RSCObjectList += $RSCObjectListResponse.data.db2Databases.edges.node
 # Getting all results from paginations
 While ($RSCObjectListResponse.data.db2Databases.pageInfo.hasNextPage) 
 {
+# Incrementing
+$ObjectCount = $ObjectCount + $ObjectQueryLimit; $ObjectCounter = $ObjectCounter + $ObjectQueryLimit
+# Logging
+IF($DisableLogging){}ELSE{Write-Host "GettingObjects: $ObjectCount-$ObjectCounter"}
 # Getting next set
 $RSCGraphQL.variables.after = $RSCObjectListResponse.data.db2Databases.pageInfo.endCursor
 $RSCObjectListResponse = Invoke-RestMethod -Method POST -Uri $RSCGraphqlURL -Body $($RSCGraphQL | ConvertTo-JSON -Depth 20) -Headers $RSCSessionHeader
@@ -289,18 +308,24 @@ $RSCObjectList += $RSCObjectListResponse.data.db2Databases.edges.node
 ################################################
 # Processing DBs
 ################################################
+# Counting
+$RSCObjectsCount = $RSCObjectList | Measure-Object | Select-Object -ExpandProperty Count
+$RSCObjectsCounter = 0
 # Creating array
 $RSCDBs = [System.Collections.ArrayList]@()
 # For Each Object Getting Data
 ForEach ($RSCDB in $RSCObjectList)
 {
+# Logging
+$RSCObjectsCounter ++
+IF($DisableLogging){}ELSE{Write-Host "ProcessingDatabase: $RSCObjectsCounter/$RSCObjectsCount"}
 # Setting variables
 $DBName = $RSCDB.name
 $DBID = $RSCDB.id
 $DBCDMID = $RSCDB.cdmId
 $DBReplicas = $RSCDB.replicatedObjectCount
 $DBIsRelic = $RSCDB.isRelic
-$DBType = $RSCDB.objectType
+$DBType = $RSCDB.db2DbType
 # SLA info
 $DBSLADomainInfo = $RSCDB.effectiveSlaDomain
 $DBSLADomain = $DBSLADomainInfo.name

@@ -42,7 +42,7 @@ Import-Module RSCReporting
 # Checking connectivity, exiting function with error if not connected
 Test-RSCConnection
 # Getting SLA domains if required
-IF($DisableLogging){$RSCSLADomains = Get-RSCSLADomains}
+IF($GetSLADomainLogSettings){$RSCSLADomains = Get-RSCSLADomains}
 # Setting first value if null
 IF($ObjectQueryLimit -eq $null){$ObjectQueryLimit = 1000}
 ################################################
@@ -56,7 +56,7 @@ $RSCObjectList = @()
 $RSCGraphQL = @{"operationName" = "OracleDatabasesListQuery";
 
 "variables" = @{
-"first" = 1000
+"first" = $ObjectQueryLimit
 };
 
 "query" = "query OracleDatabasesListQuery(`$first: Int!, `$after: String, `$filter: [Filter!], `$isMultitenancyEnabled: Boolean = false) {

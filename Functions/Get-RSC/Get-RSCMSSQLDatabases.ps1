@@ -161,7 +161,7 @@ $RSCObjectList += $RSCObjectListResponse.data.mssqlDatabases.edges.node
 $ObjectCount = 0
 $ObjectCounter = $ObjectCount + $ObjectQueryLimit
 # Getting all results from paginations
-While ($RSCObjectListResponse.data.mssqlDatabases.pageInfo.hasNextPage) 
+While($RSCObjectListResponse.data.mssqlDatabases.pageInfo.hasNextPage) 
 {
 # Logging
 IF($DisableLogging){}ELSE{Write-Host "GettingObjects: $ObjectCount-$ObjectCounter"}
