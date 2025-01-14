@@ -32,6 +32,8 @@ Param
         $ObjectType,
         [Parameter(ParameterSetName="User")][switch]$Logging,
         [Parameter(ParameterSetName="User")][switch]$DisableLogging,
+        [Parameter(ParameterSetName="User")][switch]$IncludeOldestSnapshot,
+        [Parameter(ParameterSetName="User")][switch]$SampleObjects,
         [Parameter(Mandatory=$false)]$ObjectQueryLimit
     )
 
@@ -47,6 +49,8 @@ Write-Host "QueryingSLADomains.."
 $RSCSLADomains = Get-RSCSLADomains
 $RSCSLADomainCount = $RSCSLADomains | Measure-Object | Select-Object -ExpandProperty Count
 Write-Host "SLADomainsFound: $RSCSLADomainCount"
+# Warning if switch used
+IF($IncludeOldestSnapshot){Write-Host "WARNING: This may take a long time as it queries every protected object for it's last snapshot.."}
 ################################################
 # Getting All Objects 
 ################################################
@@ -139,7 +143,8 @@ $RSCObjectsList += $RSCObjectsResponse.data.snappableConnection.edges.node
 # Counters
 $ObjectCount = 0
 $ObjectCounter = $ObjectCount + $ObjectQueryLimit
-# Getting all results from paginations
+# Getting all results from paginations, unless sampling
+IF($SampleObjects){}ELSE{
 While ($RSCObjectsResponse.data.snappableConnection.pageInfo.hasNextPage) 
 {
 # Logging
@@ -151,6 +156,7 @@ $RSCObjectsList += $RSCObjectsResponse.data.snappableConnection.edges.node
 # Incrementing
 $ObjectCount = $ObjectCount + $ObjectQueryLimit
 $ObjectCounter = $ObjectCounter + $ObjectQueryLimit
+}
 }
 ################################################
 # Processing All Objects 
@@ -172,13 +178,14 @@ IF($DisableLogging){}ELSE{Write-Host "ProcessingObject: $RSCObjectsCounter/$RSCO
 $ObjectCDMID = $RSCObject.id
 $ObjectID = $RSCObject.fid
 $ObjectName = $RSCObject.name
-$ObjectComplianceStatus = $RSCObject.complianceStatus
 $ObjectLocation = $RSCObject.location
 $ObjectType = $RSCObject.objectType
 $ObjectSLADomainInfo = $RSCObject.slaDomain
 $ObjectSLADomain = $ObjectSLADomainInfo.name
 $ObjectSLADomainID = $ObjectSLADomainInfo.id
 $ObjectTotalSnapshots = $RSCObject.totalSnapshots
+$ObjectMissedSnapshots = $RSCObject.missedSnapshots
+$ObjectLocalSnapshots = $RSCObject.localSnapshots
 $ObjectLastSnapshot = $RSCObject.lastSnapshot
 $ObjectReplicatedSnapshots = $RSCObject.replicaSnapshots
 $ObjectArchivedSnapshots = $RSCObject.archiveSnapshots
@@ -191,6 +198,10 @@ $ObjectClusterID = $ObjectClusterInfo.id
 $ObjectClusterName = $ObjectClusterInfo.name
 $ObjectLastReplicatedSnapshot = $RSCObject.latestReplicationSnapshot
 $ObjectLastArhiveSnapshot = $RSCObject.latestArchivalSnapshot
+# Compliance statuses
+$ObjectComplianceStatus = $RSCObject.complianceStatus
+$ObjectArchiveComplianceStatus = $RSCObject.archivalComplianceStatus
+$ObjectReplicationComplianceStatus = $RSCObject.replicationComplianceStatus
 # Converting UNIX times if not null
 IF($ObjectProtectedOn -ne $null){$ObjectProtectedOn = Convert-RSCUNIXTime $ObjectProtectedOn}
 IF($ObjectLastSnapshot -ne $null){$ObjectLastSnapshot = Convert-RSCUNIXTime $ObjectLastSnapshot}
@@ -222,6 +233,9 @@ $ObjectURL = Get-RSCObjectURL -ObjectType $ObjectType -ObjectID $ObjectID
 $RSCSLADomainInfo = $RSCSLADomains | Where-Object {$_.SLADomainID -eq $ObjectSLADomainID}
 IF($RSCSLADomainInfo.Replication -eq $True){$ObjectISReplicated = $TRUE}ELSE{$ObjectISReplicated = $FALSE}
 $ObjectReplicationTargetClusterID = $RSCSLADomainInfo.ReplicationTargetClusterID
+# Getting additional SLA domain info
+$ObjectSLADailyFrequency = $RSCSLADomainInfo.DailyFrequency
+$ObjectSLADailyRetention = $RSCSLADomainInfo.DailyRetention
 # If replicated, determining if source or target
 IF($ObjectISReplicated -eq $TRUE)
 {
@@ -230,6 +244,7 @@ IF($ObjectClusterID -eq $ObjectReplicationTargetClusterID){$ObjectReplicaType = 
 }
 ELSE
 {
+# Not replicated
 $ObjectReplicaType = "N/A"
 }
 # Deciding if object should be reported on for snapshots/compliance
@@ -240,6 +255,8 @@ IF($ObjectComplianceStatus -eq "NOT_APPLICABLE"){$ObjectIsRelic = $TRUE}ELSE{$Ob
 IF($ObjectIsRelic -eq $TRUE){$ObjectReportOnCompliance = $FALSE}
 # Overriding if compliance is empty, as this means it's a replica target
 IF($ObjectComplianceStatus -eq "EMPTY"){$ObjectReportOnCompliance = $FALSE}
+# Adding get oldest backup if set and object should be reported on for compliance
+IF(($IncludeOldestSnapshot) -and ($ObjectProtectionStatus -eq "Protected")){$ObjectOldestSnapshot = Get-RSCObjectOldestSnapshot -ObjectID $ObjectID | Select-Object -ExpandProperty DateUTC}ELSE{$ObjectOldestSnapshot = $null}
 # Adding To Array
 $Object = New-Object PSObject
 $Object | Add-Member -MemberType NoteProperty -Name "RSCInstance" -Value $RSCInstance
@@ -248,16 +265,24 @@ $Object | Add-Member -MemberType NoteProperty -Name "Object" -Value $ObjectName
 $Object | Add-Member -MemberType NoteProperty -Name "Type" -Value $ObjectType
 $Object | Add-Member -MemberType NoteProperty -Name "Location" -Value $ObjectLocation
 $Object | Add-Member -MemberType NoteProperty -Name "SLADomain" -Value $ObjectSLADomain
+$Object | Add-Member -MemberType NoteProperty -Name "DailyFrequency" -Value $ObjectSLADailyFrequency
+$Object | Add-Member -MemberType NoteProperty -Name "DailyRetention" -Value $ObjectSLADailyRetention
 $Object | Add-Member -MemberType NoteProperty -Name "ProtectionStatus" -Value $ObjectProtectionStatus
 $Object | Add-Member -MemberType NoteProperty -Name "ComplianceStatus" -Value $ObjectComplianceStatus
+$Object | Add-Member -MemberType NoteProperty -Name "ArchiveComplianceStatus" -Value $ObjectArchiveComplianceStatus
+$Object | Add-Member -MemberType NoteProperty -Name "ReplicationComplianceStatus" -Value $ObjectReplicationComplianceStatus
 $Object | Add-Member -MemberType NoteProperty -Name "ReportOnCompliance" -Value $ObjectReportOnCompliance
 $Object | Add-Member -MemberType NoteProperty -Name "ProtectedOn" -Value $ObjectProtectedOn
 $Object | Add-Member -MemberType NoteProperty -Name "IsRelic" -Value $ObjectIsRelic
+$Object | Add-Member -MemberType NoteProperty -Name "PendingFirstFull" -Value $ObjectPendingFirstFull
 # Snapshot info
 $Object | Add-Member -MemberType NoteProperty -Name "TotalSnapshots" -Value $ObjectTotalSnapshots
+$Object | Add-Member -MemberType NoteProperty -Name "MissedSnapshots" -Value $ObjectMissedSnapshots
+$Object | Add-Member -MemberType NoteProperty -Name "LocalSnapshots" -Value $ObjectLocalSnapshots
 $Object | Add-Member -MemberType NoteProperty -Name "LastSnapshot" -Value $ObjectLastSnapshot
 $Object | Add-Member -MemberType NoteProperty -Name "HoursSince" -Value $ObjectSnapshotGapHours
-$Object | Add-Member -MemberType NoteProperty -Name "PendingFirstFull" -Value $ObjectPendingFirstFull
+# Including oldest snapshot if switch selected
+IF($IncludeOldestSnapshot){$Object | Add-Member -MemberType NoteProperty -Name "OldestSnapshot" -Value $ObjectOldestSnapshot}
 # Replication info
 $Object | Add-Member -MemberType NoteProperty -Name "Replicated" -Value $ObjectISReplicated
 $Object | Add-Member -MemberType NoteProperty -Name "ReplicaType" -Value $ObjectReplicaType
