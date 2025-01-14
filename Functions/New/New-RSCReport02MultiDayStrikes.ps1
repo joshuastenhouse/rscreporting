@@ -107,7 +107,7 @@ $RSCFiles = Get-RSCModuleFiles
 # Getting templates
 $RSCTemplates = Get-RSCReportTemplates
 # Getting file path of required template
-$RSCTemplatePath = $RSCTemplates | Where-Object {$_.Report -match $ReportName} | Select-Object -ExpandProperty FilePath
+$RSCTemplatePath = $RSCTemplates | Where-Object {$_.Report -match "02-MultiDayStrikes"} | Select-Object -ExpandProperty FilePath
 # Getting logo file included with module
 $LogoFile = $RSCFiles | Where-Object {$_.File -match "logo"} | Select-Object -ExpandProperty FilePath -First 1
 # Getting the machine time
