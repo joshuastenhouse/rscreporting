@@ -10,6 +10,11 @@ The current build is:
 
 ```1.1.7```
 
+Changes in 1.1.7:
+    - Added retention units to Get-RSCSLADomains to discern actual retention of hourly, daily frequencies etc
+    - Updated Write-RSCSLADomains to reflect the above, added the following varchar 50 columns: HourlyRetentionUnit, DailyRetentionUnit, WeeklyRetentionUnit, MonthlyRetentionUnit, QuarterlyRetentionUnit, YearlyRetentionUnit
+    - Added Search-RSCObject function to find the Object IDs and basic SLA information of an ojbect based on it's name
+
 To see which build you are on:
 
 ```Get-Module RSCReporting```
