@@ -1,6 +1,6 @@
 @{
 	RootModule 		= 'RSCReporting.psm1' 
-	ModuleVersion 		= '1.1.6' 
+	ModuleVersion 		= '1.1.7' 
 	CompatiblePSEditions 	= 'Desktop', 'Core' 
 	GUID 			= 'dc18a919-f4bf-4da2-8c76-24b68fa33ef0' 
 	Author 			= 'Joshua Stenhouse' 
@@ -153,6 +153,7 @@ FunctionsToExport = @(
 "Get-RSCVMwareVMsDetail",
 "Get-RSCWebhooks",
 "Import-RSCReportTemplate",
+"Josh to add - April 2025.txt",
 "New-RSCReport",
 "New-RSCReport02MultiDayStrikes",
 "Protect-RSCObject",
@@ -161,6 +162,7 @@ FunctionsToExport = @(
 "Resume-RSCCluster",
 "Resume-RSCReplicationPair",
 "Resume-RSCReplicationPairsOnTarget",
+"Search-RSCObjects",
 "Send-RSCEmail",
 "Send-RSCReport",
 "Send-RSCReport01GlobalClusterHealth",
