@@ -574,34 +574,34 @@ $GlobalSLAQuarterlySchedule = $GlobalSLA.snapshotSchedule.quarterly.basicSchedul
 $GlobalSLAYearlySchedule = $GlobalSLA.snapshotSchedule.yearly.basicSchedule
 # Hourly snapshot retention
 IF ($GlobalSLAHourlySchedule -ne $null)
-{$GlobalSLAHourlyFrequency = $GlobalSLAHourlySchedule.frequency; $GlobalSLAHourlyRetention = $GlobalSLAHourlySchedule.retention}
+{$GlobalSLAHourlyFrequency = $GlobalSLAHourlySchedule.frequency; $GlobalSLAHourlyRetention = $GlobalSLAHourlySchedule.retention; $GlobalSLAHourlyRetentionUnit = $GlobalSLAHourlySchedule.retentionUnit}
 ELSE
-{$GlobalSLAHourlyFrequency = 0; $GlobalSLAHourlyRetention = 0}
+{$GlobalSLAHourlyFrequency = 0; $GlobalSLAHourlyRetention = 0; $GlobalSLAHourlyRetentionUnit = $null}
 # Daily snapshot retention
 IF ($GlobalSLADailySchedule -ne $null)
-{$GlobalSLADailyFrequency = $GlobalSLADailySchedule.frequency; $GlobalSLADailyRetention = $GlobalSLADailySchedule.retention}
+{$GlobalSLADailyFrequency = $GlobalSLADailySchedule.frequency; $GlobalSLADailyRetention = $GlobalSLADailySchedule.retention; $GlobalSLADailyRetentionUnit = $GlobalSLADailySchedule.retentionUnit}
 ELSE
-{$GlobalSLADailyFrequency = 0; $GlobalSLADailyRetention = 0}
+{$GlobalSLADailyFrequency = 0; $GlobalSLADailyRetention = 0; $GlobalSLADailyRetentionUnit = $null}
 # Weekly snapshot retention
 IF ($GlobalSLAWeeklySchedule -ne $null)
-{$GlobalSLAWeeklyFrequency = $GlobalSLAWeeklySchedule.frequency; $GlobalSLAWeeklyRetention = $GlobalSLAWeeklySchedule.retention}
+{$GlobalSLAWeeklyFrequency = $GlobalSLAWeeklySchedule.frequency; $GlobalSLAWeeklyRetention = $GlobalSLAWeeklySchedule.retention; $GlobalSLAWeeklyRetentionUnit = $GlobalSLAWeeklySchedule.retentionUnit}
 ELSE
-{$GlobalSLAWeeklyFrequency = 0; $GlobalSLAWeeklyRetention = 0}
+{$GlobalSLAWeeklyFrequency = 0; $GlobalSLAWeeklyRetention = 0; $GlobalSLAWeeklyRetentionUnit = $null}
 # Monthly snapshot retention
 IF ($GlobalSLAMonthlySchedule -ne $null)
-{$GlobalSLAMonthlyFrequency = $GlobalSLAMonthlySchedule.frequency; $GlobalSLAMonthlyRetention = $GlobalSLAMonthlySchedule.retention}
+{$GlobalSLAMonthlyFrequency = $GlobalSLAMonthlySchedule.frequency; $GlobalSLAMonthlyRetention = $GlobalSLAMonthlySchedule.retention; $GlobalSLAMonthlyRetentionUnit = $GlobalSLAMonthlySchedule.retentionUnit}
 ELSE
-{$GlobalSLAMonthlyFrequency = 0; $GlobalSLAMonthlyRetention = 0}
+{$GlobalSLAMonthlyFrequency = 0; $GlobalSLAMonthlyRetention = 0; $GlobalSLAMonthlyRetentionUnit = $null}
 # Quarterly snapshot retention
 IF ($GlobalSLAQuarterlySchedule -ne $null)
-{$GlobalSLAQuarterlyFrequency = $GlobalSLAQuarterlySchedule.frequency; $GlobalSLAQuarterlyRetention = $GlobalSLAQuarterlySchedule.retention}
+{$GlobalSLAQuarterlyFrequency = $GlobalSLAQuarterlySchedule.frequency; $GlobalSLAQuarterlyRetention = $GlobalSLAQuarterlySchedule.retention; $GlobalSLAQuarterlyRetentionUnit = $GlobalSLAQuarterlySchedule.retentionUnit}
 ELSE
-{$GlobalSLAQuarterlyFrequency = 0; $GlobalSLAQuarterlyRetention = 0}
+{$GlobalSLAQuarterlyFrequency = 0; $GlobalSLAQuarterlyRetention = 0; $GlobalSLAQuarterlyRetentionUnit = $null}
 # Yearly snapshot retention
 IF ($GlobalSLAYearlySchedule -ne $null)
-{$GlobalSLAYearlyFrequency = $GlobalSLAYearlySchedule.frequency; $GlobalSLAYearlyRetention = $GlobalSLAYearlySchedule.retention}
+{$GlobalSLAYearlyFrequency = $GlobalSLAYearlySchedule.frequency; $GlobalSLAYearlyRetention = $GlobalSLAYearlySchedule.retention; $GlobalSLAYearlyRetentionUnit = $GlobalSLAYearlySchedule.retentionUnit}
 ELSE
-{$GlobalSLAYearlyFrequency = 0; $GlobalSLAYearlyRetention = 0}
+{$GlobalSLAYearlyFrequency = 0; $GlobalSLAYearlyRetention = 0; $GlobalSLAYearlyRetentionUnit = $null}
 # Calculating frequeny per day irrespective of config
 $GlobalSLAFrequencyDays = 24 / $GlobalSLAFrequencyHours; $GlobalSLAFrequencyDays = [Math]::Round($GlobalSLAFrequencyDays)
 # Overriding to ensure max 1 backup per day even if multiple, for SLA compliance calcs
@@ -720,16 +720,22 @@ $Object | Add-Member -MemberType NoteProperty -Name "FrequencyHours" -Value $Glo
 $Object | Add-Member -MemberType NoteProperty -Name "FrequencyDays" -Value $GlobalSLAFrequencyDays
 $Object | Add-Member -MemberType NoteProperty -Name "HourlyFrequency" -Value $GlobalSLAHourlyFrequency
 $Object | Add-Member -MemberType NoteProperty -Name "HourlyRetention" -Value $GlobalSLAHourlyRetention
+$Object | Add-Member -MemberType NoteProperty -Name "HourlyRetentionUnit" -Value $GlobalSLAHourlyRetentionUnit
 $Object | Add-Member -MemberType NoteProperty -Name "DailyFrequency" -Value $GlobalSLADailyFrequency
 $Object | Add-Member -MemberType NoteProperty -Name "DailyRetention" -Value $GlobalSLADailyRetention
+$Object | Add-Member -MemberType NoteProperty -Name "DailyRetentionUnit" -Value $GlobalSLADailyRetentionUnit
 $Object | Add-Member -MemberType NoteProperty -Name "WeeklyFrequency" -Value $GlobalSLAWeeklyFrequency
 $Object | Add-Member -MemberType NoteProperty -Name "WeeklyRetention" -Value $GlobalSLAWeeklyRetention
+$Object | Add-Member -MemberType NoteProperty -Name "WeeklyRetentionUnit" -Value $GlobalSLAWeeklyRetentionUnit
 $Object | Add-Member -MemberType NoteProperty -Name "MonthlyFrequency" -Value $GlobalSLAMonthlyFrequency
 $Object | Add-Member -MemberType NoteProperty -Name "MonthlyRetention" -Value $GlobalSLAMonthlyRetention
+$Object | Add-Member -MemberType NoteProperty -Name "MonthlyRetentionUnit" -Value $GlobalSLAMonthlyRetentionUnit
 $Object | Add-Member -MemberType NoteProperty -Name "QuarterlyFrequency" -Value $GlobalSLAQuarterlyFrequency
 $Object | Add-Member -MemberType NoteProperty -Name "QuarterlyRetention" -Value $GlobalSLAQuarterlyRetention
+$Object | Add-Member -MemberType NoteProperty -Name "QuarterlyRetentionUnit" -Value $GlobalSLAQuarterlyRetentionUnit
 $Object | Add-Member -MemberType NoteProperty -Name "YearlyFrequency" -Value $GlobalSLAYearlyFrequency
 $Object | Add-Member -MemberType NoteProperty -Name "YearlyRetention" -Value $GlobalSLAYearlyRetention
+$Object | Add-Member -MemberType NoteProperty -Name "YearlyRetentionUnit" -Value $GlobalSLAYearlyRetentionUnit
 # VM specific SLA configrations
 $Object | Add-Member -MemberType NoteProperty -Name "VMJournalConfigured" -Value $VMConfigured
 $Object | Add-Member -MemberType NoteProperty -Name "VMJournalRetention" -Value $VMConfigJournalHours
