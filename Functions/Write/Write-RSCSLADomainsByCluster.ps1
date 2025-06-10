@@ -76,7 +76,7 @@ IF($SQLModuleCheck -eq $null){Import-Module $SQLModuleName -ErrorAction Silently
 # SQL - Checking Table Exists
 ##########################
 # Manually setting SQL table name if not specified
-IF($SQLTable -eq $null){$SQLTable = "RSCSLADomainsByCluster"}
+IF($SQLTable -eq $null){$SQLTable = "RSCClusterSLADomains"}
 # Creating query
 $SQLTableListQuery = "USE $SQLDB;
 SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES;"
