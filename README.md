@@ -10,7 +10,7 @@ The current build is:
 
 ```1.1.7```
 
-Changes in 1.1.7:
+Changes in 1.1.7 updated 06/10/2025:
 
     - Added retention units to Get-RSCSLADomains to discern actual retention of hourly, daily frequencies etc
     - Updated Write-RSCSLADomains to reflect the above, added the following varchar 50 columns: HourlyRetentionUnit, DailyRetentionUnit, WeeklyRetentionUnit, MonthlyRetentionUnit, QuarterlyRetentionUnit, YearlyRetentionUnit
