@@ -132,16 +132,22 @@ CREATE TABLE [dbo].[$SQLTable](
     [FrequencyDays] [int] NULL,
     [HourlyFrequency] [int] NULL,
 	[HourlyRetention] [int] NULL,
+    [HourlyRetentionUnit] [varchar](50) NULL,
 	[DailyFrequency] [int] NULL,
 	[DailyRetention] [int] NULL,
+    [DailyRetentionUnit] [varchar](50) NULL,
 	[WeeklyFrequency] [int] NULL,
 	[WeeklyRetention] [int] NULL,
+    [WeeklyRetentionUnit] [varchar](50) NULL,
 	[MonthlyFrequency] [int] NULL,
 	[MonthlyRetention] [int] NULL,
+    [MonthlyRetentionUnit] [varchar](50) NULL,
 	[QuarterlyFrequency] [int] NULL,
 	[QuarterlyRetention] [int] NULL,
-	[YearlyFrequency] [int] NULL,
+	[QuarterlyRetentionUnit] [varchar](50) NULL,
+    [YearlyFrequency] [int] NULL,
 	[YearlyRetention] [int] NULL,
+    [YearlyRetentionUnit] [varchar](50) NULL,
     [VMJournalConfigured] [varchar](50) NULL,
     [VMJournalRetention] [int] NULL,
     [VMJournalRetentionUnit] [varchar](50) NULL,
@@ -280,16 +286,22 @@ $FrequencyHours = $RSCObject.FrequencyHours
 $FrequencyDays = $RSCObject.FrequencyDays
 $HourlyFrequency = $RSCObject.HourlyFrequency
 $HourlyRetention = $RSCObject.HourlyRetention
+$HourlyRetentionUnit = $RSCObject.HourlyRetentionUnit
 $DailyFrequency = $RSCObject.DailyFrequency
 $DailyRetention = $RSCObject.DailyRetention
+$DailyRetentionUnit = $RSCObject.DailyRetentionUnit
 $WeeklyFrequency = $RSCObject.WeeklyFrequency
 $WeeklyRetention = $RSCObject.WeeklyRetention
+$WeeklyRetentionUnit = $RSCObject.WeeklyRetentionUnit
 $MonthlyFrequency = $RSCObject.MonthlyFrequency
 $MonthlyRetention = $RSCObject.MonthlyRetention
+$MonthlyRetentionUnit = $RSCObject.MonthlyRetentionUnit
 $QuarterlyFrequency = $RSCObject.QuarterlyFrequency
 $QuarterlyRetention = $RSCObject.QuarterlyRetention
+$QuarterlyRetentionUnit = $RSCObject.QuarterlyRetentionUnit
 $YearlyFrequency = $RSCObject.YearlyFrequency
 $YearlyRetention = $RSCObject.YearlyRetention
+$YearlyRetentionUnit = $RSCObject.YearlyRetentionUnit
 $VMJournalConfigured = $RSCObject.VMJournalConfigured
 $VMJournalRetention = $RSCObject.VMJournalRetention
 $VMJournalRetentionUnit = $RSCObject.VMJournalRetentionUnit
@@ -318,8 +330,8 @@ ProtectedObjects, RetentionLocked,
 ArchiveEnabled, ArchiveTarget, ArchiveName, ArchiveType, ArchiveID, 
 ReplicationEnabled, ReplicationDuration, ReplicationUnit, ReplicationTargetCluster, ReplicationTargetClusterID, 
 LocalRetention, LocalRetentionUnit, Frequency, FrequencyUnit, FrequencyHours, FrequencyDays, 
-HourlyFrequency, HourlyRetention, DailyFrequency, DailyRetention, WeeklyFrequency, WeeklyRetention, 
-MonthlyFrequency, MonthlyRetention, QuarterlyFrequency, QuarterlyRetention, YearlyFrequency, YearlyRetention, 
+HourlyFrequency, HourlyRetention, HourlyRetentionUnit, DailyFrequency, DailyRetention, DailyRetentionUnit, WeeklyFrequency, WeeklyRetention, WeeklyRetentionUnit,
+MonthlyFrequency, MonthlyRetention, MonthlyRetentionUnit, QuarterlyFrequency, QuarterlyRetention, QuarterlyRetentionUnit, YearlyFrequency, YearlyRetention, YearlyRetentionUnit,
 VMJournalConfigured, VMJournalRetention, VMJournalRetentionUnit, 
 MSSQLConfigured, MSSQLLogFrequency, MSSQLLogFrequencyUnit, MSSQLLogRetention, MSSQLLogRetentionUnit, 
 OracleConfigured, OracleLogFrequency, OracleLogFrequencyUnit, OracleLogRetention, OracleLogRetentionUnit, 
@@ -331,8 +343,8 @@ VALUES(
 '$ArchiveEnabled', '$ArchiveTarget', '$ArchiveName', '$ArchiveType', '$ArchiveID', 
 '$ReplicationEnabled', '$ReplicationDuration', '$ReplicationUnit', '$ReplicationTargetCluster', '$ReplicationTargetClusterID', 
 '$LocalRetention', '$LocalRetentionUnit', '$Frequency', '$FrequencyUnit', '$FrequencyHours', '$FrequencyDays', 
-'$HourlyFrequency', '$HourlyRetention', '$DailyFrequency', '$DailyRetention', '$WeeklyFrequency', ' $WeeklyRetention', 
-'$MonthlyFrequency', '$MonthlyRetention', '$QuarterlyFrequency', '$QuarterlyRetention', '$YearlyFrequency', '$YearlyRetention', 
+'$HourlyFrequency', '$HourlyRetention', '$HourlyRetentionUnit', '$DailyFrequency', '$DailyRetention', '$DailyRetentionUnit', '$WeeklyFrequency', '$WeeklyRetention', '$WeeklyRetentionUnit', 
+'$MonthlyFrequency', '$MonthlyRetention', '$MonthlyRetentionUnit', '$QuarterlyFrequency', '$QuarterlyRetention', '$QuarterlyRetentionUnit', '$YearlyFrequency', '$YearlyRetention', '$YearlyRetentionUnit',
 '$VMJournalConfigured', '$VMJournalRetention', '$VMJournalRetentionUnit', 
 '$MSSQLConfigured', '$MSSQLLogFrequency', '$MSSQLLogFrequencyUnit', '$MSSQLLogRetention', '$MSSQLLogRetentionUnit', 
 '$OracleConfigured', '$OracleLogFrequency', '$OracleLogFrequencyUnit', '$OracleLogRetention', '$OracleLogRetentionUnit', 
@@ -367,8 +379,8 @@ ProtectedObjects, RetentionLocked,
 ArchiveEnabled, ArchiveTarget, ArchiveName, ArchiveType, ArchiveID, 
 ReplicationEnabled, ReplicationDuration, ReplicationUnit, ReplicationTargetCluster, ReplicationTargetClusterID, 
 LocalRetention, LocalRetentionUnit, Frequency, FrequencyUnit, FrequencyHours, FrequencyDays, 
-HourlyFrequency, HourlyRetention, DailyFrequency, DailyRetention, WeeklyFrequency, WeeklyRetention, 
-MonthlyFrequency, MonthlyRetention, QuarterlyFrequency, QuarterlyRetention, YearlyFrequency, YearlyRetention, 
+HourlyFrequency, HourlyRetention, HourlyRetentionUnit, DailyFrequency, DailyRetention, DailyRetentionUnit, WeeklyFrequency, WeeklyRetention, WeeklyRetentionUnit,
+MonthlyFrequency, MonthlyRetention, MonthlyRetentionUnit, QuarterlyFrequency, QuarterlyRetention, QuarterlyRetentionUnit, YearlyFrequency, YearlyRetention, YearlyRetentionUnit,
 VMJournalConfigured, VMJournalRetention, VMJournalRetentionUnit, 
 MSSQLConfigured, MSSQLLogFrequency, MSSQLLogFrequencyUnit, MSSQLLogRetention, MSSQLLogRetentionUnit, 
 OracleConfigured, OracleLogFrequency, OracleLogFrequencyUnit, OracleLogRetention, OracleLogRetentionUnit, 
@@ -380,8 +392,8 @@ VALUES(
 '$ArchiveEnabled', '$ArchiveTarget', '$ArchiveName', '$ArchiveType', '$ArchiveID', 
 '$ReplicationEnabled', '$ReplicationDuration', '$ReplicationUnit', '$ReplicationTargetCluster', '$ReplicationTargetClusterID', 
 '$LocalRetention', '$LocalRetentionUnit', '$Frequency', '$FrequencyUnit', '$FrequencyHours', '$FrequencyDays', 
-'$HourlyFrequency', '$HourlyRetention', '$DailyFrequency', '$DailyRetention', '$WeeklyFrequency', ' $WeeklyRetention', 
-'$MonthlyFrequency', '$MonthlyRetention', '$QuarterlyFrequency', '$QuarterlyRetention', '$YearlyFrequency', '$YearlyRetention', 
+'$HourlyFrequency', '$HourlyRetention', '$HourlyRetentionUnit', '$DailyFrequency', '$DailyRetention', '$DailyRetentionUnit', '$WeeklyFrequency', '$WeeklyRetention', ' $WeeklyRetentionUnit',
+'$MonthlyFrequency', '$MonthlyRetention', '$MonthlyRetentionUnit','$QuarterlyFrequency', '$QuarterlyRetention', '$QuarterlyRetentionUnit', '$YearlyFrequency', '$YearlyRetention', '$YearlyRetentionUnit', 
 '$VMJournalConfigured', '$VMJournalRetention', '$VMJournalRetentionUnit', 
 '$MSSQLConfigured', '$MSSQLLogFrequency', '$MSSQLLogFrequencyUnit', '$MSSQLLogRetention', '$MSSQLLogRetentionUnit', 
 '$OracleConfigured', '$OracleLogFrequency', '$OracleLogFrequencyUnit', '$OracleLogRetention', '$OracleLogRetentionUnit', 
@@ -462,14 +474,19 @@ WHEN MATCHED
             Target.FrequencyDays = Source.FrequencyDays,
             Target.HourlyFrequency = Source.HourlyFrequency,
             Target.HourlyRetention = Source.HourlyRetention,
+            Target.HourlyRetentionUnit = Source.HourlyRetentionUnit,
             Target.DailyFrequency = Source.DailyFrequency,
             Target.DailyRetention = Source.DailyRetention,
+            Target.DailyRetentionUnit = Source.DailyRetentionUnit,
             Target.WeeklyFrequency = Source.WeeklyFrequency,
             Target.WeeklyRetention = Source.WeeklyRetention,
+            Target.WeeklyRetentionUnit = Source.WeeklyRetentionUnit,
             Target.MonthlyFrequency = Source.MonthlyFrequency,
             Target.MonthlyRetention = Source.MonthlyRetention,
+            Target.MonthlyRetentionUnit = Source.MonthlyRetentionUnit,
             Target.QuarterlyFrequency = Source.QuarterlyFrequency,
             Target.QuarterlyRetention = Source.QuarterlyRetention,
+            Target.QuarterlyRetentionUnit = Source.QuarterlyRetentionUnit,
             Target.YearlyFrequency = Source.YearlyFrequency,
             Target.YearlyRetention = Source.YearlyRetention,
             Target.VMJournalConfigured = Source.VMJournalConfigured,
@@ -495,8 +512,8 @@ THEN INSERT (RSCInstance, SLADomain, SLADomainID,
             ArchiveEnabled, ArchiveTarget, ArchiveName, ArchiveType, ArchiveID, 
             ReplicationEnabled, ReplicationDuration, ReplicationUnit, ReplicationTargetCluster, ReplicationTargetClusterID, 
             LocalRetention, LocalRetentionUnit, Frequency, FrequencyUnit, FrequencyHours, FrequencyDays, 
-            HourlyFrequency, HourlyRetention, DailyFrequency, DailyRetention, WeeklyFrequency, WeeklyRetention, 
-            MonthlyFrequency, MonthlyRetention, QuarterlyFrequency, QuarterlyRetention, YearlyFrequency, YearlyRetention, 
+            HourlyFrequency, HourlyRetention, HourlyRetentionUnit, DailyFrequency, DailyRetention, DailyRetentionUnit, WeeklyFrequency, WeeklyRetention, WeeklyRetentionUnit,
+            MonthlyFrequency, MonthlyRetention, MonthlyRetentionUnit, QuarterlyFrequency, QuarterlyRetention, QuarterlyRetentionUnit, YearlyFrequency, YearlyRetention, YearlyRetentionUnit,
             VMJournalConfigured, VMJournalRetention, VMJournalRetentionUnit, 
             MSSQLConfigured, MSSQLLogFrequency, MSSQLLogFrequencyUnit, MSSQLLogRetention, MSSQLLogRetentionUnit, 
             OracleConfigured, OracleLogFrequency, OracleLogFrequencyUnit, OracleLogRetention, OracleLogRetentionUnit, 
@@ -507,8 +524,8 @@ THEN INSERT (RSCInstance, SLADomain, SLADomainID,
             Source.ArchiveEnabled, Source.ArchiveTarget, Source.ArchiveName, Source.ArchiveType, Source.ArchiveID, 
             Source.ReplicationEnabled, Source.ReplicationDuration, Source.ReplicationUnit, Source.ReplicationTargetCluster, Source.ReplicationTargetClusterID, 
             Source.LocalRetention, Source.LocalRetentionUnit, Source.Frequency, Source.FrequencyUnit, Source.FrequencyHours, Source.FrequencyDays, 
-            Source.HourlyFrequency, Source.HourlyRetention, Source.DailyFrequency, Source.DailyRetention, Source.WeeklyFrequency, Source.WeeklyRetention, 
-            Source.MonthlyFrequency, Source.MonthlyRetention, Source.QuarterlyFrequency, Source.QuarterlyRetention, Source.YearlyFrequency, Source.YearlyRetention, 
+            Source.HourlyFrequency, Source.HourlyRetention, Source.HourlyRetentionUnit, Source.DailyFrequency, Source.DailyRetention, Source.DailyRetentionUnit, Source.WeeklyFrequency, Source.WeeklyRetention,  Source.WeeklyRetentionUnit, 
+            Source.MonthlyFrequency, Source.MonthlyRetention, Source.MonthlyRetentionUnit, Source.QuarterlyFrequency, Source.QuarterlyRetention, Source.QuarterlyRetentionUnit, Source.YearlyFrequency, Source.YearlyRetention, Source.YearlyRetentionUnit, 
             Source.VMJournalConfigured, Source.VMJournalRetention, Source.VMJournalRetentionUnit, 
             Source.MSSQLConfigured, Source.MSSQLLogFrequency, Source.MSSQLLogFrequencyUnit, Source.MSSQLLogRetention, Source.MSSQLLogRetentionUnit, 
             Source.OracleConfigured, Source.OracleLogFrequency, Source.OracleLogFrequencyUnit, Source.OracleLogRetention, Source.OracleLogRetentionUnit, 
@@ -594,16 +611,14 @@ ELSE
 $ScriptDuration = 0
 }
 # Calculating seconds per event
-IF($RSCSLADomainCount -gt 0){$SecondsPerObject = $ScriptDurationSeconds/$RSCSLADomainCount;$SecondsPerObject=[Math]::Round($SecondsPerObject,2)}ELSE{$SecondsPerObject=0}
+# IF($RSCSLADomainCount -gt 0){$SecondsPerObject = $ScriptDurationSeconds/$RSCSLADomainCount;$SecondsPerObject=[Math]::Round($SecondsPerObject,2)}ELSE{$SecondsPerObject=0}
 # Logging
 Write-Host "Script Execution Summary
 ----------------------------------
 Start: $ScriptStart
 End: $ScriptEnd
-CollectedEventsFrom: $TimeRange
 TotalSLADomains: $RSCSLADomainCount
-Runtime: $ScriptDuration
-SecondsPerSLA: $SecondsPerObject"
+Runtime: $ScriptDuration"
 # Returning null
 Return $null
 # End of function
