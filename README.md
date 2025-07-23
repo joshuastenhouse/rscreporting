@@ -8,7 +8,13 @@ Import the module into your current session:
 
 The current build is: 
 
-```1.1.7```
+```1.1.8```
+
+Changes in 1.1.8 updated 07/23/2025:
+
+    - Fixed divide by zero bug in Write-RSCClusterSLADomains
+    - Added retention units to Get-RSCClusterSLADomains to discern actual retention of hourly, daily frequencies etc
+    - Updated Write-RSCClusterSLADomains to reflect the above, added the following varchar 50 columns: HourlyRetentionUnit, DailyRetentionUnit, WeeklyRetentionUnit, MonthlyRetentionUnit, QuarterlyRetentionUnit, YearlyRetentionUnit
 
 Changes in 1.1.7 updated 06/10/2025:
 
