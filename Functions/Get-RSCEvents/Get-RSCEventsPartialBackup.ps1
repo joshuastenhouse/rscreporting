@@ -1,11 +1,11 @@
 ################################################
-# Function - Get-RSCEventsBackup - Getting all RSC Backup events
+# Function - Get-RSCEventsPartialBackup - Getting all RSC Partial Backup events (Succeeded with warnings)
 ################################################
-Function Get-RSCEventsBackup {
+Function Get-RSCEventsPartialBackup {
 
 <#
 .SYNOPSIS
-Returns all RSC backup events within the time frame specified, default is 24 hours with no parameters.
+Returns all RSC backup partial events within the time frame specified, default is 24 hours with no parameters.
 
 .DESCRIPTION
 Makes the required GraphQL API calls to RSC via Invoke-RestMethod to get the data as described, then creates a usable array of the returned information, removing the need for the PowerShell user to understand GraphQL in order to interact with RSC.
@@ -37,20 +37,20 @@ Removes all log backup events.
 Returns an array of all the available information on the GraphQL endpoint in a uniform and usable format.
 
 .EXAMPLE
-Get-RSCEventsBackup
+Get-RSCEventsPartialBackup
 This example returns all backup events within a 24 hour period as no paramters were set.
 
 .EXAMPLE
-Get-RSCEventsBackup -DaysToCapture 30
+Get-RSCEventsPartialBackup -DaysToCapture 30
 This example returns all backup events within a 30 day period.
 
 .EXAMPLE
-Get-RSCEventsBackup -DaysToCapture 30 -LastActivityStatus "FAILED" -ObjectType "VMwareVirtualMachine"
+Get-RSCEventsPartialBackup -DaysToCapture 30 -LastActivityStatus "FAILED" -ObjectType "VMwareVirtualMachine"
 This example returns all failed backup events within 30 days for VMwareVirtualMachines.
 
 .NOTES
 Author: Joshua Stenhouse
-Date: 05/11/2023
+Date: 08/27/2025
 #>
 
 ################################################
@@ -67,7 +67,7 @@ Date: 05/11/2023
         [Parameter(Mandatory=$false)]$FromDate,
         [Parameter(Mandatory=$false)]$ToDate,
         [Parameter(Mandatory=$false)]$EventLimit,
-        [switch]$AddWarningsToErrorMessage,
+        [Parameter(Mandatory=$false)]$MessageDepth,
         [switch]$ExcludeLogBackups,
         [switch]$Logging
     )
@@ -81,8 +81,8 @@ Import-Module RSCReporting
 Test-RSCConnection
 # If event limit null, setting to value
 IF($EventLimit -eq $null){$EventLimit = 999}ELSE{$EventLimit = [int]$EventLimit}
-# Overriding to 50 if user wants the warnings otherwise it won't have the event depth required to pull the data
-IF($AddWarningsToErrorMessage){$MessageDepth = 50}ELSE{$MessageDepth = 1}
+# If event message depth null, setting to 50
+IF($MessageDepth -eq $null){$MessageDepth = 50}ELSE{$MessageDepth = [int]$MessageDepth}
 ################################################
 # Getting times required
 ################################################
@@ -178,6 +178,8 @@ Start-Sleep 1
 ################################################
 # Hard coding event type 
 $lastActivityType = "BACKUP"
+# Hard coding event status
+$LastActivityStatus = "PARTIAL_SUCCESS"
 # Creating array for events
 $RSCEventsList = @()
 # Building GraphQL query
@@ -208,6 +210,7 @@ $RSCGraphQL = @{"operationName" = "EventSeriesListQuery";
             message
             __typename
             activityInfo
+            status
           }
           __typename
         }
@@ -372,17 +375,10 @@ $EventMinutes = $null
 $EventSeconds = $null
 $EventDuration = $null
 }
-# Override for warning message if configured
-IF($AddWarningsToErrorMessage)
-{
-IF($EventStatus -eq "PARTIAL_SUCCESS")
-{
 # Override for partial success to get the top warning
 $EventErrorMessage = $Event | Select-Object -ExpandProperty activityConnection | Select-Object -ExpandProperty nodes | Where-Object {$_.Status -eq "Warning"} | Select-Object -ExpandProperty message -First 1
 # If null, could be an actual partial success warning in the messages
 IF($EventErrorMessage -eq $null){$EventErrorMessage = $Event | Select-Object -ExpandProperty activityConnection | Select-Object -ExpandProperty nodes | Where-Object {$_.Status -eq "PARTIAL_SUCCESS"} | Select-Object -ExpandProperty message -First 1}
-}
-}
 # Removing illegal SQL characters from object or message
 IF($EventObject -ne $null){$EventObject = $EventObject.Replace("'","")}
 IF($EventLocation -ne $null){$EventLocation = $EventLocation.Replace("'","")}

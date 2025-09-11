@@ -1,7 +1,7 @@
 ################################################
-# Function - Write-RSCEventsBackup - Inserting all RSC Backup events into SQL
+# Function - Write-RSCEventsPartialBackup - Inserting all Partial RSC Backup events into SQL
 ################################################
-Function Write-RSCEventsBackup {
+Function Write-RSCEventsPartialBackup {
 
 <#
 .SYNOPSIS
@@ -42,29 +42,29 @@ Set the required object name of the events, has to be be a valid object name, yo
 None, all the events are written into the MS SQL DB specified.
 
 .EXAMPLE
-Write-RSCEventsBackup -SQLInstance "localhost" -SQLDB "YourDBName"
+Write-RSCEventsPartialBackup -SQLInstance "localhost" -SQLDB "YourDBName"
 This example collects all events from the default last 24 hours and writes them into a table named RSCEventsBackup that it will create on first run with the required structure in the database RSCReprting.
 
 .EXAMPLE
-Write-RSCEventsBackup -SQLInstance "localhost" -SQLDB "YourDBName" -DaysToCapture 30
+Write-RSCEventsPartialBackup -SQLInstance "localhost" -SQLDB "YourDBName" -DaysToCapture 30
 This example collects all events from the default last 30 days and writes them into a table named RSCEventsBackup that it will create on first run with the required structure in the database RSCReprting.
 
 .EXAMPLE
-Write-RSCEventsBackup -SQLInstance "localhost" -SQLDB "YourDBName" -DaysToCapture 30 -SQLTable "YourTableName"
+Write-RSCEventsPartialBackup -SQLInstance "localhost" -SQLDB "YourDBName" -DaysToCapture 30 -SQLTable "YourTableName"
 This example collects all events from the default last 30 days and writes them into a table named MyTableName that it will create on first run with the required structure in the database RSCReprting.
 
 .EXAMPLE
-Write-RSCEventsBackup -SQLInstance "localhost" -SQLDB "YourDBName" -DaysToCapture 30 -SQLTable "YourTableName" -DontUseTempDB
+Write-RSCEventsPartialBackup -SQLInstance "localhost" -SQLDB "YourDBName" -DaysToCapture 30 -SQLTable "YourTableName" -DontUseTempDB
 As above, but doesn't use regular tables in TempDB if you don't have permission to create/drop tables in TempDB. Events are written straight into the table then duplicate EventIDs are removed.
 
 .EXAMPLE
-Write-RSCEventsBackup -SQLInstance "localhost" -SQLDB "YourDBName" -DaysToCapture 30 -SQLTable "YourTableName" -LastActivityStatus "FAILED"
+Write-RSCEventsPartialBackup -SQLInstance "localhost" -SQLDB "YourDBName" -DaysToCapture 30 -SQLTable "YourTableName" -LastActivityStatus "FAILED"
 This example collects all failed events from the default last 30 days and writes them into a table named MyTableName that it will create on first run with the required structure in the database RSCReprting.
 
 .NOTES
 Author: Joshua Stenhouse
-Date: 05/11/2023
-Last Updated: 07/29/2025
+Date: 09/11/2025
+Last Updated: 09/11/2025
 #>
 
 ################################################
@@ -84,7 +84,7 @@ Last Updated: 07/29/2025
         [Parameter(Mandatory=$false)]$FromDate,
         [Parameter(Mandatory=$false)]$ToDate,
         [Parameter(Mandatory=$false)]$EventLimit,
-        [switch]$AddWarningsToErrorMessage,
+        [Parameter(Mandatory=$false)]$MessageDepth,
         [Switch]$ExcludeLogBackups,
         [Switch]$ExcludeRunningJobs,
         [Switch]$ExcludeScheduledBackups,
@@ -102,8 +102,8 @@ Test-RSCConnection
 Test-RSCSQLModule
 # If event limit null, setting to value
 IF($EventLimit -eq $null){$EventLimit = 999}ELSE{$EventLimit = [int]$EventLimit}
-# Overriding to 50 if user wants the warnings otherwise it won't have the event depth required to pull the data
-IF($AddWarningsToErrorMessage){$MessageDepth = 50}ELSE{$MessageDepth = 1}
+# If event message depth null, setting to 50
+IF($MessageDepth -eq $null){$MessageDepth = 50}ELSE{$MessageDepth = [int]$MessageDepth}
 ################################################
 # Importing SQL Server Module
 ################################################
@@ -523,17 +523,10 @@ $EventMinutes = $null
 $EventSeconds = $null
 $EventDuration = $null
 }
-# Override for warning message if configured
-IF($AddWarningsToErrorMessage)
-{
-IF($EventStatus -eq "PARTIAL_SUCCESS")
-{
 # Override for partial success to get the top warning
 $EventErrorMessage = $Event | Select-Object -ExpandProperty activityConnection | Select-Object -ExpandProperty nodes | Where-Object {$_.Status -eq "Warning"} | Select-Object -ExpandProperty message -First 1
 # If null, could be an actual partial success warning in the messages
 IF($EventErrorMessage -eq $null){$EventErrorMessage = $Event | Select-Object -ExpandProperty activityConnection | Select-Object -ExpandProperty nodes | Where-Object {$_.Status -eq "PARTIAL_SUCCESS"} | Select-Object -ExpandProperty message -First 1}
-}
-}
 # Removing illegal SQL characters from object or message
 IF($EventObject -ne $null){$EventObject = $EventObject.Replace("'","")}
 IF($EventLocation -ne $null){$EventLocation = $EventLocation.Replace("'","")}
