@@ -1,6 +1,6 @@
 @{
 	RootModule 		= 'RSCReporting.psm1' 
-	ModuleVersion 		= '1.1.8' 
+	ModuleVersion 		= '1.1.9' 
 	CompatiblePSEditions 	= 'Desktop', 'Core' 
 	GUID 			= 'dc18a919-f4bf-4da2-8c76-24b68fa33ef0' 
 	Author 			= 'Joshua Stenhouse' 
@@ -60,6 +60,7 @@ FunctionsToExport = @(
 "Get-RSCEventsHardware",
 "Get-RSCEventsLogBackup",
 "Get-RSCEventsLogBackupOnDemand",
+"Get-RSCEventsPartialBackup",
 "Get-RSCEventsRecovery",
 "Get-RSCEventsReplication",
 "Get-RSCEventsRunning",
@@ -195,6 +196,7 @@ FunctionsToExport = @(
 "Write-RSCEventsBackup",
 "Write-RSCEventsBackupOnDemand",
 "Write-RSCEventsLogBackup",
+"Write-RSCEventsPartialBackup",
 "Write-RSCEventsRecovery",
 "Write-RSCEventsReplication",
 "Write-RSCObjects",
