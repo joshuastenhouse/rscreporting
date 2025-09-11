@@ -20,7 +20,7 @@ $RSCSessionStatus ("Connected" or "Disconnected")
 GraphQL schema reference: https://rubrikinc.github.io/rubrik-api-documentation/schema/reference
 
 .PARAMETER ScriptDirectory
-The mandatory directory required to store encrypted userID and secret for a service account on RSC.
+The directory required to store encrypted userID and secret for a service account on RSC, if not already connected using the official SDK.
 .PARAMETER JSONFile
 Specify the absolute path of the JSON file downloaded from RSC to pre-populate all the required variables of RSCURL, UserID and Secret.
 .PARAMETER RSCURL
@@ -29,6 +29,9 @@ Set the URL of your RSC instance, if not entered will be prompted unless you spe
 .OUTPUTS
 Returns an array of the connection information and global variables used for all subsequent RSC Reporting functions.
 
+.EXAMPLE
+Connect-RSCReporting
+This example will automatically connect using the credentials stored by the official SDK if it's already connected.
 .EXAMPLE
 Connect-RSCReporting -ScriptDirectory "C:\Scripts"
 This example prompts for the RSC URL, user ID and secret, then connects to RSC and securely stores them for subsequent use in the script directory specified. Use this thereafter for new connections as it will rememeber all your settings from the script directory.
@@ -49,24 +52,89 @@ Same as the first example, but returns the minimal amount of data required to as
 .NOTES
 Author: Joshua Stenhouse
 Date: 05/11/2023
+Updated: 09/11/2025
 #>
 
 ################################################
 # Paramater Config
 ################################################
 [CmdletBinding(DefaultParameterSetName = "List")]
-Param([Parameter(Mandatory=$true)]
-	  [String]$ScriptDirectory,$JSONFile,$RSCURL,$EncryptionKey,[switch]$Quiet
+Param(
+    [String]$ScriptDirectory,$Credentials,$JSONFile,$RSCURL,$EncryptionKey,[switch]$Quiet
   )
 
+##################################
+# If already connected using official SDK using it's access token
+##################################
+# Ensuring null RSC credentials for import later
+$RSCCredentials = $null
+# Detecting global variable used by official SDK
+IF($Global:RscConnectionClient -ne $null)
+{
+# Setting RscServiceAccountFile directory
+IF(($IsLinux -eq $FALSE) -or ($IsLinux -eq $null))
+{
+$UserDir = Split-Path $PROFILE
+$RscServiceAccountFile = $UserDir + "\rubrik-powershell-sdk\rsc_service_account_default.xml"
+}ELSE{$RscServiceAccountFile = $PROFILE + "/rubrik-powershell-sdk/rsc_service_account_default.xml"}
+# Importing credentials
+$RSCCredentialsImport = IMPORT-CLIXML $RscServiceAccountFile
+# Setting the username and password from the credential file (run at the start of each script)
+$RSCClientID = $RSCCredentialsImport.client_id
+$RSCSecret = $RSCCredentialsImport.client_secret
+# Creating credentials objects
+[pscredential]$RSCCredentialClientID = New-Object System.Management.Automation.PSCredential ("ClientID", $RSCClientID)
+[pscredential]$RSCCredentialSecret = New-Object System.Management.Automation.PSCredential ("Secret", $RSCSecret)
+# Setting the username and password from the credential file (run at the start of each script)
+$RSCClientID = $RSCCredentialClientID.GetNetworkCredential().Password
+$RSCSecret = $RSCCredentialSecret.GetNetworkCredential().Password
+# Removing client string
+$RSCClientID = $RSCClientID.Replace("client|","")
+# Getting RSC URL from file too
+$RSCURL = $RSCCredentialsImport.access_token_uri
+# Creating combined credentials object
+[pscredential]$Credentials = New-Object System.Management.Automation.PSCredential ($RSCClientID, $RSCCredentialSecret.Password)
+}
+ELSE
+{
+##################################
+# Handling if no RSC URL is specificed
+##################################
+# Setting URL file
+$RSCURLFile = $ScriptDirectory + "RSCURL.bin"
+# Testing if file exists
+$RSCURLFileTest =  Test-Path $RSCURLFile
+# If exists pulling it
+IF (($RSCURLFileTest -eq $TRUE) -and ($RSCURL -eq $null))
+{
+$RSCURL = Get-Content $RSCURLFile
+}
+ELSE
+{
+# If the user didn't specify the required params by variable or string, prompting for the string to be entered manually
+IF($RSCURL -eq $null){$RSCURL = Read-Host "Enter RSC URL, don't use a variable, if you want to use a variable pass it on the function"}
+# Exporting URL file
+$RSCURL | Out-File $RSCURLFile -Force
+}
+}
 ##################################
 # Getting last character of script path, if not / or \ adding it for the credentials path
 ##################################
 IF($ScriptDirectory -eq $null){$ScriptDirectory = Read-Host "Enter a script directory, don't use a variable, if you want to use a variable pass it on the function"}
+# Fixing Script Directory Based on OS
+IF(($IsLinux -eq $FALSE) -or ($IsLinux -eq $null))
+{
+# Fixing directory if required
+IF($LastScriptDirectoryChar -ne "\"){$ScriptDirectory += "\"}
+}
+IF ($IsLinux -eq $TRUE)
+{
+# Fixing directory if required
+IF($LastScriptDirectoryChar -ne "/"){$ScriptDirectory += "/"}
+}
 $LastScriptDirectoryChar = $ScriptDirectory.Substring($ScriptDirectory.Length - 1)
-$RSCCredentials = $null
 ##################################
-# Getting last character of script path, if not / or \ adding it for the credentials path
+# Importing JSON file if specified
 ##################################
 IF($JSONFile -ne $null)
 {
@@ -89,38 +157,6 @@ IF(($RSCClientID -ne $null) -and ($RSCClientSecret -ne $null))
 [pscredential]$RSCCredentials = New-Object System.Management.Automation.PSCredential ($RSCClientID, $RSCClientSecretSecureString)
 }
 }
-}
-##################################
-# Fixing Script Directory Based on OS
-##################################
-IF(($IsLinux -eq $FALSE) -or ($IsLinux -eq $null))
-{
-# Fixing directory if required
-IF($LastScriptDirectoryChar -ne "\"){$ScriptDirectory += "\"}
-}
-IF ($IsLinux -eq $TRUE)
-{
-# Fixing directory if required
-IF($LastScriptDirectoryChar -ne "/"){$ScriptDirectory += "/"}
-}
-##################################
-# Handling if no RSC URL is specificed
-##################################
-# Setting URL file
-$RSCURLFile = $ScriptDirectory + "RSCURL.bin"
-# Testing if file exists
-$RSCURLFileTest =  Test-Path $RSCURLFile
-# If exists pulling it
-IF (($RSCURLFileTest -eq $TRUE) -and ($RSCURL -eq $null))
-{
-$RSCURL = Get-Content $RSCURLFile
-}
-ELSE
-{
-# If the user didn't specify the required params by variable or string, prompting for the string to be entered manually
-IF($RSCURL -eq $null){$RSCURL = Read-Host "Enter RSC URL, don't use a variable, if you want to use a variable pass it on the function"}
-# Exporting URL file
-$RSCURL | Out-File $RSCURLFile -Force
 }
 ##################################
 # Fixing Common URL Mistakes & Getting URL file name for encrypted token export
@@ -153,6 +189,21 @@ IF($PSVersion -lt 6)
 [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.SecurityProtocolType]'Ssl3,Tls12'
 }
 ###############################################
+# Accepting Credentials Object Workflow - Added 08/05/2025
+###############################################
+IF($Credentials)
+{
+# Setting credentials
+$RSCClientID = $Credentials.UserName
+$RSCSecret = $Credentials.GetNetworkCredential().Password
+# Removing string from client ID if present as hard coded in API call further down
+IF($RSCClientID -ne $null){$RSCClientID = $RSCClientID.Replace("client|","")}
+}
+ELSE
+{
+# Credentials have not been passed to the function, running workflows to encrypt and store credentials
+#
+###############################################
 # Windows Host Workflow ($IsLinux is a global variable in PowerShell 6.0 onwards to indicate if OS is Linux, if running PS 5.1 on Windows it will be null)
 ###############################################
 IF(($IsLinux -eq $FALSE) -or ($IsLinux -eq $null))
@@ -165,9 +216,9 @@ $RSCCredentialsFileTest =  Test-Path $RSCCredentialsFile
 IF ($RSCCredentialsFileTest -eq $False)
 {
 # Only prompting if credentials object doesn't already exist (could've been created by importing the JSON)
-IF ($RSCCredentials -eq $null)
+IF ($JSONFile -eq $null)
 {
-$RSCCredentials = Get-Credential -Message "Enter RSC client ID in user (without client|) and client secret in password"
+$RSCCredentials = Get-Credential -Message "Enter RSC client ID in user (without client|) and client secret in password" -ErrorAction Stop
 }
 # Exporting credentials
 $RSCCredentials | EXPORT-CLIXML $RSCCredentialsFile -Force
@@ -215,6 +266,10 @@ $RSCSecret = [System.Net.NetworkCredential]::new("",$RSCSecretStr).password
 # End of Linux workflow below
 }
 # End of Linux workflow above
+#
+# End of bypass if credentials passed to function below
+}
+# End of bypass if credentials passed to function above
 ###########################
 # Building RSC URLs & Headers
 ###########################
@@ -270,6 +325,7 @@ $RSCSessionHeader = @{
 ##########################
 # Deleting credentials file if required
 ##########################
+IF($RSCCredentialsFile -ne $null){$RSCCredentialsFileTest =  Test-Path $RSCCredentialsFile}
 # If it failed to connect, and the credentials file was just created
 IF(($RSCCredentialsFileTest -eq $False) -and ($RSCSessionStatus -ne "Connected"))
 {
@@ -327,6 +383,11 @@ IF($hostname -eq "Studio2Plus")
 $Global:EmailTo = "joshua@rubrik.local"
 $Global:EmailFrom = "reporting@rubrik.local"
 $Global:SMTPServer = "localhost"
+}
+# Overriding message if using RSC SDK connection file
+IF($Global:RscConnectionClient -ne $null)
+{
+$RSCErrorMessage = "Connected using XML file from Rubrik Security Cloud SDK Set-RSCServiceAccountFile function"
 }
 ##########################
 # Returning All Data Unless Quiet Switch
