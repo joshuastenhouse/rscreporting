@@ -208,6 +208,7 @@ $RSCGraphQL = @{"operationName" = "EventSeriesListQuery";
             message
             __typename
             activityInfo
+            status
           }
           __typename
         }
@@ -375,12 +376,15 @@ $EventDuration = $null
 # Override for warning message if configured
 IF($AddWarningsToErrorMessage)
 {
-IF($EventStatus -eq "PARTIAL_SUCCESS")
-{
 # Override for partial success to get the top warning
-$EventErrorMessage = $Event | Select-Object -ExpandProperty activityConnection | Select-Object -ExpandProperty nodes | Where-Object {$_.Status -eq "Warning"} | Select-Object -ExpandProperty message -First 1
+IF([string]::IsNullOrEmpty($EventErrorMessage))
+{
+$EventErrorMessage = $Event | Select-Object -ExpandProperty activityConnection | Select-Object -ExpandProperty nodes | Where-Object {$_.Status -eq "PARTIAL_SUCCESS"} | Select-Object -ExpandProperty message -First 1
+}
 # If null, could be an actual partial success warning in the messages
-IF($EventErrorMessage -eq $null){$EventErrorMessage = $Event | Select-Object -ExpandProperty activityConnection | Select-Object -ExpandProperty nodes | Where-Object {$_.Status -eq "PARTIAL_SUCCESS"} | Select-Object -ExpandProperty message -First 1}
+IF([string]::IsNullOrEmpty($EventErrorMessage))
+{
+$EventErrorMessage = $Event | Select-Object -ExpandProperty activityConnection | Select-Object -ExpandProperty nodes | Where-Object {$_.Status -eq "Warning"} | Select-Object -ExpandProperty message -First 1
 }
 }
 # Removing illegal SQL characters from object or message
