@@ -8,7 +8,14 @@ Import the module into your current session:
 
 The current build is: 
 
-```1.1.8```
+```1.1.9```
+
+Changes in 1.1.9 updated 09/15/2025:
+
+    - Added new functions for partial backup events that populate the error message field with the most recent warning from the event message/acitivity history (Get-RSCEventsPartialBackup and Write-RSCEventsPartialBackup)
+    - Added -AddWarningsToErrorMessage switch to Write-RSCEventsBackup to achieve the same as the above, giving the option of adding this additional field in a seperate function or adding to the existing function because this will increase the query time in order to parse the activity history (only added 11 seconds in 5000 event query though, mileage may vary)
+    - Connect-RSCReporting now automatically detects if you have connected to RSC using the official SDK and utilizes it's encrypted credentials to authenticate with your RSC instance rather than having to store the credentials twice by checking for the RscConnectionClient global variable.
+    - Connect-RSCReporting also now supports passthrough of a credentials object if executing RSCReporting functions through an automation platform and you don't want to store any local encrypted credentials
 
 Changes in 1.1.8 updated 07/23/2025:
 
