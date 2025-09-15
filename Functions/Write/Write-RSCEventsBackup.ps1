@@ -356,6 +356,7 @@ $RSCGraphQL = @{"operationName" = "EventSeriesListQuery";
             message
             __typename
             activityInfo
+            status
           }
           __typename
         }
@@ -495,15 +496,15 @@ $EventClusterName = $EventCluster.name
 IF($EventClusterName -eq "Polaris"){$EventClusterName = "RSC-Native"}
 # Getting message
 $EventInfo = $Event | Select-Object -ExpandProperty activityConnection -First 1 | Select-Object -ExpandProperty nodes 
-$EventMessage = $EventInfo.message
+$EventMessage = $EventInfo.message | Select-Object -First 1
 # Getting error detail
 $EventDetail = $Event | Select-Object -ExpandProperty activityConnection -First 1 | Select-Object -ExpandProperty nodes | Select-Object -ExpandProperty activityInfo | ConvertFrom-JSON
 $EventCDMInfo = $EventDetail.CdmInfo 
 IF($EventCDMInfo -ne $null){$EventCDMInfo = $EventCDMInfo | ConvertFrom-JSON}
-$EventErrorCause = $EventCDMInfo.cause
-$EventErrorCode = $EventErrorCause.errorCode
-$EventErrorMessage = $EventErrorCause.message
-$EventErrorReason = $EventErrorCause.reason
+$EventErrorCause = $EventCDMInfo.cause | Select-Object -First 1
+$EventErrorCode = $EventErrorCause.errorCode | Select-Object -First 1
+$EventErrorMessage = $EventErrorCause.message | Select-Object -First 1
+$EventErrorReason = $EventErrorCause.reason | Select-Object -First 1
 # Converting event times
 $EventDateUTC = Convert-RSCUNIXTime $EventDateUNIX
 IF($EventStartUNIX -ne $null){$EventStartUTC = Convert-RSCUNIXTime $EventStartUNIX}ELSE{$EventStartUTC = $null}
@@ -526,12 +527,15 @@ $EventDuration = $null
 # Override for warning message if configured
 IF($AddWarningsToErrorMessage)
 {
-IF($EventStatus -eq "PARTIAL_SUCCESS")
-{
 # Override for partial success to get the top warning
-$EventErrorMessage = $Event | Select-Object -ExpandProperty activityConnection | Select-Object -ExpandProperty nodes | Where-Object {$_.Status -eq "Warning"} | Select-Object -ExpandProperty message -First 1
+IF([string]::IsNullOrEmpty($EventErrorMessage))
+{
+$EventErrorMessage = $Event | Select-Object -ExpandProperty activityConnection | Select-Object -ExpandProperty nodes | Where-Object {$_.Status -eq "PARTIAL_SUCCESS"} | Select-Object -ExpandProperty message -First 1
+}
 # If null, could be an actual partial success warning in the messages
-IF($EventErrorMessage -eq $null){$EventErrorMessage = $Event | Select-Object -ExpandProperty activityConnection | Select-Object -ExpandProperty nodes | Where-Object {$_.Status -eq "PARTIAL_SUCCESS"} | Select-Object -ExpandProperty message -First 1}
+IF([string]::IsNullOrEmpty($EventErrorMessage))
+{
+$EventErrorMessage = $Event | Select-Object -ExpandProperty activityConnection | Select-Object -ExpandProperty nodes | Where-Object {$_.Status -eq "Warning"} | Select-Object -ExpandProperty message -First 1
 }
 }
 # Removing illegal SQL characters from object or message
