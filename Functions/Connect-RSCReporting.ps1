@@ -98,6 +98,22 @@ $RSCURL = $RSCCredentialsImport.access_token_uri
 ELSE
 {
 ##################################
+# Getting last character of script path, if not / or \ adding it for the credentials path
+##################################
+IF($ScriptDirectory -eq $null){$ScriptDirectory = Read-Host "Enter a script directory, don't use a variable, if you want to use a variable pass it on the function"}
+# Fixing Script Directory Based on OS
+IF(($IsLinux -eq $FALSE) -or ($IsLinux -eq $null))
+{
+# Fixing directory if required
+IF($LastScriptDirectoryChar -ne "\"){$ScriptDirectory += "\"}
+}
+IF ($IsLinux -eq $TRUE)
+{
+# Fixing directory if required
+IF($LastScriptDirectoryChar -ne "/"){$ScriptDirectory += "/"}
+}
+$LastScriptDirectoryChar = $ScriptDirectory.Substring($ScriptDirectory.Length - 1)
+##################################
 # Handling if no RSC URL is specificed
 ##################################
 # Setting URL file
@@ -117,22 +133,6 @@ IF($RSCURL -eq $null){$RSCURL = Read-Host "Enter RSC URL, don't use a variable, 
 $RSCURL | Out-File $RSCURLFile -Force
 }
 }
-##################################
-# Getting last character of script path, if not / or \ adding it for the credentials path
-##################################
-IF($ScriptDirectory -eq $null){$ScriptDirectory = Read-Host "Enter a script directory, don't use a variable, if you want to use a variable pass it on the function"}
-# Fixing Script Directory Based on OS
-IF(($IsLinux -eq $FALSE) -or ($IsLinux -eq $null))
-{
-# Fixing directory if required
-IF($LastScriptDirectoryChar -ne "\"){$ScriptDirectory += "\"}
-}
-IF ($IsLinux -eq $TRUE)
-{
-# Fixing directory if required
-IF($LastScriptDirectoryChar -ne "/"){$ScriptDirectory += "/"}
-}
-$LastScriptDirectoryChar = $ScriptDirectory.Substring($ScriptDirectory.Length - 1)
 ##################################
 # Importing JSON file if specified
 ##################################
