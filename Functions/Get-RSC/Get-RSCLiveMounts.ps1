@@ -178,8 +178,8 @@ $LiveMountIsReady = $LiveMount.isReady
 $LiveMountObject = $LiveMount.newVmName
 $LiveMountSourceObject = $LiveMount.sourceVm.name
 $LiveMountSourceObjectID = $LiveMount.sourceVm.name
-$LiveMountHost = $LiveMount.host.name
-$LiveMountHostID = $LiveMount.host.id
+$LiveMountHost = $LiveMount.host.name | Select-Object -First 1
+$LiveMountHostID = $LiveMount.host.id | Select-Object -First 1
 $LiveMountStatus = $LiveMount.vmStatus
 $LiveMountTimeUNIX = $LiveMount.mountTimestamp
 # Deciding if migrating
@@ -621,7 +621,7 @@ $LiveMountStatus = "MOUNTED"
 $LiveMountTimeUNIX = $LiveMount.creationDate
 $LiveMountSourceObject = $LiveMount.sourceDatabase.name
 $LiveMountSourceObjectID = $LiveMount.sourceDatabase.id
-$LiveMountHost = $LiveMount.targetInstance.logicalPath.name
+$LiveMountHost = $LiveMount.targetInstance.logicalPath.name | Select-Object -First 1
 $LiveMountIsReady = $LiveMount.isReady
 # Host ID not on the API, so getting it from the name
 $LiveMountHostID = $RSCHostList | Where-Object {$_.Host -eq $LiveMountHost} | Select-Object -ExpandProperty HostID -First 1
