@@ -8,7 +8,11 @@ Import the module into your current session:
 
 The current build is: 
 
-```1.1.9```
+```1.2.0```
+
+Changes in 1.2.0 updated 10/29/2025:
+
+    - Fixed bug in Get-RSCLivemounts for SQL DBs mounted to availability groups which was preventing a target mount host ID being displayed.
 
 Changes in 1.1.9 updated 09/15/2025:
 
