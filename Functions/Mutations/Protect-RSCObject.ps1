@@ -27,8 +27,7 @@ Specify an unprotected objectID and a valid SLADomainID to protect it with.
 
 .NOTES
 Author: Joshua Stenhouse
-Date: 08/16/2023
-Last Updated: 07/29/2025
+Date: 07/29/2025
 #>
 ################################################
 # Paramater Config
