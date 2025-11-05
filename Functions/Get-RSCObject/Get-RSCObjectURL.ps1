@@ -253,9 +253,17 @@ IF ($ObjectType -eq "ADDomain"){$RSCObjectURL = $RSCURL + "/on_prem_ad/domains/"
 # https://rubrik-gaia.my.rubrik.com/inventory_hierarchy/on_prem_ad/domain_controllers/5218aae2-cee6-5bcc-b2e8-1348f10f61d9/overview
 IF ($ObjectType -eq "ADDomainController"){$RSCObjectURL = $RSCURL + "/on_prem_ad/domain_controllers/" + $ObjectID + "/overview"}
 
+# AD Domain controllers
+# https://rubrik-dc.my.rubrik.com/inventory_hierarchy/on_prem_ad/domain_controllers/bfcb4867-959e-5329-99a4-e1160937b0a8/overview
+IF ($ObjectType -eq "ACTIVE_DIRECTORY_DOMAIN_CONTROLLER"){$RSCObjectURL = $RSCURL + "/on_prem_ad/domain_controllers/" + $ObjectID + "/overview"}
+
 # EntraID domain
 # https://rubrik-dc.my.rubrik.com/inventory_hierarchy/azure_ad/f07e6ce6-2536-40d0-8509-ed6d8c78034f/overview
 IF ($ObjectType -eq "EntraIDDomain"){$RSCObjectURL = $RSCURL + "/inventory_hierarchy/azure_ad/" + $ObjectID + "/overview"}
+
+# EntraID domain
+# https://rubrik-dc.my.rubrik.com/inventory_hierarchy/azure_ad/f07e6ce6-2536-40d0-8509-ed6d8c78034f/overview
+IF ($ObjectType -eq "ENTRA_ID_DOMAIN"){$RSCObjectURL = $RSCURL + "/inventory_hierarchy/azure_ad/" + $ObjectID + "/overview"}
 
 # If null not manageable in Polaris, or it's a fileset and I haven't figured out how to link to the host yet
 IF ($RSCObjectURL -eq $null){$RSCObjectURL = $RSCURL}

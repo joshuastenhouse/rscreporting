@@ -97,6 +97,8 @@ $RSCGraphQL = @{"operationName" = "SnapshotOfASnappableConnection";
 "query" = "query SnapshotOfASnappableConnection(`$workloadId: String!, `$first: Int, `$sortOrder: SortOrder) {
   snapshotOfASnappableConnection(workloadId: `$workloadId, first: `$first, sortOrder: `$sortOrder) {
     nodes {
+        isOnDemandSnapshot
+        id
       ... on CdmSnapshot {
         id
         date
@@ -207,6 +209,9 @@ $Object | Add-Member -MemberType NoteProperty -Name "ObjectID" -Value $ObjectID
 # Detailed section
 IF($Detailed)
 {
+# Snapshot Type
+$IsOnDemandSnapshot = $ObjectSnapshot.isOnDemandSnapshot
+IF($IsOnDemandSnapshot -eq $TRUE){$SnapshotType = "On-Demand"}ELSE{$SnapshotType = "Policy-Based"}
 # Getting detailed info
 $ArchivalInfo = $ObjectSnapshot.snapshotRetentionInfo.archivalInfos
 $ReplicationInfo = $ObjectSnapshot.snapshotRetentionInfo.replicationInfos
@@ -227,6 +232,7 @@ IF($LocalExpiration -ne $null){$LocalExpirationUTC = Convert-RSCUNIXTime $LocalE
 # Setting opposite if null
 IF($IsLocal -eq $null){$IsLocal = $False}
 # Adding additional fields
+$Object | Add-Member -MemberType NoteProperty -Name "SnapshotType" -Value $SnapshotType
 $Object | Add-Member -MemberType NoteProperty -Name "OnSourceCluster" -Value $IsLocal
 $Object | Add-Member -MemberType NoteProperty -Name "RubrikCluster" -Value $RubrikCluster
 $Object | Add-Member -MemberType NoteProperty -Name "LocalExpirationUTC" -Value $LocalExpirationUTC

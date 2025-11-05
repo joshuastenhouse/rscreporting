@@ -305,8 +305,8 @@ $RSCObjects.Add($Object) | Out-Null
 }
 # End of for each object above
 
-# Setting global variable for use in other functions so they don't have to collect it again
-$Global:RSCGlobalObjects = $RSCObjects
+# Setting global variable for use in other functions so they don't have to collect it again, unless it was a sample
+IF($SampleObjects){}ELSE{$Global:RSCGlobalObjects = $RSCObjects}
 
 # Returning array
 Return $RSCObjects

@@ -22,9 +22,16 @@ This example returns an array of all the information returned by the GraphQL end
 
 .NOTES
 Author: Joshua Stenhouse
-Date: 05/11/2023
+Date: 10/29/2025
 #>
 
+################################################
+# Paramater Config
+################################################
+	Param
+    (
+        [Parameter(Mandatory=$false)]$TagFilter
+    )
 ################################################
 # Importing Module & Running Required Functions
 ################################################
@@ -215,6 +222,11 @@ $DBSLADomainID = $DBSLADomainInfo.id
 $DBSLADomain = $DBSLADomainInfo.name
 $DBSLAAssignment = $CloudDB.slaAssignment
 $DBTags = $CloudDB.tags | Select-Object Key,value
+# Filtering tags if variable supplied
+IF($TagFilter -ne $null)
+{
+$DBTags = $DBTags | Where-Object {$_.value -match $TagFilter}
+}
 # Adding To Array for Each tag
 ForEach($DBTag in $DBTags)
 {
@@ -437,6 +449,11 @@ $VMAccountName = $VMAccountInfo.name
 $VMAccountNativeID = $VMAccountInfo.id
 $VMAccountStatus = $VMAccountInfo.status
 $VMTags = $CloudVM.tags | Select-Object Key,value
+# Filtering tags if variable supplied
+IF($TagFilter -ne $null)
+{
+$VMTags = $VMTags | Where-Object {$_.value -match $TagFilter}
+}
 # Adding To Array for Each tag
 ForEach($VMTag in $VMTags)
 {
@@ -658,6 +675,11 @@ $VolumeAccountName = $VolumeAccountInfo.name
 $VolumeAccountNativeID = $VolumeAccountInfo.id
 $VolumeAccountStatus = $VolumeAccountInfo.status
 $VolumeTags = $CloudDisk.tags  | Select-Object Key,value
+# Filtering tags if variable supplied
+IF($TagFilter -ne $null)
+{
+$VolumeTags = $VolumeTags | Where-Object {$_.value -match $TagFilter}
+}
 # Adding To Array for Each tag
 ForEach($VolumeTag in $VolumeTags)
 {

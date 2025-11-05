@@ -28,16 +28,17 @@ Specify an unprotected objectID and a valid SLADomainID to protect it with.
 .NOTES
 Author: Joshua Stenhouse
 Date: 08/16/2023
+Last Updated: 07/29/2025
 #>
 ################################################
 # Paramater Config
 ################################################
 [CmdletBinding()]
     Param (
-        [Parameter(Mandatory=$true)]
-        [string]$ObjectID,
-        [Parameter(Mandatory=$true)]
-        [string]$SLADomainID
+        [Parameter(Mandatory=$true)][string]$ObjectID,
+        [Parameter(Mandatory=$true)][string]$SLADomainID,
+        [Parameter(ParameterSetName="User")][switch]$CheckIDsExist,
+        [Parameter(ParameterSetName="User")][switch]$ShouldApplyToExistingSnapshots
     )
 
 ################################################
@@ -47,6 +48,9 @@ Date: 08/16/2023
 Import-Module RSCReporting
 # Checking connectivity, exiting function with error if not
 Test-RSCConnection
+# Validating IDs exist if switch enabled
+IF($CheckIDsExist)
+{
 # Getting protected objects to validate ObjectID
 $RSCObjects = Get-RSCObjects
 # Validating object ID exists
@@ -57,13 +61,6 @@ IF($RSCObjectInfo -eq $null)
 Write-Error "ERROR: ObjectID specified not found, check and try again.."
 Break
 }
-# Getting object type, as not all objects use the generic on-demand snapshot call
-$RSCObjectName = $RSCObjectInfo.Object
-$RSCObjectType = $RSCObjectInfo.Type
-$RSCObjectRubrikCluster = $RSCObjectInfo.RubrikCluster
-$RSCObjectRubrikClusterID = $RSCObjectInfo.RubrikClusterID
-$RSCObjectOldSLADomain = $RSCObjectInfo.SLADomain
-$RSCObjectOldSLADomainID = $RSCObjectInfo.SLADomainID
 # Getting protected objects to validate ObjectID
 $RSCSLADomains = Get-RSCSLADomains
 # Validating object ID exists
@@ -74,14 +71,15 @@ IF($RSCSLADomainInfo -eq $null)
 Write-Error "ERROR: SLADomainID specified not found, check and try again.."
 Break
 }
-# Getting object type, as not all objects use the generic on-demand snapshot call
-$RSCObjectNewSLADomain = $RSCSLADomainInfo.SLADomain
+}
 ################################################
 # API Call To RSC GraphQL URI To Assign SLA Domain
 ################################################
 # Setting timestamp
 $UTCDateTime = [System.DateTime]::UtcNow
-# Building GraphQL query
+# Default Building GraphQL query
+IF($CheckIDsExist)
+{
 $RSCGraphQL = @{"operationName" = "AssignSlasForSnappableHierarchiesMutation";
 
 "variables" = @{
@@ -117,6 +115,46 @@ $RSCGraphQL = @{"operationName" = "AssignSlasForSnappableHierarchiesMutation";
     }
   }"
 }
+}
+ELSE
+{
+# Should not apply to existing snapshots
+$RSCGraphQL = @{"operationName" = "AssignSlasForSnappableHierarchiesMutation";
+
+"variables" = @{
+        "userNote" = "SLA Assigned By Powershell SDK"
+        "globalExistingSnapshotRetention" = "RETAIN_SNAPSHOTS"
+        "globalSlaAssignType" = "protectWithSlaId"
+        "globalSlaOptionalFid" = "$SLADomainID"
+        "objectIds" = "$ObjectID"
+        "shouldApplyToExistingSnapshots" = $true
+        "shouldApplyToNonPolicySnapshots" = $false
+};
+
+"query" = "mutation AssignSlasForSnappableHierarchiesMutation(
+`$globalExistingSnapshotRetention: GlobalExistingSnapshotRetention,
+    `$globalSlaOptionalFid: UUID,
+    `$globalSlaAssignType: SlaAssignTypeEnum!,
+    `$objectIds: [UUID!]!,
+    `$applicableSnappableTypes: [WorkloadLevelHierarchy!],
+    `$shouldApplyToExistingSnapshots: Boolean,
+    `$shouldApplyToNonPolicySnapshots: Boolean,
+    `$userNote: String) {
+    assignSlasForSnappableHierarchies(
+      globalExistingSnapshotRetention: `$globalExistingSnapshotRetention,
+      globalSlaOptionalFid: `$globalSlaOptionalFid,
+      globalSlaAssignType: `$globalSlaAssignType,
+      objectIds: `$objectIds,
+      applicableSnappableTypes: `$applicableSnappableTypes,
+      shouldApplyToExistingSnapshots: `$shouldApplyToExistingSnapshots,
+      shouldApplyToNonPolicySnapshots: `$shouldApplyToNonPolicySnapshots,
+      userNote: `$userNote
+    ) {
+      success
+    }
+  }"
+}
+}
 # Querying API
 Try
 {
@@ -144,20 +182,12 @@ $Object = New-Object PSObject
 $Object | Add-Member -MemberType NoteProperty -Name "RSCInstance" -Value $RSCInstance
 $Object | Add-Member -MemberType NoteProperty -Name "Mutation" -Value "AssignSlasForSnappableHierarchiesMutation"
 $Object | Add-Member -MemberType NoteProperty -Name "RequestStatus" -Value $RSCRequest
-$Object | Add-Member -MemberType NoteProperty -Name "Object" -Value $RSCObjectName
-$Object | Add-Member -MemberType NoteProperty -Name "ObjectType" -Value $RSCObjectType
 $Object | Add-Member -MemberType NoteProperty -Name "ObjectID" -Value $ObjectID
-$Object | Add-Member -MemberType NoteProperty -Name "RubrikCluster" -Value $RSCObjectRubrikCluster
-$Object | Add-Member -MemberType NoteProperty -Name "RubrikClusterID" -Value $RSCObjectRubrikClusterID
-$Object | Add-Member -MemberType NoteProperty -Name "OldSLADomain" -Value $RSCObjectOldSLADomain
-$Object | Add-Member -MemberType NoteProperty -Name "OldSLADomainID" -Value $RSCObjectOldSLADomainID
-$Object | Add-Member -MemberType NoteProperty -Name "NewSLADomain" -Value $RSCObjectNewSLADomain
-$Object | Add-Member -MemberType NoteProperty -Name "NewSLADomainID" -Value $SLADomainID
+$Object | Add-Member -MemberType NoteProperty -Name "SLADomainID" -Value $SLADomainID
 $Object | Add-Member -MemberType NoteProperty -Name "RequestDateUTC" -Value $UTCDateTime
 $Object | Add-Member -MemberType NoteProperty -Name "RequestStatus" -Value $RequestStatus
 $Object | Add-Member -MemberType NoteProperty -Name "ErrorMessage" -Value $RSCResponse.errors.message
 $Object | Add-Member -MemberType NoteProperty -Name "ErrorReason" -Value $ErrorReason
-
 
 # Returning array
 Return $Object
