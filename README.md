@@ -8,7 +8,13 @@ Import the module into your current session:
 
 The current build is: 
 
-```1.2.0```
+```1.2.1```
+
+Changes in 1.2.1 updated 11/04/2025:
+
+    - Added -TagFilter on Get-RSCAWSTagAssignments and Write-RSCAWSTagAssignments to reduce the number of tags returned or written to only those required, but... the function still has to query all tags to filter so it likely won't reduce the overall runtime of the function in larger environments by much.
+    - Added Write-RSCFilesets and Write-RSCLiveMount functions based on customer requests for enhancement
+    - Added Get-RSCSnapshotAnalytics and Get-RSCObjectSnapshotAnalytics to show data analytics stats per snapshot and on multiple snapshots on an object including change rate, number of files created, deleted, and modified performed as part of anomal detection on all appropriately licensed clusters/objects
 
 Changes in 1.2.0 updated 10/29/2025:
 
