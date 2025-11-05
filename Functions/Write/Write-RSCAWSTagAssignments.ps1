@@ -45,7 +45,7 @@ Date: 05/11/2023
 ################################################
 	Param
     (
-        [Parameter(Mandatory=$true)]$SQLInstance,[Parameter(Mandatory=$true)]$SQLDB,$SQLTable,
+        [Parameter(Mandatory=$true)]$SQLInstance,[Parameter(Mandatory=$true)]$SQLDB,$SQLTable,$TagFilter,
         [switch]$DropExistingRows,
         [switch]$DontUseTempDB
     )
@@ -193,7 +193,7 @@ $UTCDateTime = [System.DateTime]::UtcNow
 ################################################
 # Getting tags assigned to all AWS objects
 ################################################
-$RSCTagAssignments = Get-RSCAWSTagAssignments
+$RSCTagAssignments = Get-RSCAWSTagAssignments -TagFilter $TagFilter
 ################################################
 # Processing Tag Assignments
 ################################################
