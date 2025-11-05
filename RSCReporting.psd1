@@ -1,6 +1,6 @@
 @{
 	RootModule 		= 'RSCReporting.psm1' 
-	ModuleVersion 		= '1.2.0' 
+	ModuleVersion 		= '1.2.1' 
 	CompatiblePSEditions 	= 'Desktop', 'Core' 
 	GUID 			= 'dc18a919-f4bf-4da2-8c76-24b68fa33ef0' 
 	Author 			= 'Joshua Stenhouse' 
@@ -97,6 +97,7 @@ FunctionsToExport = @(
 "Get-RSCObjectLastBackup",
 "Get-RSCObjectOldestSnapshot",
 "Get-RSCObjects",
+"Get-RSCObjectSnapshotAnalytics",
 "Get-RSCObjectSnapshots",
 "Get-RSCObjectsPendingFirstFull",
 "Get-RSCObjectStorageUsage",
@@ -128,6 +129,7 @@ FunctionsToExport = @(
 "Get-RSCSLADomainsByCluster",
 "Get-RSCSLADomainsLogSettings",
 "Get-RSCSLAManagedVolumes",
+"Get-RSCSnapshotAnalytics",
 "Get-RSCSSOGroupRoleAssignments",
 "Get-RSCSSOGroups",
 "Get-RSCSSOGroupUsers",
@@ -199,6 +201,8 @@ FunctionsToExport = @(
 "Write-RSCEventsPartialBackup",
 "Write-RSCEventsRecovery",
 "Write-RSCEventsReplication",
+"Write-RSCFilesets",
+"Write-RSCLiveMounts",
 "Write-RSCObjects",
 "Write-RSCObjectStorageUsage",
 "Write-RSCSLADomains",
