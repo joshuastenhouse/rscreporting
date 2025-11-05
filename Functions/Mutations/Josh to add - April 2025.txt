@@ -1,4 +1,0 @@
-Register-VMwarevCenter
-Unregister-VMwarevCenter
-Get-VMwarevCenterRegistrationStatus
-
