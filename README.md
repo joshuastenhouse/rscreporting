@@ -8,7 +8,11 @@ Import the module into your current session:
 
 The current build is: 
 
-```1.2.1```
+```1.2.2```
+
+Changes in 1.2.2 updated 11/12/2025:
+
+    - Set the snapshot to null for oracle databases on Get-RSCLivemounts to remove error when trying to write the results to MSSQL using Write-RSCLivemounts as I was returning a string that said "NoSnapshotOnTheAPI". Rubrik engineering need to add recoveryPoint to the OracleLiveMountListQuery like it is on the MssqlDatabaseLiveMountListQuery for this to be populated for Oracle like it is for every other live mount.
 
 Changes in 1.2.1 updated 11/04/2025:
 
