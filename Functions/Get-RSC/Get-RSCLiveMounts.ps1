@@ -1100,7 +1100,7 @@ ForEach ($LiveMount in $RSCObjectList)
 {
 # Setting variables
 $LiveMountID = $LiveMount.id
-$LiveMountSnapshotUNIX = $null
+$LiveMountSnapshotUNIX = $null # Not returned on the API still as of 11/12/2025. JS.
 $LiveMountRubrikCluster = $LiveMount.cluster.name
 $LiveMountRubrikClusterID = $LiveMount.cluster.id
 $LiveMountObject = $LiveMount.mountedDatabaseName
@@ -1145,8 +1145,6 @@ $RSCLiveMountHours = $null
 $RSCLiveMountMinutes = $null
 $RSCLiveMountDuration = $null
 }
-# Overiding snapshot as not available on API as of 08/17/23, don't want user to think it's a bug with the SDK!
-$LiveMountSnapshotUTC = "NotAvailableOnAPI"
 # Adding To Array
 $Object = New-Object PSObject
 $Object | Add-Member -MemberType NoteProperty -Name "RSCInstance" -Value $RSCInstance
