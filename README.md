@@ -8,7 +8,11 @@ Import the module into your current session:
 
 The current build is: 
 
-```1.2.2```
+```1.2.3```
+
+Changes in 1.2.3 updated 11/18/2025:
+
+    - Changed MountPath for Oracle DBs on Get-RSCLiveMounts from "N/A" to the targetHostMount field on the API which also populates the field in Write-RSCLiveMounts
 
 Changes in 1.2.2 updated 11/12/2025:
 
