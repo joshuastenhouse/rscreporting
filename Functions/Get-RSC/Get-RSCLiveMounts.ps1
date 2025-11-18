@@ -1072,6 +1072,7 @@ fragment OracleLiveMountFragment on OracleLiveMount {
   cdmId
   mountedDatabaseName
   creationDate
+  targetHostMount
   __typename
 }"
 }
@@ -1109,7 +1110,7 @@ $LiveMountTimeUNIX = $LiveMount.creationDate
 $LiveMountSourceObject = $LiveMount.sourceDatabase.name
 $LiveMountSourceObjectID = $LiveMount.sourceDatabase.id
 $LiveMountIsReady = $TRUE
-$LiveMountPath = "N/A"
+$LiveMountPath = $LiveMount.targetHostMount
 # Host ID
 $LiveMountHost = $LiveMount.targetOracleHost.name
 $LiveMountHostID = $RSCHostList | Where-Object {$_.Host -eq $LiveMountHost} | Select-Object -ExpandProperty HostID -First 1
