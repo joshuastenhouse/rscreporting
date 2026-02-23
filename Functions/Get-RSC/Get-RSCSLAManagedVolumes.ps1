@@ -1,7 +1,7 @@
 ################################################
 # Function - Get-RSCSLAManagedVolumes - Getting All SLA Managed Volumes connected to RSC
 ################################################
-Function Get-RSCSLAManagedVolumes {
+Function Get-RSCSLAManagedVolume {
 
 <#
 .SYNOPSIS
@@ -24,7 +24,9 @@ This example returns an array of all the information returned by the GraphQL end
 Author: Joshua Stenhouse
 Date: 05/11/2023
 #>
-
+[CmdletBinding()]
+[Alias('Get-RSCSLAManagedVolumes')]
+param()
 ################################################
 # Importing Module & Running Required Functions
 ################################################

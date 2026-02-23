@@ -1,7 +1,7 @@
 ################################################
 # Creating the Get-RSCObjectSnapshots function
 ################################################
-Function Get-RSCObjectSnapshots {
+Function Get-RSCObjectSnapshot {
 
 <#
 .SYNOPSIS
@@ -32,6 +32,7 @@ Date: 05/11/2023
 # Paramater Config
 ################################################
 [CmdletBinding(DefaultParameterSetName = "List")]
+[Alias('Get-RSCObjectSnapshots')]
 Param(
       [Parameter(
           ParameterSetName = "ObjectID",

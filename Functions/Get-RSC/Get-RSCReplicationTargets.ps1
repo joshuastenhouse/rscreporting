@@ -1,7 +1,7 @@
 ################################################
 # Function - Get-RSCReplicationTargets - Getting Replication Targets connected to RSC
 ################################################
-Function Get-RSCReplicationTargets {
+Function Get-RSCReplicationTarget {
 
 <#
 .SYNOPSIS
@@ -24,7 +24,9 @@ This example returns an array of all the information returned by the GraphQL end
 Author: Joshua Stenhouse
 Date: 05/11/2023
 #>
-
+[CmdletBinding()]
+[Alias('Get-RSCReplicationTargets')]
+param()
 ################################################
 # Importing Module & Running Required Functions
 ################################################

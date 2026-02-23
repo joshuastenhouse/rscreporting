@@ -1,7 +1,7 @@
 ################################################
 # Function - Get-RSCObjectIDs - Getting all object IDs visible to the RSC instance
 ################################################
-Function Get-RSCObjectIDs {
+Function Get-RSCObjectID {
 
 <#
 .SYNOPSIS
@@ -27,6 +27,8 @@ Date: 08/21/2024
 ################################################
 # Paramater Config
 ################################################
+[CmdletBinding()]
+[Alias('Get-RSCObjectIDs')]
 Param
     (
         [Parameter(Mandatory=$false)]$ObjectQueryLimit

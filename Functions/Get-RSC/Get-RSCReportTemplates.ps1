@@ -1,7 +1,7 @@
 ################################################
 # Creating the Get-RSCReportTemplates function
 ################################################
-Function Get-RSCReportTemplates {
+Function Get-RSCReportTemplate {
 
 <#
 .SYNOPSIS
@@ -24,7 +24,9 @@ This example returns an array of all the information returned by the GraphQL end
 Author: Joshua Stenhouse
 Date: 05/11/2023
 #>
-
+[CmdletBinding()]
+[Alias('Get-RSCReportTemplates')]
+param()
 # Importing Module 
 Import-Module RSCReporting
 # Creating array

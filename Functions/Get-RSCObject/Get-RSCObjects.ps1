@@ -1,7 +1,7 @@
 ################################################
 # Function - Get-RSCObjects - Getting all objects visible to the RSC instance
 ################################################
-Function Get-RSCObjects {
+Function Get-RSCObject {
 
 <#
 .SYNOPSIS
@@ -27,6 +27,8 @@ Date: 05/11/2023
 ################################################
 # Paramater Config
 ################################################
+[CmdletBinding()]
+[Alias('Get-RSCObjects')]
 Param
     (
         $ObjectType,

@@ -1,7 +1,7 @@
 ################################################
 # Function - Get-RSCUsers - Getting Users within RSC
 ################################################
-Function Get-RSCUsers {
+Function Get-RSCUser {
 
 <#
 .SYNOPSIS
@@ -24,7 +24,9 @@ This example returns an array of all the information returned by the GraphQL end
 Author: Joshua Stenhouse
 Date: 05/11/2023
 #>
-
+[CmdletBinding()]
+[Alias('Get-RSCUsers')]
+param()
 ################################################
 # Importing Module & Running Required Functions
 ################################################

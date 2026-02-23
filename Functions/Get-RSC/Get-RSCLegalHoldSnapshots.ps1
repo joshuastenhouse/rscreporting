@@ -1,7 +1,7 @@
 ################################################
 # Function - Get-RSCLegalHoldSnapshots - Getting all snapshots on legal hold
 ################################################
-Function Get-RSCLegalHoldSnapshots {
+Function Get-RSCLegalHoldSnapshot {
 
 <#
 .SYNOPSIS
@@ -24,7 +24,9 @@ This example returns an array of all the information returned by the GraphQL end
 Author: Joshua Stenhouse
 Date: 08/22/2023
 #>
-
+[CmdletBinding()]
+[Alias('Get-RSCLegalHoldSnapshots')]
+param()
 ################################################
 # Importing Module & Running Required Functions
 ################################################

@@ -1,7 +1,7 @@
 ################################################
 # Function - Get-RSCObjectTypes - Getting all object types visible to the RSC instance
 ################################################
-Function Get-RSCObjectTypes {
+Function Get-RSCObjectType {
 
 <#
 .SYNOPSIS
@@ -27,6 +27,8 @@ Date: 05/11/2023
 ################################################
 # Paramater Config
 ################################################
+[CmdletBinding()]
+[Alias('Get-RSCObjectTypes')]
 Param
     (
         [Parameter(ParameterSetName="User")][switch]$GetLiveViaObjectQuery
