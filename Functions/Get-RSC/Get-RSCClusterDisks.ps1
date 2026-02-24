@@ -1,7 +1,7 @@
 ################################################
 # Function - Get-RSCClusterDisks - Getting CDM Cluster Disks in each node attached to RSC
 ################################################
-Function Get-RSCClusterDisks {
+Function Get-RSCClusterDisk {
 
 <#
 .SYNOPSIS
@@ -24,7 +24,9 @@ This example returns an array of all the information returned by the GraphQL end
 Author: Joshua Stenhouse
 Date: 05/11/2023
 #>
-
+[CmdletBinding()]
+[Alias('Get-RSCClusterDisks')]
+param()
 ################################################
 # Importing Module & Running Required Functions
 ################################################

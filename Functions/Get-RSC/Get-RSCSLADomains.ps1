@@ -1,7 +1,7 @@
 ################################################
 # Function - Get-RSCSLADomains - Getting all SLA domains in RSC
 ################################################
-Function Get-RSCSLADomains {
+Function Get-RSCSLADomain {
 
 <#
 .SYNOPSIS
@@ -24,7 +24,9 @@ This example returns an array of all the information returned by the GraphQL end
 Author: Joshua Stenhouse
 Date: 05/11/2023
 #>
-
+[CmdletBinding()]
+[Alias('Get-RSCSLADomains')]
+param()
 ################################################
 # Importing Module & Running Required Functions
 ################################################

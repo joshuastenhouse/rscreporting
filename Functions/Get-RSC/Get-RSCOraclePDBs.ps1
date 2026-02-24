@@ -1,7 +1,7 @@
 ################################################
 # Function - Get-RSCOraclePDBs - Getting all Microsoft SQL Databases connected to the RSC instance
 ################################################
-Function Get-RSCOraclePDBs {
+Function Get-RSCOraclePDB {
 
 <#
 .SYNOPSIS
@@ -24,7 +24,9 @@ This example returns an array of all the information returned by the GraphQL end
 Author: Joshua Stenhouse
 Date: 05/11/2023
 #>
-
+[CmdletBinding()]
+[Alias('Get-RSCOraclePDBs')]
+param()
 ################################################
 # Importing Module & Running Required Functions
 ################################################

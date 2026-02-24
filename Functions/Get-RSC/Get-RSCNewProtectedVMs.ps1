@@ -1,7 +1,7 @@
 ################################################
 # Function - Get-RSCNewProtectedVMs - Getting all new VMs protected in the RSC instance
 ################################################
-Function Get-RSCNewProtectedVMs {
+Function Get-RSCNewProtectedVM {
 
 <#
 .SYNOPSIS
@@ -27,6 +27,8 @@ Date: 05/11/2023
 ################################################
 # Paramater Config
 ################################################
+[CmdletBinding()]
+[Alias('Get-RSCNewProtectedVMs')]
 Param
     (
         $DaysToCapture,

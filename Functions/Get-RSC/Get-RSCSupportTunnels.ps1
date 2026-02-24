@@ -1,7 +1,7 @@
 ################################################
 # Function - Get-RSCSupportTunnels - Getting all Cluster support tunnels
 ################################################
-Function Get-RSCSupportTunnels {
+Function Get-RSCSupportTunnel {
 
 <#
 .SYNOPSIS
@@ -24,7 +24,9 @@ This example returns an array of all the information returned by the GraphQL end
 Author: Joshua Stenhouse
 Date: 05/11/2023
 #>
-
+[CmdletBinding()]
+[Alias('Get-RSCSupportTunnels')]
+param()
 ################################################
 # Importing Module & Running Required Functions
 ################################################

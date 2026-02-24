@@ -1,7 +1,7 @@
 ################################################
 # Function - Get-RSCSAPSystems - Getting all RSC SAP Systems connected to the RSC instance
 ################################################
-Function Get-RSCSAPSystems {
+Function Get-RSCSAPSystem {
 
 <#
 .SYNOPSIS
@@ -24,7 +24,9 @@ This example returns an array of all the information returned by the GraphQL end
 Author: Joshua Stenhouse
 Date: 05/11/2023
 #>
-
+[CmdletBinding()]
+[Alias('Get-RSCSAPSystems')]
+param()
 ################################################
 # Importing Module & Running Required Functions
 ################################################

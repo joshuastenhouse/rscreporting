@@ -1,7 +1,7 @@
 ################################################
 # Function - Get-RSCAHVVMs - Getting all AHV VMs connected to the RSC instance
 ################################################
-Function Get-RSCAHVVMs {
+Function Get-RSCAHVVM {
 
 <#
 .SYNOPSIS
@@ -21,7 +21,9 @@ This example returns an array of all the information returned by the GraphQL end
 Author: Joshua Stenhouse
 Date: 05/11/2023
 #>
-
+[CmdletBinding()]
+[Alias('Get-RSCAHVVMs')]
+param()
 ################################################
 # Importing Module & Running Required Functions
 ################################################

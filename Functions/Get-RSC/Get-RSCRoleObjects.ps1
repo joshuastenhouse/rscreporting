@@ -1,7 +1,7 @@
 ################################################
 # Function - Get-RSCRoleObjects - Getting all objects assigned to Roles within RSC
 ################################################
-Function Get-RSCRoleObjects {
+Function Get-RSCRoleObject {
 
 <#
 .SYNOPSIS
@@ -29,6 +29,7 @@ Date: 07/15/24
 # Paramater Config
 ################################################
 [CmdletBinding()]
+[Alias('Get-RSCRoleObjects')]
     Param (
         [Parameter(ValueFromPipeline=$true)]
         [array]$PipelineArray,

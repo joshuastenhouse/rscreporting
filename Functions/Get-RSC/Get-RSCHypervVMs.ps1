@@ -1,7 +1,7 @@
 ################################################
 # Function - Get-RSCHypervVMs - Getting all Hyperv VMs connected to the RSC instance
 ################################################
-Function Get-RSCHypervVMs {
+Function Get-RSCHypervVM {
 
 <#
 .SYNOPSIS
@@ -24,7 +24,9 @@ This example returns an array of all the information returned by the GraphQL end
 Author: Joshua Stenhouse
 Date: 05/11/2023
 #>
-
+[CmdletBinding()]
+[Alias('Get-RSCHypervVMs')]
+param()
 ################################################
 # Importing Module & Running Required Functions
 ################################################

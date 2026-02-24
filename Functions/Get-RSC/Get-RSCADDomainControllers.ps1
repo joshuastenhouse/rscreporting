@@ -1,7 +1,7 @@
 ################################################
 # Function - Get-RSCADDomainControllers - Getting All Active Directory Domain Controllers Protected by RSC
 ################################################
-Function Get-RSCADDomainControllers {
+Function Get-RSCADDomainController {
 
 <#
 .SYNOPSIS
@@ -24,7 +24,9 @@ This example returns an array of all the information returned by the GraphQL end
 Author: Joshua Stenhouse
 Date: 07/08/2024
 #>
-
+[CmdletBinding()]
+[Alias('Get-RSCADDomainControllers')]
+param()
 ################################################
 # Importing Module & Running Required Functions
 ################################################

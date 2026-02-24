@@ -1,7 +1,7 @@
 ################################################
 # Function - Get-RSCArchiveTargets - Getting Archive Targets connected to RSC
 ################################################
-Function Get-RSCArchiveTargets {
+Function Get-RSCArchiveTarget {
 
 <#
 .SYNOPSIS
@@ -21,7 +21,9 @@ This example returns an array of all the information returned by the GraphQL end
 Author: Joshua Stenhouse
 Date: 05/11/2023
 #>
-
+[CmdletBinding()]
+[Alias('Get-RSCArchiveTargets')]
+param()
 ################################################
 # Importing Module & Running Required Functions
 ################################################
