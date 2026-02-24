@@ -1,7 +1,7 @@
 ################################################
 # Function - Get-RSCMSSQLDatabases - Getting all Microsoft SQL Databases connected to the RSC instance
 ################################################
-Function Get-RSCMSSQLDatabases {
+Function Get-RSCMSSQLDatabase {
 
 <#
 .SYNOPSIS
@@ -27,6 +27,8 @@ Date: 05/11/2023
 ################################################
 # Paramater Config
 ################################################
+[CmdletBinding()]
+[Alias('Get-RSCMSSQLDatabases')]
 Param
     (
         [Parameter(ParameterSetName="User")][switch]$DisableLogging,

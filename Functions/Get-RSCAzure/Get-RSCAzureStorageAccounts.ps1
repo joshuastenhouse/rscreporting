@@ -1,7 +1,7 @@
 ################################################
 # Function - Get-RSCAzureStorageAccounts - Getting All Azure Storage Accounts connected to RSC
 ################################################
-Function Get-RSCAzureStorageAccounts {
+Function Get-RSCAzureStorageAccount {
 
 <#
 .SYNOPSIS
@@ -24,7 +24,9 @@ This example returns an array of all the information returned by the GraphQL end
 Author: Joshua Stenhouse
 Date: 07/09/2024
 #>
-
+[CmdletBinding()]
+[Alias('Get-RSCAzureStorageAccounts')]
+param()
 ################################################
 # Importing Module & Running Required Functions
 ################################################

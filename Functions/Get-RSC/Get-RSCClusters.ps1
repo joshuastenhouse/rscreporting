@@ -1,7 +1,7 @@
 ################################################
 # Function - Get-RSCClusters - Getting CDM Clusters attached to RSC
 ################################################
-Function Get-RSCClusters {
+Function Get-RSCCluster {
 
 <#
 .SYNOPSIS
@@ -28,6 +28,8 @@ Date: 05/11/2023
 ################################################
 # Paramater Config
 ################################################
+[CmdletBinding()]
+[Alias('Get-RSCClusters')]
 Param
     (
         [Parameter(ParameterSetName="User")][switch]$GetObjectStats

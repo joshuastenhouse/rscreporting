@@ -1,7 +1,7 @@
 ################################################
 # Function - Get-RSCUserRoleAssignments - Getting Users Role Assignments within RSC
 ################################################
-Function Get-RSCUserRoleAssignments {
+Function Get-RSCUserRoleAssignment {
 
 <#
 .SYNOPSIS
@@ -24,7 +24,9 @@ This example returns an array of all the information returned by the GraphQL end
 Author: Joshua Stenhouse
 Date: 05/11/2023
 #>
-
+[CmdletBinding()]
+[Alias('Get-RSCUserRoleAssignments')]
+param()
 ################################################
 # Importing Module & Running Required Functions
 ################################################

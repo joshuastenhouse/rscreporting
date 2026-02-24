@@ -1,7 +1,7 @@
 ################################################
 # Function - Get-RSCDB2Instances - Getting all DB2 Instances connected to the RSC instance
 ################################################
-Function Get-RSCDB2Instances {
+Function Get-RSCDB2Instance {
 
 <#
 .SYNOPSIS
@@ -24,7 +24,9 @@ This example returns an array of all the information returned by the GraphQL end
 Author: Joshua Stenhouse
 Date: 05/11/2023
 #>
-
+[CmdletBinding()]
+[Alias('Get-RSCDB2Instances')]
+param()
 ################################################
 # Importing Module & Running Required Functions
 ################################################

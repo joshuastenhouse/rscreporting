@@ -1,7 +1,7 @@
 ################################################
 # Creating the Get-RSCSLADomainsLogSettings function
 ################################################
-Function Get-RSCSLADomainsLogSettings {
+Function Get-RSCSLADomainsLogSetting {
 	
 <#
 .SYNOPSIS
@@ -29,6 +29,8 @@ Date: 05/11/2023
 ################################################
 # Paramater Config
 ################################################
+[CmdletBinding()]
+[Alias('Get-RSCSLADomainsLogSettings')]
 Param (
     [Parameter(Mandatory=$true)]
     [String]$SLADomainID

@@ -1,7 +1,7 @@
 ################################################
 # Function - Get-RSCOracleDatabases - Getting all Oracle Databases connected to the RSC instance
 ################################################
-Function Get-RSCOracleDatabases {
+Function Get-RSCOracleDatabase {
 	
 	<#
 .SYNOPSIS
@@ -28,6 +28,8 @@ Date: 05/11/2023
 ################################################
 # Paramater Config
 ################################################
+[CmdletBinding()]
+[Alias('Get-RSCOracleDatabases')]
 Param
     (
         [Parameter(ParameterSetName="User")][switch]$GetSLADomainLogSettings,

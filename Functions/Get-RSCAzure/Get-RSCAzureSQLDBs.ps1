@@ -1,7 +1,7 @@
 ################################################
 # Function - Get-RSCAzureSQLDBs - Getting all AzureSQLDatabases connected to the RSC instance
 ################################################
-Function Get-RSCAzureSQLDBs {
+Function Get-RSCAzureSQLDB {
 
 <#
 .SYNOPSIS
@@ -24,7 +24,9 @@ This example returns an array of all the information returned by the GraphQL end
 Author: Joshua Stenhouse
 Date: 05/11/2023
 #>
-
+[CmdletBinding()]
+[Alias('Get-RSCAzureSQLDBs')]
+param()
 ################################################
 # Importing Module & Running Required Functions
 ################################################

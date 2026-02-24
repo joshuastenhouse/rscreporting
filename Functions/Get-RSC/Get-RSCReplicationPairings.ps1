@@ -1,7 +1,7 @@
 ################################################
 # Function - Get-RSCReplicationPairings - Getting Replication Pairings Configuered on RSC
 ################################################
-Function Get-RSCReplicationPairings {
+Function Get-RSCReplicationPairing {
 
 <#
 .SYNOPSIS
@@ -24,7 +24,9 @@ This example returns an array of all the information returned by the GraphQL end
 Author: Joshua Stenhouse
 Date: 11/14/2024
 #>
-
+[CmdletBinding()]
+[Alias('Get-RSCReplicationPairings')]
+param()
 ################################################
 # Importing Module & Running Required Functions
 ################################################

@@ -1,7 +1,7 @@
 ################################################
 # Function - Get-RSCClusterNodes - Getting CDM Cluster Nodes attached to RSC
 ################################################
-Function Get-RSCClusterNodes {
+Function Get-RSCClusterNode {
 
 <#
 .SYNOPSIS
@@ -24,7 +24,9 @@ This example returns an array of all the information returned by the GraphQL end
 Author: Joshua Stenhouse
 Date: 05/11/2023
 #>
-
+[CmdletBinding()]
+[Alias('Get-RSCClusterNodes')]
+param()
 ################################################
 # Importing Module & Running Required Functions
 ################################################

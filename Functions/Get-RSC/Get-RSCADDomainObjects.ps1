@@ -1,7 +1,7 @@
 ################################################
 # Function - Get-RSCADDomainObjects - Getting All Active Directory Domain Objects For the AD Domain Specified
 ################################################
-Function Get-RSCADDomainObjects {
+Function Get-RSCADDomainObject {
 
 <#
 .SYNOPSIS
@@ -27,7 +27,9 @@ Date: 07/08/2024
 
 ################################################
 # Paramater Config
-################################################	
+################################################
+[CmdletBinding()]
+[Alias('Get-RSCADDomainObjects')]
 	Param
     (
     [Parameter(Mandatory=$true)]

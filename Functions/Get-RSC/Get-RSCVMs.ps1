@@ -1,7 +1,7 @@
 ################################################
 # Function - Get-RSCVMs - Getting all VMs visible to the RSC instance
 ################################################
-Function Get-RSCVMs {
+Function Get-RSCVM {
 
 <#
 .SYNOPSIS
@@ -27,6 +27,8 @@ Date: 05/11/2023
 ################################################
 # Paramater Config
 ################################################
+[CmdletBinding()]
+[Alias('Get-RSCVMs')]
 Param
     (
         $ObjectType,

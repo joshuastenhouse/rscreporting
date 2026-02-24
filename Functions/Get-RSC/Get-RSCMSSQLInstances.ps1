@@ -1,7 +1,7 @@
 ################################################
 # Function - Get-RSCMSSQLInstances - Getting all MSSQL instances visible to the RSC instance
 ################################################
-Function Get-RSCMSSQLInstances {
+Function Get-RSCMSSQLInstance {
 
 <#
 .SYNOPSIS
@@ -24,7 +24,9 @@ This example returns an array of all the information returned by the GraphQL end
 Author: Joshua Stenhouse
 Date: 05/11/2023
 #>
-
+[CmdletBinding()]
+[Alias('Get-RSCMSSQLInstances')]
+param()
 ################################################
 # Importing Module & Running Required Functions
 ################################################

@@ -1,7 +1,7 @@
 ################################################
 # Function - Get-RSCLiveMounts - Getting all Live Mounts on RSC
 ################################################
-Function Get-RSCLiveMounts {
+Function Get-RSCLiveMount {
 
 <#
 .SYNOPSIS
@@ -24,7 +24,9 @@ This example returns an array of all the information returned by the GraphQL end
 Author: Joshua Stenhouse
 Date: 05/11/2023
 #>
-
+[CmdletBinding()]
+[Alias('Get-RSCLiveMounts')]
+param()
 ################################################
 # Importing Module & Running Required Functions
 ################################################

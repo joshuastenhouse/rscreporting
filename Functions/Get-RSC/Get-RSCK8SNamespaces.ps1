@@ -1,7 +1,7 @@
 ################################################
 # Function - Get-RSCK8SNamespaces - Getting all K*S Namespaces connected to the RSC instance
 ################################################
-Function Get-RSCK8SNamespaces {
+Function Get-RSCK8SNamespace {
 
 <#
 .SYNOPSIS
@@ -24,7 +24,9 @@ This example returns an array of all the information returned by the GraphQL end
 Author: Joshua Stenhouse
 Date: 05/11/2023
 #>
-
+[CmdletBinding()]
+[Alias('Get-RSCK8SNamespaces')]
+param()
 ################################################
 # Importing Module & Running Required Functions
 ################################################

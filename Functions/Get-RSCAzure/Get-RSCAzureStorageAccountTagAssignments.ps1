@@ -1,7 +1,7 @@
 ################################################
 # Function - Get-RSCAzureStorageAccountTagAssignments - Getting Azure Tags assigned to Storage Accounts visible to RSC
 ################################################
-Function Get-RSCAzureStorageAccountTagAssignments {
+Function Get-RSCAzureStorageAccountTagAssignment {
 
 <#
 .SYNOPSIS
@@ -24,7 +24,9 @@ This example returns an array of all the information returned by the GraphQL end
 Author: Joshua Stenhouse
 Date: 07/09/2024
 #>
-
+[CmdletBinding()]
+[Alias('Get-RSCAzureStorageAccountTagAssignments')]
+param()
 ################################################
 # Importing Module & Running Required Functions
 ################################################

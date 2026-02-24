@@ -1,7 +1,7 @@
 ################################################
 # Function - Get-RSCEntraIDDomains - Getting All EntraID Domains Protected by RSC
 ################################################
-Function Get-RSCEntraIDDomains {
+Function Get-RSCEntraIDDomain {
 
 <#
 .SYNOPSIS
@@ -24,7 +24,9 @@ This example returns an array of all the information returned by the GraphQL end
 Author: Joshua Stenhouse
 Date: 07/08/2024
 #>
-
+[CmdletBinding()]
+[Alias('Get-RSCEntraIDDomains')]
+param()
 ################################################
 # Importing Module & Running Required Functions
 ################################################
