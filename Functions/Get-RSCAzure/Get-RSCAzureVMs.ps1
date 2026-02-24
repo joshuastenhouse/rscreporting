@@ -1,7 +1,7 @@
 ################################################
 # Function - Get-RSCAzureVMs - Getting All RSCAzureVMs connected to RSC
 ################################################
-Function Get-RSCAzureVMs {
+Function Get-RSCAzureVM {
 
 <#
 .SYNOPSIS
@@ -24,7 +24,9 @@ This example returns an array of all the information returned by the GraphQL end
 Author: Joshua Stenhouse
 Date: 07/09/2024
 #>
-
+[CmdletBinding()]
+[Alias('Get-RSCAzureVMs')]
+param()
 ################################################
 # Importing Module & Running Required Functions
 ################################################

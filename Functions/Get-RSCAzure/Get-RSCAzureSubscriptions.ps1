@@ -1,7 +1,7 @@
 ################################################
 # Function - Get-RSCAzureSubscriptions - Getting Azure Subscriptions connected to RSC
 ################################################
-Function Get-RSCAzureSubscriptions {
+Function Get-RSCAzureSubscription {
 
 <#
 .SYNOPSIS
@@ -24,7 +24,9 @@ This example returns an array of all the information returned by the GraphQL end
 Author: Joshua Stenhouse
 Date: 07/09/2024
 #>
-
+[CmdletBinding()]
+[Alias('Get-RSCAzureSubscriptions')]
+param()
 ################################################
 # Importing Module & Running Required Functions
 ################################################

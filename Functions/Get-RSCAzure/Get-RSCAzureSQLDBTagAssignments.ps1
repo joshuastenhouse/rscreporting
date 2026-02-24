@@ -1,7 +1,7 @@
 ################################################
 # Function - Get-RSCAzureSQLDBTagAssignments - Getting Azure Tags assigned to SQLDBs visible to RSC
 ################################################
-Function Get-RSCAzureSQLDBTagAssignments {
+Function Get-RSCAzureSQLDBTagAssignment {
 
 <#
 .SYNOPSIS
@@ -24,7 +24,9 @@ This example returns an array of all the information returned by the GraphQL end
 Author: Joshua Stenhouse
 Date: 07/09/2024
 #>
-
+[CmdletBinding()]
+[Alias('Get-RSCAzureSQLDBTagAssignments')]
+param()
 ################################################
 # Importing Module & Running Required Functions
 ################################################

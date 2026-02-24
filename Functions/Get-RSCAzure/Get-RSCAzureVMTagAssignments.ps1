@@ -1,7 +1,7 @@
 ################################################
 # Function - Get-RSCAzureVMTagAssignments - Getting Azure Tags assigned to VMs visible to RSC
 ################################################
-Function Get-RSCAzureVMTagAssignments {
+Function Get-RSCAzureVMTagAssignment {
 
 <#
 .SYNOPSIS
@@ -24,7 +24,9 @@ This example returns an array of all the information returned by the GraphQL end
 Author: Joshua Stenhouse
 Date: 07/09/2024
 #>
-
+[CmdletBinding()]
+[Alias('Get-RSCAzureVMTagAssignments')]
+param()
 ################################################
 # Importing Module & Running Required Functions
 ################################################
