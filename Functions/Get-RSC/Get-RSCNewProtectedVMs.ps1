@@ -1,9 +1,9 @@
 ################################################
 # Function - Get-RSCNewProtectedVMs - Getting all new VMs protected in the RSC instance
 ################################################
-Function Get-RSCNewProtectedVM {
+function Get-RSCNewProtectedVM {
 
-<#
+    <#
 .SYNOPSIS
 A Rubrik Security Cloud (RSC) Reporting Module Function returning a list of every new protected VM in RSV.
 
@@ -24,31 +24,32 @@ This example returns an array of all the information returned by the GraphQL end
 Author: Joshua Stenhouse
 Date: 05/11/2023
 #>
-################################################
-# Paramater Config
-################################################
-[CmdletBinding()]
-[Alias('Get-RSCNewProtectedVMs')]
-Param
+    ################################################
+    # Paramater Config
+    ################################################
+    [CmdletBinding()]
+    [Alias('Get-RSCNewProtectedVMs')]
+    param
     (
         $DaysToCapture,
-        [Parameter(ParameterSetName="User")][switch]$Logging
+        [Parameter(ParameterSetName = "User")][switch]$Logging
     )
 
-################################################
-# Importing Module & Running Required Functions
-################################################
-# If event limit null, setting to value
-IF($DaysToCapture -eq $null){$DaysToCapture = 7}
-# Importing the module is it needs other modules
-Import-Module RSCReporting
-# Checking connectivity, exiting function with error if not connected
-Test-RSCConnection
-# Getting RSC VMs
-$RSCVMList = Get-RSCVMs
-# Filtering
-$RSCVMListFiltered = $RSCVMList | Where {(($_.ProtectedDays -gt 0) -and ($_.ProtectedDays -le $DaysToCapture))}
-# Returning array
-Return $RSCVMListFiltered
-# End of function
+    ################################################
+    # Importing Module & Running Required Functions
+    ################################################
+    # If event limit null, setting to value
+    if ($DaysToCapture -eq $null) { $DaysToCapture = 7 }
+    # Importing the module is it needs other modules
+    Import-Module RSCReporting
+    # Checking connectivity, exiting function with error if not connected
+    Test-RSCConnection
+    # Getting RSC VMs
+    $RSCVMList = Get-RSCVMs
+    # Filtering
+    $RSCVMListFiltered = $RSCVMList | where { (($_.ProtectedDays -gt 0) -and ($_.ProtectedDays -le $DaysToCapture)) }
+    # Returning array
+    return $RSCVMListFiltered
+    # End of function
 }
+

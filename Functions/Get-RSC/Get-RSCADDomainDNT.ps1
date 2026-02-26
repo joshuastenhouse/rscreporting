@@ -1,9 +1,9 @@
 ################################################
 # Function - Get-RSCADDomainDNT - Getting All Active Directory Domain DNTs For the AD DNT & Snapshot Specified
 ################################################
-Function Get-RSCADDomainDNT {
+function Get-RSCADDomainDNT {
 
-<#
+    <#
 .SYNOPSIS
 A Rubrik Security Cloud (RSC) Reporting Module Function returning a list of all DNTs on the specified DNT, used for browsing an AD snapshot.
 
@@ -25,40 +25,39 @@ Author: Joshua Stenhouse
 Date: 07/08/2024
 #>
 
-################################################
-# Paramater Config
-################################################	
-	Param
+    ################################################
+    # Paramater Config
+    ################################################	
+    param
     (
-    [Parameter(Mandatory=$true)]
-    [String]$SnapshotID,[int]$DNT,[switch]$ListContainers
+        [Parameter(Mandatory = $true)]
+        [String]$SnapshotID, [int]$DNT, [switch]$ListContainers
     )
-################################################
-# Importing Module & Running Required Functions
-################################################
-# Importing the module is it needs other modules
-Import-Module RSCReporting
-# Checking connectivity, exiting function with error if not connected
-Test-RSCConnection
+    ################################################
+    # Importing Module & Running Required Functions
+    ################################################
+    # Importing the module is it needs other modules
+    Import-Module RSCReporting
+    # Checking connectivity, exiting function with error if not connected
+    Test-RSCConnection
 
-################################################
-# Querying RSC GraphQL API
-################################################
-# Creating array for objects
-$AllDNTList = @()
-# Building GraphQL query
-IF($ListContainers)
-{
-$RSCGraphQL = @{"operationName" = "DcSnapshotBrowseQuery";
+    ################################################
+    # Querying RSC GraphQL API
+    ################################################
+    # Creating array for objects
+    $AllDNTList = @()
+    # Building GraphQL query
+    if ($ListContainers) {
+        $RSCGraphQL = @{"operationName" = "DcSnapshotBrowseQuery";
 
-"variables" = @{
-"activeDirectorySnapshotBrowseId" = $SnapshotID
-"dnt" = $DNT
-"first" = 1000
-"listOnlyContainers" = $true
-};
+            "variables"                 = @{
+                "activeDirectorySnapshotBrowseId" = $SnapshotID
+                "dnt"                             = $DNT
+                "first"                           = 1000
+                "listOnlyContainers"              = $true
+            };
 
-"query" = "query DcSnapshotBrowseQuery(`$activeDirectorySnapshotBrowseId: String!, `$dnt: Int!, `$first: Int, `$after: String, `$listOnlyContainers: Boolean, `$locationId: String, `$activeDirectoryObjectType: ActiveDirectoryObjectType) {
+            "query"                     = "query DcSnapshotBrowseQuery(`$activeDirectorySnapshotBrowseId: String!, `$dnt: Int!, `$first: Int, `$after: String, `$listOnlyContainers: Boolean, `$locationId: String, `$activeDirectoryObjectType: ActiveDirectoryObjectType) {
   activeDirectorySnapshotBrowse(id: `$activeDirectorySnapshotBrowseId, dnt: `$dnt, first: `$first, after: `$after, listOnlyContainers: `$listOnlyContainers, locationId: `$locationId, activeDirectoryObjectType: `$activeDirectoryObjectType) {
     count
     edges {
@@ -83,20 +82,19 @@ $RSCGraphQL = @{"operationName" = "DcSnapshotBrowseQuery";
     __typename
   }
 }"
-}
-}
-ELSE
-{
-$RSCGraphQL = @{"operationName" = "DcSnapshotBrowseQuery";
+        }
+    }
+    else {
+        $RSCGraphQL = @{"operationName" = "DcSnapshotBrowseQuery";
 
-"variables" = @{
-"activeDirectorySnapshotBrowseId" = $SnapshotID
-"dnt" = $DNT
-"first" = 1000
-"listOnlyContainers" = $false
-};
+            "variables"                 = @{
+                "activeDirectorySnapshotBrowseId" = $SnapshotID
+                "dnt"                             = $DNT
+                "first"                           = 1000
+                "listOnlyContainers"              = $false
+            };
 
-"query" = "query DcSnapshotBrowseQuery(`$activeDirectorySnapshotBrowseId: String!, `$dnt: Int!, `$first: Int, `$after: String, `$listOnlyContainers: Boolean, `$locationId: String, `$activeDirectoryObjectType: ActiveDirectoryObjectType) {
+            "query"                     = "query DcSnapshotBrowseQuery(`$activeDirectorySnapshotBrowseId: String!, `$dnt: Int!, `$first: Int, `$after: String, `$listOnlyContainers: Boolean, `$locationId: String, `$activeDirectoryObjectType: ActiveDirectoryObjectType) {
   activeDirectorySnapshotBrowse(id: `$activeDirectorySnapshotBrowseId, dnt: `$dnt, first: `$first, after: `$after, listOnlyContainers: `$listOnlyContainers, locationId: `$locationId, activeDirectoryObjectType: `$activeDirectoryObjectType) {
     count
     edges {
@@ -121,27 +119,26 @@ $RSCGraphQL = @{"operationName" = "DcSnapshotBrowseQuery";
     __typename
   }
 }"
-}
-}
-################################################
-# API Call To RSC GraphQL URI 
-################################################
-# Querying API
-$RSCResponse = Invoke-RestMethod -Method POST -Uri $RSCGraphqlURL -Body $($RSCGraphQL | ConvertTo-JSON -Depth 20) -Headers $RSCSessionHeader
-$AllDNTList += $RSCResponse.data.activeDirectorySnapshotBrowse.edges.node
-# Removing 3804, this is just the top level structure of the domain in the snapshot browse view, it's not an OU/container
-$AllDNTList = $AllDNTList | Where-Object {$_.dnt -ne "3804"}
-# Getting all results from activeDirectorySnapshotBrowse
-While ($RSCResponse.data.activeDirectorySnapshotBrowse.pageInfo.hasNextPage)
-{
-# Getting next set
-$RSCGraphQL.variables.after = $RSCResponse.data.activeDirectorySnapshotBrowse.pageInfo.endCursor
-$RSCResponse = Invoke-RestMethod -Method POST -Uri $RSCGraphqlURL -Body $($RSCGraphQL | ConvertTo-JSON -Depth 20) -Headers $RSCSessionHeader
-$AllDNTList += $RSCResponse.data.activeDirectorySnapshotBrowse.edges.node
-}
+        }
+    }
+    ################################################
+    # API Call To RSC GraphQL URI 
+    ################################################
+    # Querying API
+    $RSCResponse = Invoke-RestMethod -Method POST -Uri $RSCGraphqlURL -Body $($RSCGraphQL | ConvertTo-Json -Depth 20) -Headers $RSCSessionHeader
+    $AllDNTList += $RSCResponse.data.activeDirectorySnapshotBrowse.edges.node
+    # Removing 3804, this is just the top level structure of the domain in the snapshot browse view, it's not an OU/container
+    $AllDNTList = $AllDNTList | Where-Object { $_.dnt -ne "3804" }
+    # Getting all results from activeDirectorySnapshotBrowse
+    while ($RSCResponse.data.activeDirectorySnapshotBrowse.pageInfo.hasNextPage) {
+        # Getting next set
+        $RSCGraphQL.variables.after = $RSCResponse.data.activeDirectorySnapshotBrowse.pageInfo.endCursor
+        $RSCResponse = Invoke-RestMethod -Method POST -Uri $RSCGraphqlURL -Body $($RSCGraphQL | ConvertTo-Json -Depth 20) -Headers $RSCSessionHeader
+        $AllDNTList += $RSCResponse.data.activeDirectorySnapshotBrowse.edges.node
+    }
 
-#
-# Returning array
-Return $AllDNTList
-# End of function
+    #
+    # Returning array
+    return $AllDNTList
+    # End of function
 }

@@ -1,9 +1,9 @@
 ################################################
 # Creating the Get-RSCReportTemplates function
 ################################################
-Function Get-RSCReportTemplate {
+function Get-RSCReportTemplate {
 
-<#
+    <#
 .SYNOPSIS
 A Rubrik Security Cloud (RSC) Reporting Module Function returning a list of .html files included with the module.
 
@@ -24,34 +24,34 @@ This example returns an array of all the information returned by the GraphQL end
 Author: Joshua Stenhouse
 Date: 05/11/2023
 #>
-[CmdletBinding()]
-[Alias('Get-RSCReportTemplates')]
-param()
-# Importing Module 
-Import-Module RSCReporting
-# Creating array
-$RSCReportTemplates = [System.Collections.ArrayList]@()
-# Checking connectivity, exiting function with error if not connected
-$HTMLReportTemplates = Get-Module -Name RSCReporting -All | Select-Object -ExpandProperty FileList
-# Filtering for HTML files on
-$HTMLReportTemplates = $HTMLReportTemplates | Where-Object {$_ -match ".html"}
-# Getting report names
-ForEach($HTMLReportTemplate in $HTMLReportTemplates)
-{
-$ReportFileName = Get-ChildItem $HTMLReportTemplate | Select-Object -ExpandProperty Name
-$ReportName = $ReportFileName.Replace(".html","")
-# Adding To Array
-$Object = New-Object PSObject
-$Object | Add-Member -MemberType NoteProperty -Name "Report" -Value $ReportName
-$Object | Add-Member -MemberType NoteProperty -Name "FileName" -Value $ReportFileName
-$Object | Add-Member -MemberType NoteProperty -Name "FilePath" -Value $HTMLReportTemplate
-# Adding
-$RSCReportTemplates.Add($Object) | Out-Null
+    [CmdletBinding()]
+    [Alias('Get-RSCReportTemplates')]
+    param()
+    # Importing Module 
+    Import-Module RSCReporting
+    # Creating array
+    $RSCReportTemplates = [System.Collections.ArrayList]@()
+    # Checking connectivity, exiting function with error if not connected
+    $HTMLReportTemplates = Get-Module -Name RSCReporting -All | Select-Object -ExpandProperty FileList
+    # Filtering for HTML files on
+    $HTMLReportTemplates = $HTMLReportTemplates | Where-Object { $_ -match ".html" }
+    # Getting report names
+    foreach ($HTMLReportTemplate in $HTMLReportTemplates) {
+        $ReportFileName = Get-ChildItem $HTMLReportTemplate | Select-Object -ExpandProperty Name
+        $ReportName = $ReportFileName.Replace(".html", "")
+        # Adding To Array
+        $Object = New-Object PSObject
+        $Object | Add-Member -MemberType NoteProperty -Name "Report" -Value $ReportName
+        $Object | Add-Member -MemberType NoteProperty -Name "FileName" -Value $ReportFileName
+        $Object | Add-Member -MemberType NoteProperty -Name "FilePath" -Value $HTMLReportTemplate
+        # Adding
+        $RSCReportTemplates.Add($Object) | Out-Null
 
-}
-# Returning data
-Return $RSCReportTemplates
+    }
+    # Returning data
+    return $RSCReportTemplates
 }
 ################################################
 # End of script
 ################################################
+

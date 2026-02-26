@@ -1,9 +1,9 @@
 ################################################
 # Function - Start-RSCMVSnapshot - Requesting an on demand snapshot of an RSC Managed Volume
 ################################################
-Function Start-RSCMVSnapshot {
+function Start-RSCMVSnapshot {
 	
-<#
+    <#
 .SYNOPSIS
 Makes a regular Managed Volume writeable by initiating a begin snapshot request on ManagedVolumeID or ObjectID (same thing).
 
@@ -31,104 +31,102 @@ Selecting a managed volume called YOURMVNAME and piping it to Start-RSCManagedVo
 Author: Joshua Stenhouse
 Date: 08/16/2023
 #>
-################################################
-# Paramater Config
-################################################
-[CmdletBinding(SupportsShouldProcess=$true)]
-    Param (
-        [Parameter(ValueFromPipeline=$true)]
+    ################################################
+    # Paramater Config
+    ################################################
+    [CmdletBinding(SupportsShouldProcess = $true)]
+    param (
+        [Parameter(ValueFromPipeline = $true)]
         [array]$PipelineArray,
-        [Parameter(Mandatory=$false)]
+        [Parameter(Mandatory = $false)]
         [string]$ObjectID
     )
-begin{}
-process{
-if ($pscmdlet.ShouldProcess("ManagedModuleID $ObjectID")){
-################################################
-# Importing Module & Running Required Functions
-################################################
-# IF piped the object array pulling out the ObjectID needed
-IF($PipelineArray -ne $null){$ObjectID = $PipelineArray | Select-Object -ExpandProperty ObjectID -First 1}
-# Importing
-Import-Module RSCReporting
-# Checking connectivity, exiting function with error if not
-Test-RSCConnection
-# Getting protected objects to validate IDs and get SLADomainID if null
-$RSCObjects = Get-RSCManagedVolumes
-# Validating object ID exists
-$RSCObjectInfo = $RSCObjects | Where-Object {$_.ObjectID -eq $ObjectID}
-# Breaking if not
-IF($RSCObjectInfo -eq $null)
-{
-Write-Error "ERROR: ObjectID specified not found, check and try again.."
-Break
-}
-# Getting object type, as not all objects use the generic on-demand snapshot call
-$RSCObjectProtocol = $RSCObjectInfo.Protocol
-$RSCObjectName = $RSCObjectInfo.ManagedVolume
-$RSCObjectRubrikCluster = $RSCObjectInfo.RubrikCluster
-$RSCObjectRubrikClusterID = $RSCObjectInfo.RubrikClusterID
-################################################
-# API Call To RSC GraphQL URI
-################################################
-# Building GraphQL query
-$RSCGraphQL = @{"operationName" = "ManagedVolumeBeginSnapshotMutation";
+    begin {}
+    process {
+        if ($pscmdlet.ShouldProcess("ManagedModuleID $ObjectID")) {
+            ################################################
+            # Importing Module & Running Required Functions
+            ################################################
+            # IF piped the object array pulling out the ObjectID needed
+            if ($PipelineArray -ne $null) { $ObjectID = $PipelineArray | Select-Object -ExpandProperty ObjectID -First 1 }
+            # Importing
+            Import-Module RSCReporting
+            # Checking connectivity, exiting function with error if not
+            Test-RSCConnection
+            # Getting protected objects to validate IDs and get SLADomainID if null
+            $RSCObjects = Get-RSCManagedVolumes
+            # Validating object ID exists
+            $RSCObjectInfo = $RSCObjects | Where-Object { $_.ObjectID -eq $ObjectID }
+            # Breaking if not
+            if ($RSCObjectInfo -eq $null) {
+                Write-Error "ERROR: ObjectID specified not found, check and try again.."
+                break
+            }
+            # Getting object type, as not all objects use the generic on-demand snapshot call
+            $RSCObjectProtocol = $RSCObjectInfo.Protocol
+            $RSCObjectName = $RSCObjectInfo.ManagedVolume
+            $RSCObjectRubrikCluster = $RSCObjectInfo.RubrikCluster
+            $RSCObjectRubrikClusterID = $RSCObjectInfo.RubrikClusterID
+            ################################################
+            # API Call To RSC GraphQL URI
+            ################################################
+            # Building GraphQL query
+            $RSCGraphQL = @{"operationName" = "ManagedVolumeBeginSnapshotMutation";
 
-"variables" = @{
-    "input" = @{
-        "id" = "$ObjectID"
-        "config" = @{
-                    "isAsync" = $true
-                }
-    }
-};
+                "variables"                 = @{
+                    "input" = @{
+                        "id"     = "$ObjectID"
+                        "config" = @{
+                            "isAsync" = $true
+                        }
+                    }
+                };
 
-"query" = "mutation ManagedVolumeBeginSnapshotMutation(`$input: BeginManagedVolumeSnapshotInput!) {
+                "query"                     = "mutation ManagedVolumeBeginSnapshotMutation(`$input: BeginManagedVolumeSnapshotInput!) {
   beginManagedVolumeSnapshot(input: `$input) {
     asyncRequestStatus {
       id
     }
   }
 }"
-}
-# Querying API
-Try
-{
-$RSCResponse = Invoke-RestMethod -Method POST -Uri $RSCGraphqlURL -Body $($RSCGraphQL | ConvertTo-JSON -Depth 20) -Headers $RSCSessionHeader
-$RSCRequest = "SUCCESS"
-}
-Catch
-{
-$RSCRequest = "FAILED"
-}
-# Checking for permission errors
-IF($RSCResponse.errors.message){$RSCResponse.errors.message}
-# Getting response
-$JobID = $RSCResponse.data.beginManagedVolumeSnapshot.asyncRequestStatus.id
-# Setting timestamp
-$UTCDateTime = [System.DateTime]::UtcNow
-################################################
-# Returing Job Info
-################################################
-# Adding To Array
-$Object = New-Object PSObject
-$Object | Add-Member -MemberType NoteProperty -Name "RSCInstance" -Value $RSCInstance
-$Object | Add-Member -MemberType NoteProperty -Name "Mutation" -Value "ManagedVolumeBeginSnapshotMutation"
-$Object | Add-Member -MemberType NoteProperty -Name "RequestStatus" -Value $RSCRequest
-$Object | Add-Member -MemberType NoteProperty -Name "ManagedVolume" -Value $RSCObjectName
-$Object | Add-Member -MemberType NoteProperty -Name "Protocol" -Value $RSCObjectProtocol
-$Object | Add-Member -MemberType NoteProperty -Name "ObjectID" -Value $ObjectID
-$Object | Add-Member -MemberType NoteProperty -Name "RubrikCluster" -Value $RSCObjectRubrikCluster
-$Object | Add-Member -MemberType NoteProperty -Name "RubrikClusterID" -Value $RSCObjectRubrikClusterID
-$Object | Add-Member -MemberType NoteProperty -Name "RequestDateUTC" -Value $UTCDateTime
-$Object | Add-Member -MemberType NoteProperty -Name "RequestStatus" -Value $RequestStatus
-$Object | Add-Member -MemberType NoteProperty -Name "JobID" -Value $JobID
-$Object | Add-Member -MemberType NoteProperty -Name "ErrorMessage" -Value $RSCResponse.errors.message
+            }
+            # Querying API
+            try {
+                $RSCResponse = Invoke-RestMethod -Method POST -Uri $RSCGraphqlURL -Body $($RSCGraphQL | ConvertTo-Json -Depth 20) -Headers $RSCSessionHeader
+                $RSCRequest = "SUCCESS"
+            }
+            catch {
+                $RSCRequest = "FAILED"
+            }
+            # Checking for permission errors
+            if ($RSCResponse.errors.message) { $RSCResponse.errors.message }
+            # Getting response
+            $JobID = $RSCResponse.data.beginManagedVolumeSnapshot.asyncRequestStatus.id
+            # Setting timestamp
+            $UTCDateTime = [System.DateTime]::UtcNow
+            ################################################
+            # Returing Job Info
+            ################################################
+            # Adding To Array
+            $Object = New-Object PSObject
+            $Object | Add-Member -MemberType NoteProperty -Name "RSCInstance" -Value $RSCInstance
+            $Object | Add-Member -MemberType NoteProperty -Name "Mutation" -Value "ManagedVolumeBeginSnapshotMutation"
+            $Object | Add-Member -MemberType NoteProperty -Name "RequestStatus" -Value $RSCRequest
+            $Object | Add-Member -MemberType NoteProperty -Name "ManagedVolume" -Value $RSCObjectName
+            $Object | Add-Member -MemberType NoteProperty -Name "Protocol" -Value $RSCObjectProtocol
+            $Object | Add-Member -MemberType NoteProperty -Name "ObjectID" -Value $ObjectID
+            $Object | Add-Member -MemberType NoteProperty -Name "RubrikCluster" -Value $RSCObjectRubrikCluster
+            $Object | Add-Member -MemberType NoteProperty -Name "RubrikClusterID" -Value $RSCObjectRubrikClusterID
+            $Object | Add-Member -MemberType NoteProperty -Name "RequestDateUTC" -Value $UTCDateTime
+            $Object | Add-Member -MemberType NoteProperty -Name "RequestStatus" -Value $RequestStatus
+            $Object | Add-Member -MemberType NoteProperty -Name "JobID" -Value $JobID
+            $Object | Add-Member -MemberType NoteProperty -Name "ErrorMessage" -Value $RSCResponse.errors.message
 
-# Returning array
-Return $Object
-# End of function
+            # Returning array
+            return $Object
+            # End of function
+        }
+    }
 }
-}
-}
-end{}
+end {}
+

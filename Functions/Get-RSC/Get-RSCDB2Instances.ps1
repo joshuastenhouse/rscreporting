@@ -1,9 +1,9 @@
 ################################################
 # Function - Get-RSCDB2Instances - Getting all DB2 Instances connected to the RSC instance
 ################################################
-Function Get-RSCDB2Instance {
+function Get-RSCDB2Instance {
 
-<#
+    <#
 .SYNOPSIS
 A Rubrik Security Cloud (RSC) Reporting Module Function returning a list of all DB2 instances.
 
@@ -24,31 +24,31 @@ This example returns an array of all the information returned by the GraphQL end
 Author: Joshua Stenhouse
 Date: 05/11/2023
 #>
-[CmdletBinding()]
-[Alias('Get-RSCDB2Instances')]
-param()
-################################################
-# Importing Module & Running Required Functions
-################################################
-# Importing the module is it needs other modules
-Import-Module RSCReporting
-# Checking connectivity, exiting function with error if not connected
-Test-RSCConnection
-# Getting SLA domains
-$RSCSLADomains = Get-RSCSLADomains
-################################################
-# Getting Object List 
-################################################
-# Creating array for objects
-$RSCObjectList = @()
-# Building GraphQL query
-$RSCGraphQL = @{"operationName" = "Db2InstanceListQuery";
+    [CmdletBinding()]
+    [Alias('Get-RSCDB2Instances')]
+    param()
+    ################################################
+    # Importing Module & Running Required Functions
+    ################################################
+    # Importing the module is it needs other modules
+    Import-Module RSCReporting
+    # Checking connectivity, exiting function with error if not connected
+    Test-RSCConnection
+    # Getting SLA domains
+    $RSCSLADomains = Get-RSCSLADomains
+    ################################################
+    # Getting Object List 
+    ################################################
+    # Creating array for objects
+    $RSCObjectList = @()
+    # Building GraphQL query
+    $RSCGraphQL = @{"operationName" = "Db2InstanceListQuery";
 
-"variables" = @{
-"first" = 1000
-};
+        "variables"                 = @{
+            "first" = 1000
+        };
 
-"query" = "query Db2InstanceListQuery(`$first: Int!, `$after: String) {
+        "query"                     = "query Db2InstanceListQuery(`$first: Int!, `$after: String) {
   db2Instances(first: `$first, after: `$after) {
     count
     edges {
@@ -208,100 +208,99 @@ fragment SLADomainFragment on SlaDomain {
   }
   __typename
 }"
-}
-################################################
-# API Call To RSC GraphQL URI
-################################################
-# Querying API
-$RSCObjectListResponse = Invoke-RestMethod -Method POST -Uri $RSCGraphqlURL -Body $($RSCGraphQL | ConvertTo-JSON -Depth 20) -Headers $RSCSessionHeader
-# Setting variable
-$RSCObjectList += $RSCObjectListResponse.data.db2Instances.edges.node
-# Getting all results from paginations
-While ($RSCObjectListResponse.data.db2Instances.pageInfo.hasNextPage) 
-{
-# Getting next set
-$RSCGraphQL.variables.after = $RSCObjectListResponse.data.db2Instances.pageInfo.endCursor
-$RSCObjectListResponse = Invoke-RestMethod -Method POST -Uri $RSCGraphqlURL -Body $($RSCGraphQL | ConvertTo-JSON -Depth 20) -Headers $RSCSessionHeader
-$RSCObjectList += $RSCObjectListResponse.data.db2Instances.edges.node
-}
-################################################
-# Processing Objects
-################################################
-# Creating array
-$RSCDB2Instances = [System.Collections.ArrayList]@()
-# For Each Object Getting Data
-ForEach ($Instance in $RSCObjectList)
-{
-# Setting variables
-$DBInstance = $Instance.name
-$DBInstanceID = $Instance.id
-$DBInstanceCDMID = $Instance.cdmId
-$DBInstanceType = $Instance.objectType
-$DBInstanceDBCount = $Instance.descendantConnection.count
-$DBInstanceDBs = $Instance.descendantConnection.edges.node
-# SLA info
-$DBSLADomainInfo = $Instance.effectiveSlaDomain
-$DBSLADomain = $DBSLADomainInfo.name
-$DBSLADomainID = $DBSLADomainInfo.id
-$DBSLAAssignment = $Instance.slaAssignment
-$DBSLAPaused = $Instance.slaPauseStatus
-# Rubrik cluster info
-$DBRubrikClusterInfo = $Instance.primaryClusterLocation
-$DBRubrikCluster = $DBRubrikClusterInfo.name
-$DBRubrikClusterID = $DBRubrikClusterInfo.id
-# User note info
-$DBNoteInfo = $Instance.latestUserNote
-$DbNote = $DBNoteInfo.userNote
-$DBNoteCreator = $DBNoteInfo.userName
-$DBNoteCreatedUNIX = $DBNoteInfo.time
-IF($DBNoteCreatedUNIX -ne $null){$DBNoteCreatedUTC = Convert-RSCUNIXTime $DBNoteCreatedUNIX}ELSE{$DBNoteCreatedUTC = $null}
-# Location
-$DBPhysicalPath = $Instance.physicalChildConnection.edges.node
-$DBHostName = $DBPhysicalPath.name
-$DBHostID = $DBPhysicalPath.id
-# Last refresh
-$DBLastRefreshUNIX = $Instance.lastRefreshTime
-IF($DBLastRefreshUNIX -ne $null){$DBLastRefreshUTC = Convert-RSCUNIXTime $DBLastRefreshUNIX}ELSE{$DBLastRefreshUTC = $null}
-# Calculating hours since each snapshot
-$UTCDateTime = [System.DateTime]::UtcNow
-IF($DBLastRefreshUTC -ne $null){$DBRefreshTimespan = New-TimeSpan -Start $DBLastRefreshUTC -End $UTCDateTime;$DBRefreshHoursSince = $DBRefreshTimespan | Select-Object -ExpandProperty TotalHours;$DBRefreshHoursSince = [Math]::Round($DBRefreshHoursSince,1)}ELSE{$DBRefreshHoursSince = $null}
-# Getting URL
-$DBInstanceURL = Get-RSCObjectURL -ObjectType "Db2Instance" -ObjectID $DBInstanceID
-# Adding To Array
-$Object = New-Object PSObject
-$Object | Add-Member -MemberType NoteProperty -Name "RSCInstance" -Value $RSCInstance
-# DB info
-$Object | Add-Member -MemberType NoteProperty -Name "Instance" -Value $DBInstance
-$Object | Add-Member -MemberType NoteProperty -Name "InstanceID" -Value $DBInstanceID
-$Object | Add-Member -MemberType NoteProperty -Name "InstanceCDMID" -Value $DBInstanceCDMID
-$Object | Add-Member -MemberType NoteProperty -Name "InstanceType" -Value $DBInstanceType
-$Object | Add-Member -MemberType NoteProperty -Name "DBCount" -Value $DBInstanceDBCount
-# Protection
-$Object | Add-Member -MemberType NoteProperty -Name "SLADomain" -Value $DBSLADomain
-$Object | Add-Member -MemberType NoteProperty -Name "SLADomainID" -Value $DBSLADomainID
-$Object | Add-Member -MemberType NoteProperty -Name "SLAAssignment" -Value $DBSLAAssignment
-$Object | Add-Member -MemberType NoteProperty -Name "SLAPaused" -Value $DBSLAPaused
-# DB note info
-$Object | Add-Member -MemberType NoteProperty -Name "LatestRSCNote" -Value $DBNote
-$Object | Add-Member -MemberType NoteProperty -Name "LatestNoteCreator" -Value $DBNoteCreator
-$Object | Add-Member -MemberType NoteProperty -Name "LatestNoteDateUTC" -Value $DBNoteCreatedUTC
-# Rubrik cluster info
-$Object | Add-Member -MemberType NoteProperty -Name "RubrikCluster" -Value $DBRubrikCluster
-$Object | Add-Member -MemberType NoteProperty -Name "RubrikClusterID" -Value $DBRubrikClusterID
-# Location information
-$Object | Add-Member -MemberType NoteProperty -Name "Host" -Value $DBHostName
-$Object | Add-Member -MemberType NoteProperty -Name "HostID" -Value $DBHostID
-# Refresh timing
-$Object | Add-Member -MemberType NoteProperty -Name "LastRefreshUTC" -Value $DBLastRefreshUTC
-$Object | Add-Member -MemberType NoteProperty -Name "HoursSince" -Value $DBRefreshHoursSince
-$Object | Add-Member -MemberType NoteProperty -Name "URL" -Value $DBInstanceURL
-# Adding
-$RSCDB2Instances.Add($Object) | Out-Null
-# End of for each object below
-}
-# End of for each object above
+    }
+    ################################################
+    # API Call To RSC GraphQL URI
+    ################################################
+    # Querying API
+    $RSCObjectListResponse = Invoke-RestMethod -Method POST -Uri $RSCGraphqlURL -Body $($RSCGraphQL | ConvertTo-Json -Depth 20) -Headers $RSCSessionHeader
+    # Setting variable
+    $RSCObjectList += $RSCObjectListResponse.data.db2Instances.edges.node
+    # Getting all results from paginations
+    while ($RSCObjectListResponse.data.db2Instances.pageInfo.hasNextPage) {
+        # Getting next set
+        $RSCGraphQL.variables.after = $RSCObjectListResponse.data.db2Instances.pageInfo.endCursor
+        $RSCObjectListResponse = Invoke-RestMethod -Method POST -Uri $RSCGraphqlURL -Body $($RSCGraphQL | ConvertTo-Json -Depth 20) -Headers $RSCSessionHeader
+        $RSCObjectList += $RSCObjectListResponse.data.db2Instances.edges.node
+    }
+    ################################################
+    # Processing Objects
+    ################################################
+    # Creating array
+    $RSCDB2Instances = [System.Collections.ArrayList]@()
+    # For Each Object Getting Data
+    foreach ($Instance in $RSCObjectList) {
+        # Setting variables
+        $DBInstance = $Instance.name
+        $DBInstanceID = $Instance.id
+        $DBInstanceCDMID = $Instance.cdmId
+        $DBInstanceType = $Instance.objectType
+        $DBInstanceDBCount = $Instance.descendantConnection.count
+        $DBInstanceDBs = $Instance.descendantConnection.edges.node
+        # SLA info
+        $DBSLADomainInfo = $Instance.effectiveSlaDomain
+        $DBSLADomain = $DBSLADomainInfo.name
+        $DBSLADomainID = $DBSLADomainInfo.id
+        $DBSLAAssignment = $Instance.slaAssignment
+        $DBSLAPaused = $Instance.slaPauseStatus
+        # Rubrik cluster info
+        $DBRubrikClusterInfo = $Instance.primaryClusterLocation
+        $DBRubrikCluster = $DBRubrikClusterInfo.name
+        $DBRubrikClusterID = $DBRubrikClusterInfo.id
+        # User note info
+        $DBNoteInfo = $Instance.latestUserNote
+        $DbNote = $DBNoteInfo.userNote
+        $DBNoteCreator = $DBNoteInfo.userName
+        $DBNoteCreatedUNIX = $DBNoteInfo.time
+        if ($DBNoteCreatedUNIX -ne $null) { $DBNoteCreatedUTC = Convert-RSCUNIXTime $DBNoteCreatedUNIX }else { $DBNoteCreatedUTC = $null }
+        # Location
+        $DBPhysicalPath = $Instance.physicalChildConnection.edges.node
+        $DBHostName = $DBPhysicalPath.name
+        $DBHostID = $DBPhysicalPath.id
+        # Last refresh
+        $DBLastRefreshUNIX = $Instance.lastRefreshTime
+        if ($DBLastRefreshUNIX -ne $null) { $DBLastRefreshUTC = Convert-RSCUNIXTime $DBLastRefreshUNIX }else { $DBLastRefreshUTC = $null }
+        # Calculating hours since each snapshot
+        $UTCDateTime = [System.DateTime]::UtcNow
+        if ($DBLastRefreshUTC -ne $null) { $DBRefreshTimespan = New-TimeSpan -Start $DBLastRefreshUTC -End $UTCDateTime; $DBRefreshHoursSince = $DBRefreshTimespan | Select-Object -ExpandProperty TotalHours; $DBRefreshHoursSince = [Math]::Round($DBRefreshHoursSince, 1) }else { $DBRefreshHoursSince = $null }
+        # Getting URL
+        $DBInstanceURL = Get-RSCObjectURL -ObjectType "Db2Instance" -ObjectID $DBInstanceID
+        # Adding To Array
+        $Object = New-Object PSObject
+        $Object | Add-Member -MemberType NoteProperty -Name "RSCInstance" -Value $RSCInstance
+        # DB info
+        $Object | Add-Member -MemberType NoteProperty -Name "Instance" -Value $DBInstance
+        $Object | Add-Member -MemberType NoteProperty -Name "InstanceID" -Value $DBInstanceID
+        $Object | Add-Member -MemberType NoteProperty -Name "InstanceCDMID" -Value $DBInstanceCDMID
+        $Object | Add-Member -MemberType NoteProperty -Name "InstanceType" -Value $DBInstanceType
+        $Object | Add-Member -MemberType NoteProperty -Name "DBCount" -Value $DBInstanceDBCount
+        # Protection
+        $Object | Add-Member -MemberType NoteProperty -Name "SLADomain" -Value $DBSLADomain
+        $Object | Add-Member -MemberType NoteProperty -Name "SLADomainID" -Value $DBSLADomainID
+        $Object | Add-Member -MemberType NoteProperty -Name "SLAAssignment" -Value $DBSLAAssignment
+        $Object | Add-Member -MemberType NoteProperty -Name "SLAPaused" -Value $DBSLAPaused
+        # DB note info
+        $Object | Add-Member -MemberType NoteProperty -Name "LatestRSCNote" -Value $DBNote
+        $Object | Add-Member -MemberType NoteProperty -Name "LatestNoteCreator" -Value $DBNoteCreator
+        $Object | Add-Member -MemberType NoteProperty -Name "LatestNoteDateUTC" -Value $DBNoteCreatedUTC
+        # Rubrik cluster info
+        $Object | Add-Member -MemberType NoteProperty -Name "RubrikCluster" -Value $DBRubrikCluster
+        $Object | Add-Member -MemberType NoteProperty -Name "RubrikClusterID" -Value $DBRubrikClusterID
+        # Location information
+        $Object | Add-Member -MemberType NoteProperty -Name "Host" -Value $DBHostName
+        $Object | Add-Member -MemberType NoteProperty -Name "HostID" -Value $DBHostID
+        # Refresh timing
+        $Object | Add-Member -MemberType NoteProperty -Name "LastRefreshUTC" -Value $DBLastRefreshUTC
+        $Object | Add-Member -MemberType NoteProperty -Name "HoursSince" -Value $DBRefreshHoursSince
+        $Object | Add-Member -MemberType NoteProperty -Name "URL" -Value $DBInstanceURL
+        # Adding
+        $RSCDB2Instances.Add($Object) | Out-Null
+        # End of for each object below
+    }
+    # End of for each object above
 
-# Returning array
-Return $RSCDB2Instances
-# End of function
+    # Returning array
+    return $RSCDB2Instances
+    # End of function
 }
+

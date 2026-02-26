@@ -1,11 +1,11 @@
 ################################################
 # Creating the Get-RSCModuleFiles function
 ################################################
-Function Get-RSCModuleFile {
-[CmdletBinding()]
-[Alias('Get-RSCModuleFiles')]
-param()
-<#
+function Get-RSCModuleFile {
+    [CmdletBinding()]
+    [Alias('Get-RSCModuleFiles')]
+    param()
+    <#
 .SYNOPSIS
 A Rubrik Security Cloud (RSC) Reporting Module Function returning a list of all files within the PowerShell module, used by multiple other functions.
 
@@ -27,32 +27,32 @@ Author: Joshua Stenhouse
 Date: 05/11/2023
 #>
 
-# Importing Module 
-Import-Module RSCReporting
-# Creating array
-$RSCFileList = [System.Collections.ArrayList]@()
-# Checking connectivity, exiting function with error if not connected
-$RSCFiles = Get-Module -Name RSCReporting -All | Select-Object -ExpandProperty FileList
-# Getting file names
-ForEach($RSCFile in $RSCFiles)
-{
-$FileInfo = Get-ChildItem $RSCFile
-$FileName = $FileInfo.BaseName
-$FileFullName = $FileInfo.Name
-$FileExtension = $FileInfo.Extension
-# Adding To Array
-$Object = New-Object PSObject
-$Object | Add-Member -MemberType NoteProperty -Name "File" -Value $FileFullName
-$Object | Add-Member -MemberType NoteProperty -Name "FilePath" -Value $RSCFile
-$Object | Add-Member -MemberType NoteProperty -Name "FileName" -Value $FileName
-$Object | Add-Member -MemberType NoteProperty -Name "Type" -Value $FileExtension
-# Adding
-$RSCFileList.Add($Object) | Out-Null
+    # Importing Module 
+    Import-Module RSCReporting
+    # Creating array
+    $RSCFileList = [System.Collections.ArrayList]@()
+    # Checking connectivity, exiting function with error if not connected
+    $RSCFiles = Get-Module -Name RSCReporting -All | Select-Object -ExpandProperty FileList
+    # Getting file names
+    foreach ($RSCFile in $RSCFiles) {
+        $FileInfo = Get-ChildItem $RSCFile
+        $FileName = $FileInfo.BaseName
+        $FileFullName = $FileInfo.Name
+        $FileExtension = $FileInfo.Extension
+        # Adding To Array
+        $Object = New-Object PSObject
+        $Object | Add-Member -MemberType NoteProperty -Name "File" -Value $FileFullName
+        $Object | Add-Member -MemberType NoteProperty -Name "FilePath" -Value $RSCFile
+        $Object | Add-Member -MemberType NoteProperty -Name "FileName" -Value $FileName
+        $Object | Add-Member -MemberType NoteProperty -Name "Type" -Value $FileExtension
+        # Adding
+        $RSCFileList.Add($Object) | Out-Null
 
-}
-# Returning data
-Return $RSCFileList
+    }
+    # Returning data
+    return $RSCFileList
 }
 ################################################
 # End of script
 ################################################
+

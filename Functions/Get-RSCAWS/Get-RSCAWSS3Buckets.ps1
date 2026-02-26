@@ -1,9 +1,9 @@
 ################################################
 # Function - Get-RSCAWSS3Buckets - Getting All AWS S3 Buckets connected to RSC
 ################################################
-Function Get-RSCAWSS3Bucket {
+function Get-RSCAWSS3Bucket {
 
-<#
+    <#
 .SYNOPSIS
 A Rubrik Security Cloud (RSC) Reporting Module Function returning a list of all S3 buckets visible to RSC
 
@@ -24,32 +24,32 @@ This example returns an array of all the information returned by the GraphQL end
 Author: Joshua Stenhouse
 Date: 07/09/2024
 #>
-[CmdletBinding()]
-[Alias('Get-RSCAWSS3Buckets')]
-param()
-################################################
-# Importing Module & Running Required Functions
-################################################
-# Importing the module is it needs other modules
-Import-Module RSCReporting
-# Checking connectivity, exiting function with error if not connected
-Test-RSCConnection
-################################################
-# Querying RSC GraphQL API
-################################################
-# Creating array for objects
-$RSCList = @()
-# Building GraphQL query
-$RSCGraphQL = @{"operationName" = "AwsInventoryTableQuery";
+    [CmdletBinding()]
+    [Alias('Get-RSCAWSS3Buckets')]
+    param()
+    ################################################
+    # Importing Module & Running Required Functions
+    ################################################
+    # Importing the module is it needs other modules
+    Import-Module RSCReporting
+    # Checking connectivity, exiting function with error if not connected
+    Test-RSCConnection
+    ################################################
+    # Querying RSC GraphQL API
+    ################################################
+    # Creating array for objects
+    $RSCList = @()
+    # Building GraphQL query
+    $RSCGraphQL = @{"operationName" = "AwsInventoryTableQuery";
 
-"variables" = @{
-"first" = 1000
-"objectTypeFilter" = "AWS_NATIVE_S3_BUCKET"
-"includeSecurityMetadata" = $false
-};
+        "variables"                 = @{
+            "first"                   = 1000
+            "objectTypeFilter"        = "AWS_NATIVE_S3_BUCKET"
+            "includeSecurityMetadata" = $false
+        };
 
 
-"query" = "query AwsInventoryTableQuery(`$objectTypeFilter: HierarchyObjectTypeEnum!, `$first: Int, `$after: String, `$sortBy: HierarchySortByField, `$sortOrder: SortOrder, `$includeSecurityMetadata: Boolean!) {
+        "query"                     = "query AwsInventoryTableQuery(`$objectTypeFilter: HierarchyObjectTypeEnum!, `$first: Int, `$after: String, `$sortBy: HierarchySortByField, `$sortOrder: SortOrder, `$includeSecurityMetadata: Boolean!) {
   awsNativeRoot {
     objectTypeDescendantConnection(objectTypeFilter: `$objectTypeFilter, first: `$first, after: `$after, sortBy: `$sortBy, sortOrder: `$sortOrder, includeSecurityMetadata: `$includeSecurityMetadata) {
       edges {
@@ -199,83 +199,82 @@ fragment SecurityMetadataColumnFragment on HierarchyObject {
   }
   __typename
 }"
+    }
+    ################################################
+    # API Call To RSC GraphQL URI
+    ################################################
+    # Querying API
+    $RSCResponse = Invoke-RestMethod -Method POST -Uri $RSCGraphqlURL -Body $($RSCGraphQL | ConvertTo-Json -Depth 20) -Headers $RSCSessionHeader
+    $RSCList += $RSCResponse.data.awsNativeRoot.objectTypeDescendantConnection.edges.node
+    # Getting all results from activeDirectoryDomains
+    while ($RSCResponse.data.awsNativeRoot.objectTypeDescendantConnection.pageInfo.hasNextPage) {
+        # Getting next set
+        $RSCGraphQL.variables.after = $RSCResponse.data.awsNativeRoot.objectTypeDescendantConnection.pageInfo.endCursor
+        $RSCResponse = Invoke-RestMethod -Method POST -Uri $RSCGraphqlURL -Body $($RSCGraphQL | ConvertTo-Json -Depth 20) -Headers $RSCSessionHeader
+        $RSCList += $RSCResponse.data.awsNativeRoot.objectTypeDescendantConnection.edges.node
+    }
+    ################################################
+    # Processing Objects
+    ################################################
+    # Creating array
+    $RSCAWSS3Buckets = [System.Collections.ArrayList]@()
+    # For Each Object Getting Data
+    foreach ($Storage in $RSCList) {
+        # Setting variables
+        $Name = $Storage.id
+        $ID = $Storage.name
+        $Region = $Storage.region
+        $NativeID = $Storage.cloudNativeId
+        $AccessTier = $Storage.accessTier
+        $Snapshots = $Storage.snapshotDistribution.totalCount
+        $SLADomain = $Storage.effectiveSlaDomain.name
+        $SLADomainID = $Storage.effectiveSlaDomain.id
+        $PauseStatus = $Storage.slaPauseStatus
+        $SLAAssignment = $Storage.slaAssignment
+        $IsRelic = $Storage.isRelic
+        $Tags = $Storage.tags
+        $TagCount = $Tags | Measure-Object | Select-Object -ExpandProperty Count
+        $Account = $Storage.awsNativeAccount.name
+        $AccountID = $Storage.awsNativeAccount.id
+        $AccountStatus = $Storage.awsNativeAccount.status
+        # Snapshot info
+        $SnapshotDateUNIX = $Storage.newestSnapshot.date
+        $SnapshotDateID = $Storage.newestSnapshot.id
+        if ($SnapshotDateUNIX -ne $null) { $SnapshotDateUTC = Convert-RSCUNIXTime $SnapshotDateUNIX }else { $SnapshotDateUTC = $null }
+        # Calculating hours since each snapshot
+        $UTCDateTime = [System.DateTime]::UtcNow
+        if ($SnapshotDateUTC -ne $null) { $SnapshotTimespan = New-TimeSpan -Start $SnapshotDateUTC -End $UTCDateTime; $SnapshotHoursSince = $SnapshotTimespan | Select-Object -ExpandProperty TotalHours; $SnapshotHoursSince = [Math]::Round($SnapshotHoursSince, 1) }else { $SnapshotHoursSince = $null }
+        # Getting URL
+        $URL = Get-RSCObjectURL -ObjectType "S3Bucket" -ObjectID $ID
+        # Adding To Array
+        $Object = New-Object PSObject
+        $Object | Add-Member -MemberType NoteProperty -Name "RSCInstance" -Value $RSCInstance
+        $Object | Add-Member -MemberType NoteProperty -Name "S3Bucket" -Value $Name
+        $Object | Add-Member -MemberType NoteProperty -Name "S3BucketID" -Value $ID
+        $Object | Add-Member -MemberType NoteProperty -Name "Region" -Value $Region
+        $Object | Add-Member -MemberType NoteProperty -Name "Snapshots" -Value $Snapshots
+        $Object | Add-Member -MemberType NoteProperty -Name "LatestSnapshotUTC" -Value $SnapshotDateUTC
+        $Object | Add-Member -MemberType NoteProperty -Name "LatestSnapshotUTCAgeHours" -Value $SnapshotHoursSince
+        $Object | Add-Member -MemberType NoteProperty -Name "TagsAssigned" -Value $TagCount
+        $Object | Add-Member -MemberType NoteProperty -Name "Tags" -Value $Tags
+        $Object | Add-Member -MemberType NoteProperty -Name "SLADomain" -Value $SLADomain
+        $Object | Add-Member -MemberType NoteProperty -Name "SLADomainID" -Value $SLADomainID
+        $Object | Add-Member -MemberType NoteProperty -Name "PauseStatus" -Value $PauseStatus
+        $Object | Add-Member -MemberType NoteProperty -Name "SLAAssignment" -Value $SLAAssignment
+        $Object | Add-Member -MemberType NoteProperty -Name "IsRelic" -Value $IsRelic
+        $Object | Add-Member -MemberType NoteProperty -Name "Account" -Value $Account
+        $Object | Add-Member -MemberType NoteProperty -Name "AccountID" -Value $AccountID
+        $Object | Add-Member -MemberType NoteProperty -Name "AccountStatus" -Value $AccountStatus
+        $Object | Add-Member -MemberType NoteProperty -Name "ObjectID" -Value $ID
+        $Object | Add-Member -MemberType NoteProperty -Name "URL" -Value $URL
+        # Adding
+        $RSCAWSS3Buckets.Add($Object) | Out-Null
+        # End of for each object below
+    }
+    # End of for each object above
+    #
+    # Returning array
+    return $RSCAWSS3Buckets
+    # End of function
 }
-################################################
-# API Call To RSC GraphQL URI
-################################################
-# Querying API
-$RSCResponse = Invoke-RestMethod -Method POST -Uri $RSCGraphqlURL -Body $($RSCGraphQL | ConvertTo-JSON -Depth 20) -Headers $RSCSessionHeader
-$RSCList += $RSCResponse.data.awsNativeRoot.objectTypeDescendantConnection.edges.node
-# Getting all results from activeDirectoryDomains
-While ($RSCResponse.data.awsNativeRoot.objectTypeDescendantConnection.pageInfo.hasNextPage) 
-{
-# Getting next set
-$RSCGraphQL.variables.after = $RSCResponse.data.awsNativeRoot.objectTypeDescendantConnection.pageInfo.endCursor
-$RSCResponse = Invoke-RestMethod -Method POST -Uri $RSCGraphqlURL -Body $($RSCGraphQL | ConvertTo-JSON -Depth 20) -Headers $RSCSessionHeader
-$RSCList += $RSCResponse.data.awsNativeRoot.objectTypeDescendantConnection.edges.node
-}
-################################################
-# Processing Objects
-################################################
-# Creating array
-$RSCAWSS3Buckets = [System.Collections.ArrayList]@()
-# For Each Object Getting Data
-ForEach ($Storage in $RSCList)
-{
-# Setting variables
-$Name = $Storage.id
-$ID = $Storage.name
-$Region = $Storage.region
-$NativeID = $Storage.cloudNativeId
-$AccessTier = $Storage.accessTier
-$Snapshots = $Storage.snapshotDistribution.totalCount
-$SLADomain = $Storage.effectiveSlaDomain.name
-$SLADomainID = $Storage.effectiveSlaDomain.id
-$PauseStatus = $Storage.slaPauseStatus
-$SLAAssignment = $Storage.slaAssignment
-$IsRelic = $Storage.isRelic
-$Tags = $Storage.tags
-$TagCount = $Tags | Measure-Object | Select-Object -ExpandProperty Count
-$Account = $Storage.awsNativeAccount.name
-$AccountID = $Storage.awsNativeAccount.id
-$AccountStatus = $Storage.awsNativeAccount.status
-# Snapshot info
-$SnapshotDateUNIX = $Storage.newestSnapshot.date
-$SnapshotDateID = $Storage.newestSnapshot.id
-IF($SnapshotDateUNIX -ne $null){$SnapshotDateUTC = Convert-RSCUNIXTime $SnapshotDateUNIX}ELSE{$SnapshotDateUTC = $null}
-# Calculating hours since each snapshot
-$UTCDateTime = [System.DateTime]::UtcNow
-IF($SnapshotDateUTC -ne $null){$SnapshotTimespan = New-TimeSpan -Start $SnapshotDateUTC -End $UTCDateTime;$SnapshotHoursSince = $SnapshotTimespan | Select-Object -ExpandProperty TotalHours;$SnapshotHoursSince = [Math]::Round($SnapshotHoursSince,1)}ELSE{$SnapshotHoursSince = $null}
-# Getting URL
-$URL = Get-RSCObjectURL -ObjectType "S3Bucket" -ObjectID $ID
-# Adding To Array
-$Object = New-Object PSObject
-$Object | Add-Member -MemberType NoteProperty -Name "RSCInstance" -Value $RSCInstance
-$Object | Add-Member -MemberType NoteProperty -Name "S3Bucket" -Value $Name
-$Object | Add-Member -MemberType NoteProperty -Name "S3BucketID" -Value $ID
-$Object | Add-Member -MemberType NoteProperty -Name "Region" -Value $Region
-$Object | Add-Member -MemberType NoteProperty -Name "Snapshots" -Value $Snapshots
-$Object | Add-Member -MemberType NoteProperty -Name "LatestSnapshotUTC" -Value $SnapshotDateUTC
-$Object | Add-Member -MemberType NoteProperty -Name "LatestSnapshotUTCAgeHours" -Value $SnapshotHoursSince
-$Object | Add-Member -MemberType NoteProperty -Name "TagsAssigned" -Value $TagCount
-$Object | Add-Member -MemberType NoteProperty -Name "Tags" -Value $Tags
-$Object | Add-Member -MemberType NoteProperty -Name "SLADomain" -Value $SLADomain
-$Object | Add-Member -MemberType NoteProperty -Name "SLADomainID" -Value $SLADomainID
-$Object | Add-Member -MemberType NoteProperty -Name "PauseStatus" -Value $PauseStatus
-$Object | Add-Member -MemberType NoteProperty -Name "SLAAssignment" -Value $SLAAssignment
-$Object | Add-Member -MemberType NoteProperty -Name "IsRelic" -Value $IsRelic
-$Object | Add-Member -MemberType NoteProperty -Name "Account" -Value $Account
-$Object | Add-Member -MemberType NoteProperty -Name "AccountID" -Value $AccountID
-$Object | Add-Member -MemberType NoteProperty -Name "AccountStatus" -Value $AccountStatus
-$Object | Add-Member -MemberType NoteProperty -Name "ObjectID" -Value $ID
-$Object | Add-Member -MemberType NoteProperty -Name "URL" -Value $URL
-# Adding
-$RSCAWSS3Buckets.Add($Object) | Out-Null
-# End of for each object below
-}
-# End of for each object above
-#
-# Returning array
-Return $RSCAWSS3Buckets
-# End of function
-}
+

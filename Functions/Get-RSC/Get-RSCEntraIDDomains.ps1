@@ -1,9 +1,9 @@
 ################################################
 # Function - Get-RSCEntraIDDomains - Getting All EntraID Domains Protected by RSC
 ################################################
-Function Get-RSCEntraIDDomain {
+function Get-RSCEntraIDDomain {
 
-<#
+    <#
 .SYNOPSIS
 A Rubrik Security Cloud (RSC) Reporting Module Function returning a list of all protected EntraID Domains.
 
@@ -24,31 +24,31 @@ This example returns an array of all the information returned by the GraphQL end
 Author: Joshua Stenhouse
 Date: 07/08/2024
 #>
-[CmdletBinding()]
-[Alias('Get-RSCEntraIDDomains')]
-param()
-################################################
-# Importing Module & Running Required Functions
-################################################
-# Importing the module is it needs other modules
-Import-Module RSCReporting
-# Checking connectivity, exiting function with error if not connected
-Test-RSCConnection
-################################################
-# Querying RSC GraphQL API
-################################################
-# Creating array for objects
-$RSCList = @()
-# Building GraphQL query
-$RSCGraphQL = @{"operationName" = "AdDirectoriesQuery";
+    [CmdletBinding()]
+    [Alias('Get-RSCEntraIDDomains')]
+    param()
+    ################################################
+    # Importing Module & Running Required Functions
+    ################################################
+    # Importing the module is it needs other modules
+    Import-Module RSCReporting
+    # Checking connectivity, exiting function with error if not connected
+    Test-RSCConnection
+    ################################################
+    # Querying RSC GraphQL API
+    ################################################
+    # Creating array for objects
+    $RSCList = @()
+    # Building GraphQL query
+    $RSCGraphQL = @{"operationName" = "AdDirectoriesQuery";
 
-"variables" = @{
-"first" = 100
-"sortBy" = "NAME"
-"sortOrder" = "ASC"
-};
+        "variables"                 = @{
+            "first"     = 100
+            "sortBy"    = "NAME"
+            "sortOrder" = "ASC"
+        };
 
-"query" = "query AdDirectoriesQuery(`$first: Int, `$after: String, `$sortBy: HierarchySortByField, `$sortOrder: SortOrder) {
+        "query"                     = "query AdDirectoriesQuery(`$first: Int, `$after: String, `$sortBy: HierarchySortByField, `$sortOrder: SortOrder) {
   azureAdDirectories(first: `$first, after: `$after, sortBy: `$sortBy, sortOrder: `$sortOrder) {
     edges {
       cursor
@@ -149,39 +149,37 @@ fragment SnapshotCountColumnFragment on PolarisHierarchySnappable {
   }
   __typename
 }"
-}
-################################################
-# API Call To RSC GraphQL URI
-################################################
-# Querying API
-$RSCResponse = Invoke-RestMethod -Method POST -Uri $RSCGraphqlURL -Body $($RSCGraphQL | ConvertTo-JSON -Depth 20) -Headers $RSCSessionHeader
-$RSCList += $RSCResponse.data.azureAdDirectories.edges.node
-# Getting all results from activeDirectoryDomains
-While ($RSCResponse.data.azureAdDirectories.pageInfo.hasNextPage) 
-{
-# Getting next set
-$RSCGraphQL.variables.after = $RSCResponse.data.azureAdDirectories.pageInfo.endCursor
-$RSCResponse = Invoke-RestMethod -Method POST -Uri $RSCGraphqlURL -Body $($RSCGraphQL | ConvertTo-JSON -Depth 20) -Headers $RSCSessionHeader
-$RSCList += $RSCResponse.data.activeDirectoryDomains.edges.node
-}
-################################################
-# Processing List
-################################################
-# Creating array
-$RSCEntraIDDomains = [System.Collections.ArrayList]@()
-# For Each Object Getting Data
-ForEach ($Domain in $RSCList)
-{
-# Setting variables
-$ID = $Domain.id
-# Building GraphQL query
-$RSCGraphQL = @{"operationName" = "AzureAdDetailsQuery";
+    }
+    ################################################
+    # API Call To RSC GraphQL URI
+    ################################################
+    # Querying API
+    $RSCResponse = Invoke-RestMethod -Method POST -Uri $RSCGraphqlURL -Body $($RSCGraphQL | ConvertTo-Json -Depth 20) -Headers $RSCSessionHeader
+    $RSCList += $RSCResponse.data.azureAdDirectories.edges.node
+    # Getting all results from activeDirectoryDomains
+    while ($RSCResponse.data.azureAdDirectories.pageInfo.hasNextPage) {
+        # Getting next set
+        $RSCGraphQL.variables.after = $RSCResponse.data.azureAdDirectories.pageInfo.endCursor
+        $RSCResponse = Invoke-RestMethod -Method POST -Uri $RSCGraphqlURL -Body $($RSCGraphQL | ConvertTo-Json -Depth 20) -Headers $RSCSessionHeader
+        $RSCList += $RSCResponse.data.activeDirectoryDomains.edges.node
+    }
+    ################################################
+    # Processing List
+    ################################################
+    # Creating array
+    $RSCEntraIDDomains = [System.Collections.ArrayList]@()
+    # For Each Object Getting Data
+    foreach ($Domain in $RSCList) {
+        # Setting variables
+        $ID = $Domain.id
+        # Building GraphQL query
+        $RSCGraphQL = @{"operationName" = "AzureAdDetailsQuery";
 
-"variables" = @{
-"objectId" = $ID
-};
+            "variables"                 = @{
+                "objectId" = $ID
+            };
 
-"query" = "query AzureAdDetailsQuery(`$objectId: UUID!) {
+            "query"                     = "query AzureAdDetailsQuery(`$objectId: UUID!) {
   azureAdDirectory(workloadFid: `$objectId) {
     id
     region
@@ -235,51 +233,52 @@ fragment EffectiveSlaDomainFragment on SlaDomain {
   }
   __typename
 }"
+        }
+        # Querying API
+        $ObjectDetail = Invoke-RestMethod -Method POST -Uri $RSCGraphqlURL -Body $($RSCGraphQL | ConvertTo-Json -Depth 20) -Headers $RSCSessionHeader
+        $DomainDetail = $ObjectDetail.data.azureAdDirectory
+        # Setting variables
+        $DomainID = $Domain.id
+        $DomainName = $Domain.name
+        $SLADomain = $Domain.effectiveSlaDomain.name
+        $SLADomainID = $Domain.effectiveSlaDomain.id
+        $SLADomainRetentionLocked = $Domain.effectiveSlaDomain.isRetentionLockedSla
+        $Users = $DomainDetail.latestGroupCount
+        $Roles = $DomainDetail.latestRolesCount
+        $Groups = $DomainDetail.latestGroupCount
+        $Snapshots = $DomainDetail.snapshotConnection.count
+        # Snapshot info
+        $SnapshotDateUNIX = $Domain.newestSnapshot.date
+        $SnapshotDateID = $Domain.newestSnapshot.id
+        if ($SnapshotDateUNIX -ne $null) { $SnapshotDateUTC = Convert-RSCUNIXTime $SnapshotDateUNIX }else { $SnapshotDateUTC = $null }
+        # Calculating hours since each snapshot
+        $UTCDateTime = [System.DateTime]::UtcNow
+        if ($SnapshotDateUTC -ne $null) { $SnapshotTimespan = New-TimeSpan -Start $SnapshotDateUTC -End $UTCDateTime; $SnapshotHoursSince = $SnapshotTimespan | Select-Object -ExpandProperty TotalHours; $SnapshotHoursSince = [Math]::Round($SnapshotHoursSince, 1) }else { $SnapshotHoursSince = $null }
+        # Getting object URL
+        $ObjectURL = Get-RSCObjectURL -ObjectType "EntraIDDomain" -ObjectID $DomainID
+        # Adding To Array
+        $Object = New-Object PSObject
+        $Object | Add-Member -MemberType NoteProperty -Name "RSCInstance" -Value $RSCInstance
+        $Object | Add-Member -MemberType NoteProperty -Name "Domain" -Value $DomainName
+        $Object | Add-Member -MemberType NoteProperty -Name "DomainID" -Value $DomainID
+        $Object | Add-Member -MemberType NoteProperty -Name "Users" -Value $Users
+        $Object | Add-Member -MemberType NoteProperty -Name "Roles" -Value $Roles
+        $Object | Add-Member -MemberType NoteProperty -Name "Groups" -Value $Groups
+        $Object | Add-Member -MemberType NoteProperty -Name "Snapshots" -Value $Snapshots
+        $Object | Add-Member -MemberType NoteProperty -Name "LatestSnapshotUTC" -Value $SnapshotDateUTC
+        $Object | Add-Member -MemberType NoteProperty -Name "LatestSnapshotUTCAgeHours" -Value $SnapshotHoursSince
+        $Object | Add-Member -MemberType NoteProperty -Name "SLADomain" -Value $SLADomain
+        $Object | Add-Member -MemberType NoteProperty -Name "SLADomainID" -Value $SLADomainID
+        $Object | Add-Member -MemberType NoteProperty -Name "RetentionLocked" -Value $SLADomainRetentionLocked
+        $Object | Add-Member -MemberType NoteProperty -Name "URL" -Value $ObjectURL
+        # Adding
+        $RSCEntraIDDomains.Add($Object) | Out-Null
+        # End of for each object below
+    }
+    # End of for each object above
+    #
+    # Returning array
+    return $RSCEntraIDDomains
+    # End of function
 }
-# Querying API
-$ObjectDetail = Invoke-RestMethod -Method POST -Uri $RSCGraphqlURL -Body $($RSCGraphQL | ConvertTo-JSON -Depth 20) -Headers $RSCSessionHeader
-$DomainDetail = $ObjectDetail.data.azureAdDirectory
-# Setting variables
-$DomainID = $Domain.id
-$DomainName = $Domain.name
-$SLADomain = $Domain.effectiveSlaDomain.name
-$SLADomainID = $Domain.effectiveSlaDomain.id
-$SLADomainRetentionLocked = $Domain.effectiveSlaDomain.isRetentionLockedSla
-$Users = $DomainDetail.latestGroupCount
-$Roles = $DomainDetail.latestRolesCount
-$Groups = $DomainDetail.latestGroupCount
-$Snapshots = $DomainDetail.snapshotConnection.count
-# Snapshot info
-$SnapshotDateUNIX = $Domain.newestSnapshot.date
-$SnapshotDateID = $Domain.newestSnapshot.id
-IF($SnapshotDateUNIX -ne $null){$SnapshotDateUTC = Convert-RSCUNIXTime $SnapshotDateUNIX}ELSE{$SnapshotDateUTC = $null}
-# Calculating hours since each snapshot
-$UTCDateTime = [System.DateTime]::UtcNow
-IF($SnapshotDateUTC -ne $null){$SnapshotTimespan = New-TimeSpan -Start $SnapshotDateUTC -End $UTCDateTime;$SnapshotHoursSince = $SnapshotTimespan | Select-Object -ExpandProperty TotalHours;$SnapshotHoursSince = [Math]::Round($SnapshotHoursSince,1)}ELSE{$SnapshotHoursSince = $null}
-# Getting object URL
-$ObjectURL = Get-RSCObjectURL -ObjectType "EntraIDDomain" -ObjectID $DomainID
-# Adding To Array
-$Object = New-Object PSObject
-$Object | Add-Member -MemberType NoteProperty -Name "RSCInstance" -Value $RSCInstance
-$Object | Add-Member -MemberType NoteProperty -Name "Domain" -Value $DomainName
-$Object | Add-Member -MemberType NoteProperty -Name "DomainID" -Value $DomainID
-$Object | Add-Member -MemberType NoteProperty -Name "Users" -Value $Users
-$Object | Add-Member -MemberType NoteProperty -Name "Roles" -Value $Roles
-$Object | Add-Member -MemberType NoteProperty -Name "Groups" -Value $Groups
-$Object | Add-Member -MemberType NoteProperty -Name "Snapshots" -Value $Snapshots
-$Object | Add-Member -MemberType NoteProperty -Name "LatestSnapshotUTC" -Value $SnapshotDateUTC
-$Object | Add-Member -MemberType NoteProperty -Name "LatestSnapshotUTCAgeHours" -Value $SnapshotHoursSince
-$Object | Add-Member -MemberType NoteProperty -Name "SLADomain" -Value $SLADomain
-$Object | Add-Member -MemberType NoteProperty -Name "SLADomainID" -Value $SLADomainID
-$Object | Add-Member -MemberType NoteProperty -Name "RetentionLocked" -Value $SLADomainRetentionLocked
-$Object | Add-Member -MemberType NoteProperty -Name "URL" -Value $ObjectURL
-# Adding
-$RSCEntraIDDomains.Add($Object) | Out-Null
-# End of for each object below
-}
-# End of for each object above
-#
-# Returning array
-Return $RSCEntraIDDomains
-# End of function
-}
+

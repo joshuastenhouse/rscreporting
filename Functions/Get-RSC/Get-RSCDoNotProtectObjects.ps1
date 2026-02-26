@@ -1,11 +1,11 @@
 ################################################
 # Function - Get-RSCDoNotProtectObjects - Getting all Unprotected objects visible to the RSC instance
 ################################################
-Function Get-RSCDoNotProtectObject {
-[CmdletBinding()]
-[Alias('Get-RSCDoNotProtectObjects')]
-param()
-<#
+function Get-RSCDoNotProtectObject {
+    [CmdletBinding()]
+    [Alias('Get-RSCDoNotProtectObjects')]
+    param()
+    <#
 .SYNOPSIS
 A Rubrik Security Cloud (RSC) Reporting Module Function returning a list of all objects set to DoNotProtect.
 
@@ -27,19 +27,20 @@ Author: Joshua Stenhouse
 Date: 05/11/2023
 #>
 
-################################################
-# Importing Module & Running Required Functions
-################################################
-# Importing the module is it needs other modules
-Import-Module RSCReporting
-# Checking connectivity, exiting function with error if not connected
-Test-RSCConnection
-# Running existing function
-$RSCOjbects = Get-RSCObjects
-# Filtering
-$RSCDoNotProtectObjects = $RSCOjbects | Where-Object {$_.ProtectionStatus -eq "DoNotProtect"}
+    ################################################
+    # Importing Module & Running Required Functions
+    ################################################
+    # Importing the module is it needs other modules
+    Import-Module RSCReporting
+    # Checking connectivity, exiting function with error if not connected
+    Test-RSCConnection
+    # Running existing function
+    $RSCOjbects = Get-RSCObjects
+    # Filtering
+    $RSCDoNotProtectObjects = $RSCOjbects | Where-Object { $_.ProtectionStatus -eq "DoNotProtect" }
 
-# Returning array
-Return $RSCDoNotProtectObjects
-# End of function
+    # Returning array
+    return $RSCDoNotProtectObjects
+    # End of function
 }
+

@@ -1,9 +1,9 @@
 ################################################
 # Function - Get-RSCVMwareTagCategories - Getting all RSCVMwareTagCategories connected to the RSC instance
 ################################################
-Function Get-RSCVMwareTagCategorie {
+function Get-RSCVMwareTagCategorie {
 
-<#
+    <#
 .SYNOPSIS
 A Rubrik Security Cloud (RSC) Reporting Module Function returning a list of all VMware tag categories in all vCenters.
 
@@ -24,31 +24,31 @@ This example returns an array of all the information returned by the GraphQL end
 Author: Joshua Stenhouse
 Date: 05/11/2023
 #>
-[CmdletBinding()]
-[Alias('Get-RSCVMwareTagCategories')]
-param()
-################################################
-# Importing Module & Running Required Functions
-################################################
-# Importing the module is it needs other modules
-Import-Module RSCReporting
-# Checking connectivity, exiting function with error if not connected
-Test-RSCConnection
-################################################
-# Getting All Tag Categories 
-################################################
-# Creating array
-$RSCTagCategories = [System.Collections.ArrayList]@()
-# Creating array for objects
-$RSCTagCategoryList = @()
-# Building GraphQL query
-$RSCGraphQL = @{"operationName" = "vSphereVCenterConnection";
+    [CmdletBinding()]
+    [Alias('Get-RSCVMwareTagCategories')]
+    param()
+    ################################################
+    # Importing Module & Running Required Functions
+    ################################################
+    # Importing the module is it needs other modules
+    Import-Module RSCReporting
+    # Checking connectivity, exiting function with error if not connected
+    Test-RSCConnection
+    ################################################
+    # Getting All Tag Categories 
+    ################################################
+    # Creating array
+    $RSCTagCategories = [System.Collections.ArrayList]@()
+    # Creating array for objects
+    $RSCTagCategoryList = @()
+    # Building GraphQL query
+    $RSCGraphQL = @{"operationName" = "vSphereVCenterConnection";
 
-"variables" = @{
-"first" = 1000
-};
+        "variables"                 = @{
+            "first" = 1000
+        };
 
-"query" = "query vSphereVCenterConnection(`$first: Int, `$after: String) {
+        "query"                     = "query vSphereVCenterConnection(`$first: Int, `$after: String) {
   vSphereVCenterConnection {
     nodes {
       tagChildConnection(first: `$first, after: `$after) {
@@ -76,49 +76,47 @@ $RSCGraphQL = @{"operationName" = "vSphereVCenterConnection";
   }
 }
 "
-}
-################################################
-# API Call To RSC GraphQL URI
-################################################
-# Querying API
-$RSCTagListResponse = Invoke-RestMethod -Method POST -Uri $RSCGraphqlURL -Body $($RSCGraphQL | ConvertTo-JSON -Depth 20) -Headers $RSCSessionHeader
-# Setting variable
-$RSCTagCategoryList += $RSCTagListResponse.data.vSphereVCenterConnection.nodes.tagChildConnection.nodes
-# Getting all results from paginations
-While($RSCTagListResponse.data.vSphereVCenterConnection.pageInfo.hasNextPage) 
-{
-# Getting next set
-$RSCGraphQL.variables.after = $RSCTagListResponse.data.vSphereVCenterConnection.pageInfo.endCursor
-$RSCTagListResponse = Invoke-RestMethod -Method POST -Uri $RSCGraphqlURL -Body $($RSCGraphQL | ConvertTo-JSON -Depth 20) -Headers $RSCSessionHeader
-$RSCTagCategoryList += $RSCTagListResponse.data.vSphereVCenterConnection.nodes.tagChildConnection.nodes
-}
-################################################
-# Getting All Tags For Each Tag Category
-################################################
-ForEach($RSCTagCategory in $RSCTagCategoryList)
-{
-# Setting variables
-$TagCategoryID = $RSCTagCategory.id
-$TagCategoryName = $RSCTagCategory.name
-$TagCategoryVMs = $RSCTagCategory.numWorkloadDescendants
-$TagCategoryvCenterInfo = $RSCTagCategory.vsphereTagPath
-$TagCategoryvCenter = $TagCategoryvCenterInfo.name
-$TagCategoryvCenterID = $TagCategoryvCenterInfo.fid
-$TagCategorySLADomainInfo = $RSCTagCategory.effectiveSlaDomain
-$TagCategorySLADomain = $TagCategorySLADomainInfo.name
-$TagCategorySLADomainID = $TagCategorySLADomainInfo.id
-$TagCategorySLAAssignment = $RSCTagCategory.slaAssignment
-# Creating array for objects
-$RSCTagList = @()
-# Building GraphQL query
-$RSCGraphQL = @{"operationName" = "VSphereTagCategoryChildrenQuery";
+    }
+    ################################################
+    # API Call To RSC GraphQL URI
+    ################################################
+    # Querying API
+    $RSCTagListResponse = Invoke-RestMethod -Method POST -Uri $RSCGraphqlURL -Body $($RSCGraphQL | ConvertTo-Json -Depth 20) -Headers $RSCSessionHeader
+    # Setting variable
+    $RSCTagCategoryList += $RSCTagListResponse.data.vSphereVCenterConnection.nodes.tagChildConnection.nodes
+    # Getting all results from paginations
+    while ($RSCTagListResponse.data.vSphereVCenterConnection.pageInfo.hasNextPage) {
+        # Getting next set
+        $RSCGraphQL.variables.after = $RSCTagListResponse.data.vSphereVCenterConnection.pageInfo.endCursor
+        $RSCTagListResponse = Invoke-RestMethod -Method POST -Uri $RSCGraphqlURL -Body $($RSCGraphQL | ConvertTo-Json -Depth 20) -Headers $RSCSessionHeader
+        $RSCTagCategoryList += $RSCTagListResponse.data.vSphereVCenterConnection.nodes.tagChildConnection.nodes
+    }
+    ################################################
+    # Getting All Tags For Each Tag Category
+    ################################################
+    foreach ($RSCTagCategory in $RSCTagCategoryList) {
+        # Setting variables
+        $TagCategoryID = $RSCTagCategory.id
+        $TagCategoryName = $RSCTagCategory.name
+        $TagCategoryVMs = $RSCTagCategory.numWorkloadDescendants
+        $TagCategoryvCenterInfo = $RSCTagCategory.vsphereTagPath
+        $TagCategoryvCenter = $TagCategoryvCenterInfo.name
+        $TagCategoryvCenterID = $TagCategoryvCenterInfo.fid
+        $TagCategorySLADomainInfo = $RSCTagCategory.effectiveSlaDomain
+        $TagCategorySLADomain = $TagCategorySLADomainInfo.name
+        $TagCategorySLADomainID = $TagCategorySLADomainInfo.id
+        $TagCategorySLAAssignment = $RSCTagCategory.slaAssignment
+        # Creating array for objects
+        $RSCTagList = @()
+        # Building GraphQL query
+        $RSCGraphQL = @{"operationName" = "VSphereTagCategoryChildrenQuery";
 
-"variables" = @{
-"first" = 1000
-"id" = "$TagCategoryID"
-};
+            "variables"                 = @{
+                "first" = 1000
+                "id"    = "$TagCategoryID"
+            };
 
-"query" = "query VSphereTagCategoryChildrenQuery(`$first: Int!, `$after: String, `$id: UUID!, `$sortBy: HierarchySortByField, `$sortOrder: SortOrder) {
+            "query"                     = "query VSphereTagCategoryChildrenQuery(`$first: Int!, `$after: String, `$id: UUID!, `$sortBy: HierarchySortByField, `$sortOrder: SortOrder) {
   vSphereTagCategory(fid: `$id) {
     id
     tagChildConnection(first: `$first, sortBy: `$sortBy, sortOrder: `$sortOrder, after: `$after) {
@@ -253,38 +251,39 @@ fragment SnappableCountColumnFragment on HierarchyObject {
   objectType
   __typename
 }"
-}
-################################################
-# API Call To RSC GraphQL URI
-################################################
-# Querying API
-$RSCTagListResponse = Invoke-RestMethod -Method POST -Uri $RSCGraphqlURL -Body $($RSCGraphQL | ConvertTo-JSON -Depth 20) -Headers $RSCSessionHeader
-# Setting variable
-$RSCTagList += $RSCTagListResponse.data.vSphereTagCategory.tagChildConnection.edges.node
-# Counting tags
-$TagCategoryTagCount = $RSCTagList | Measure-Object | Select-Object -ExpandProperty Count
-# Getting URL
-$TagURL = Get-RSCObjectURL -ObjectType "vCenterTagCategories" -ObjectID $TagCategoryvCenterID
-# Adding To Array
-$Object = New-Object PSObject
-$Object | Add-Member -MemberType NoteProperty -Name "RSCInstance" -Value $RSCInstance
-$Object | Add-Member -MemberType NoteProperty -Name "vCenter" -Value $TagCategoryvCenter
-$Object | Add-Member -MemberType NoteProperty -Name "vCenterID" -Value $TagCategoryvCenterID
-$Object | Add-Member -MemberType NoteProperty -Name "TagCategory" -Value $TagCategoryName
-$Object | Add-Member -MemberType NoteProperty -Name "TagCategoryID" -Value $TagCategoryID
-$Object | Add-Member -MemberType NoteProperty -Name "Tags" -Value $TagCategoryTagCount
-$Object | Add-Member -MemberType NoteProperty -Name "VMs" -Value $TagCategoryVMs
-$Object | Add-Member -MemberType NoteProperty -Name "SLADomain" -Value $TagCategorySLADomain
-$Object | Add-Member -MemberType NoteProperty -Name "SLADomainID" -Value $TagCategorySLADomainID
-$Object | Add-Member -MemberType NoteProperty -Name "SLAAssignment" -Value $TagCategorySLAAssignment
-$Object | Add-Member -MemberType NoteProperty -Name "URL" -Value $TagURL
-# Adding
-$RSCTagCategories.Add($Object) | Out-Null
-# End of for each object below
-}
-# End of for each object above
+        }
+        ################################################
+        # API Call To RSC GraphQL URI
+        ################################################
+        # Querying API
+        $RSCTagListResponse = Invoke-RestMethod -Method POST -Uri $RSCGraphqlURL -Body $($RSCGraphQL | ConvertTo-Json -Depth 20) -Headers $RSCSessionHeader
+        # Setting variable
+        $RSCTagList += $RSCTagListResponse.data.vSphereTagCategory.tagChildConnection.edges.node
+        # Counting tags
+        $TagCategoryTagCount = $RSCTagList | Measure-Object | Select-Object -ExpandProperty Count
+        # Getting URL
+        $TagURL = Get-RSCObjectURL -ObjectType "vCenterTagCategories" -ObjectID $TagCategoryvCenterID
+        # Adding To Array
+        $Object = New-Object PSObject
+        $Object | Add-Member -MemberType NoteProperty -Name "RSCInstance" -Value $RSCInstance
+        $Object | Add-Member -MemberType NoteProperty -Name "vCenter" -Value $TagCategoryvCenter
+        $Object | Add-Member -MemberType NoteProperty -Name "vCenterID" -Value $TagCategoryvCenterID
+        $Object | Add-Member -MemberType NoteProperty -Name "TagCategory" -Value $TagCategoryName
+        $Object | Add-Member -MemberType NoteProperty -Name "TagCategoryID" -Value $TagCategoryID
+        $Object | Add-Member -MemberType NoteProperty -Name "Tags" -Value $TagCategoryTagCount
+        $Object | Add-Member -MemberType NoteProperty -Name "VMs" -Value $TagCategoryVMs
+        $Object | Add-Member -MemberType NoteProperty -Name "SLADomain" -Value $TagCategorySLADomain
+        $Object | Add-Member -MemberType NoteProperty -Name "SLADomainID" -Value $TagCategorySLADomainID
+        $Object | Add-Member -MemberType NoteProperty -Name "SLAAssignment" -Value $TagCategorySLAAssignment
+        $Object | Add-Member -MemberType NoteProperty -Name "URL" -Value $TagURL
+        # Adding
+        $RSCTagCategories.Add($Object) | Out-Null
+        # End of for each object below
+    }
+    # End of for each object above
 
-# Returning array
-Return $RSCTagCategories
-# End of function
+    # Returning array
+    return $RSCTagCategories
+    # End of function
 }
+

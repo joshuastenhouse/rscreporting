@@ -1,13 +1,12 @@
-﻿########################################################################################################################
+########################################################################################################################
 # Start of the script - Displaying a welcome message when importing the module
 ########################################################################################################################
 # Only displaying if not already shown in the current session
-IF($RSCDoNotShowWelcomeMessage -ne $TRUE)
-{
-# Global variable to combine RSCReporting with Official RSC SDK
-$Global:RSCReportingModule = $TRUE
-# Friendly UI banner on module load
-Write-Host "------------------------------------------------------------------------------------------
+if ($RSCDoNotShowWelcomeMessage -ne $TRUE) {
+    # Global variable to combine RSCReporting with Official RSC SDK
+    $Global:RSCReportingModule = $TRUE
+    # Friendly UI banner on module load
+    Write-Host "------------------------------------------------------------------------------------------
 Welcome to the Rubrik Security Cloud (RSC) PowerShell Module For Reporting
 ------------------------------------------------------------------------------------------
 To get started use Connect-RSCReporting and follow the below instructions:
@@ -40,8 +39,8 @@ Example 3 - Paste in the RSCURL, ClientID & Secret, just pass the Script directo
 ------------------------------------------------------------------------------------------
 Once connected, type 'Get-Command -Module RSCReporting' to sell all available functions...
 ------------------------------------------------------------------------------------------" -ForegroundColor Cyan 
-# Setting Global Variable to prevent being shown twice
-$Global:RSCDoNotShowWelcomeMessage = $TRUE
+    # Setting Global Variable to prevent being shown twice
+    $Global:RSCDoNotShowWelcomeMessage = $TRUE
 }
 ################################################
 # End of script

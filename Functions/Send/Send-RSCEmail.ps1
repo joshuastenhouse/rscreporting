@@ -1,9 +1,9 @@
 ################################################
 # Function - Send-RSCEmail - Sending emails from the RSC Reporting module
 ################################################
-Function Send-RSCEmail {
+function Send-RSCEmail {
 
-<#
+    <#
 .SYNOPSIS
 A Rubrik Security Cloud (RSC) Reporting Module Function that sends emails to a local SMTP server of your choosing.
 
@@ -20,75 +20,66 @@ Send-RSCEmail -EmailTo "test@test.com" -EmailFrom "test@test.com" -SMTPServer "l
 Author: Joshua Stenhouse
 Date: 05/11/2023
 #>
-################################################
-# Paramater Config
-################################################
-	Param
+    ################################################
+    # Paramater Config
+    ################################################
+    param
     (
-        $EmailTo,$EmailFrom,$EmailBody,$EmailSubject,$SMTPServer,$Attachments,[switch]$SSLRequired
+        $EmailTo, $EmailFrom, $EmailBody, $EmailSubject, $SMTPServer, $Attachments, [switch]$SSLRequired
     )
 
-# Checking function hasn't been passed multiple To emails in a string, formatting if so
-IF($EmailTo -match ",")
-{
-$EmailTo = $EmailTo.Split(",")
-}
-#####################
-# With SSL 
-#####################
-IF ($SSLRequired)
-{
-# Checking whether attachment has been specified
-IF ($Attachments -ne $null)
-{
-# Sending email with attachments
-Try
-{
-Send-MailMessage -To $EmailTo -BodyAsHtml -Body $EmailBody -Subject $EmailSubject -From $EmailFrom -Attachments $Attachments -SmtpServer $SMTPServer -UseSSL -ErrorAction:SilentlyContinue
-$EmailSent = $TRUE
-}
-Catch{$EmailSent = $FALSE}
-}
-ELSE
-{
-# Sending email without attachments
-Send-MailMessage -To $EmailTo -BodyAsHtml -Body $EmailBody -Subject $EmailSubject -From $EmailFrom -SmtpServer $SMTPServer -UseSSL -ErrorAction:SilentlyContinue
-$EmailSent = $TRUE
-}
-Catch{$EmailSent = $FALSE}
-}
-ELSE
-{
-#####################
-# No SSL
-#####################
-# Checking whether attachment has been specified
-IF ($Attachments -ne $null)
-{
-# Sending email with attachments
-Try
-{
-Send-MailMessage -To $EmailTo -BodyAsHtml -Body $EmailBody -Subject $EmailSubject -From $EmailFrom -Attachments $Attachments -SmtpServer $SMTPServer
-$EmailSent = $TRUE
-}
-Catch{$EmailSent = $FALSE}
-}
-ELSE
-{
-# Sending email without attachments
-Try
-{
-Send-MailMessage -To $EmailTo -BodyAsHtml -Body $EmailBody -Subject $EmailSubject -From $EmailFrom -SmtpServer $SMTPServer
-$EmailSent = $TRUE
-}
-Catch{$EmailSent = $FALSE}
-}
+    # Checking function hasn't been passed multiple To emails in a string, formatting if so
+    if ($EmailTo -match ",") {
+        $EmailTo = $EmailTo.Split(",")
+    }
+    #####################
+    # With SSL 
+    #####################
+    if ($SSLRequired) {
+        # Checking whether attachment has been specified
+        if ($Attachments -ne $null) {
+            # Sending email with attachments
+            try {
+                Send-MailMessage -To $EmailTo -BodyAsHtml -Body $EmailBody -Subject $EmailSubject -From $EmailFrom -Attachments $Attachments -SmtpServer $SMTPServer -UseSsl -ErrorAction:SilentlyContinue
+                $EmailSent = $TRUE
+            }
+            catch { $EmailSent = $FALSE }
+        }
+        else {
+            # Sending email without attachments
+            Send-MailMessage -To $EmailTo -BodyAsHtml -Body $EmailBody -Subject $EmailSubject -From $EmailFrom -SmtpServer $SMTPServer -UseSsl -ErrorAction:SilentlyContinue
+            $EmailSent = $TRUE
+        }
+        Catch { $EmailSent = $FALSE }
+    }
+    else {
+        #####################
+        # No SSL
+        #####################
+        # Checking whether attachment has been specified
+        if ($Attachments -ne $null) {
+            # Sending email with attachments
+            try {
+                Send-MailMessage -To $EmailTo -BodyAsHtml -Body $EmailBody -Subject $EmailSubject -From $EmailFrom -Attachments $Attachments -SmtpServer $SMTPServer
+                $EmailSent = $TRUE
+            }
+            catch { $EmailSent = $FALSE }
+        }
+        else {
+            # Sending email without attachments
+            try {
+                Send-MailMessage -To $EmailTo -BodyAsHtml -Body $EmailBody -Subject $EmailSubject -From $EmailFrom -SmtpServer $SMTPServer
+                $EmailSent = $TRUE
+            }
+            catch { $EmailSent = $FALSE }
+        }
+    }
+
+    # Writing status
+    $EmailStatus = "EmailSent: $EmailSent"
+
+    # Returning status
+    return $EmailStatus
+    # End of function
 }
 
-# Writing status
-$EmailStatus = "EmailSent: $EmailSent"
-
-# Returning status
-Return $EmailStatus
-# End of function
-}

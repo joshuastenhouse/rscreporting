@@ -1,9 +1,9 @@
 ################################################
 # Function - Get-RSCRoleObjects - Getting all objects assigned to Roles within RSC
 ################################################
-Function Get-RSCRoleObject {
+function Get-RSCRoleObject {
 
-<#
+    <#
 .SYNOPSIS
 A Rubrik Security Cloud (RSC) Reporting Module Function returning a list of all objects explicitly configured on roles.
 
@@ -25,49 +25,48 @@ Author: Joshua Stenhouse
 Date: 07/15/24
 #>
 
-################################################
-# Paramater Config
-################################################
-[CmdletBinding()]
-[Alias('Get-RSCRoleObjects')]
-    Param (
-        [Parameter(ValueFromPipeline=$true)]
+    ################################################
+    # Paramater Config
+    ################################################
+    [CmdletBinding()]
+    [Alias('Get-RSCRoleObjects')]
+    param (
+        [Parameter(ValueFromPipeline = $true)]
         [array]$PipelineArray,
-        [Parameter(Mandatory=$false)]
+        [Parameter(Mandatory = $false)]
         [string]$RoleID
     )
-################################################
-# Importing Module & Running Required Functions
-################################################
-# IF piped the object array pulling out the ObjectID needed
-IF($PipelineArray -ne $null){$RoleID = $PipelineArray | Select-Object -ExpandProperty ObjectID -First 1}
-# Importing the module is it needs other modules
-Import-Module RSCReporting
-# Checking connectivity, exiting function with error if not connected
-Test-RSCConnection
-# Getting role assignments
-$RSCRoleAssignments = Get-RSCUserRoleAssignments
-# Getting roles
-$RSCRoles = Get-RSCRoles
-# Getting objects list if not already pulled as a global variable in this session
-IF($RSCGlobalObjects -eq $null){$RSCObjects = Get-RSCObjects;$Global:RSCGlobalObjects = $RSCObjects}ELSE{$RSCObjects = $RSCGlobalObjects}
-# If passed RoleID only querying that role, if not passed any, querying all
-IF($RoleID -ne $null){$RoleIDs = $RoleID}ELSE{$RoleIDs = $RSCRoles | Select-Object -ExpandProperty RoleID}
-# Creating array
-$RSCRoleObjects = [System.Collections.ArrayList]@()
-################################################
-# Querying RSC GraphQL API
-################################################
-ForEach($RoleID in $RoleIDs)
-{
-# Building GraphQL query
-$RSCGraphQL = @{"operationName" = "RoleDetailsQuery";
+    ################################################
+    # Importing Module & Running Required Functions
+    ################################################
+    # IF piped the object array pulling out the ObjectID needed
+    if ($PipelineArray -ne $null) { $RoleID = $PipelineArray | Select-Object -ExpandProperty ObjectID -First 1 }
+    # Importing the module is it needs other modules
+    Import-Module RSCReporting
+    # Checking connectivity, exiting function with error if not connected
+    Test-RSCConnection
+    # Getting role assignments
+    $RSCRoleAssignments = Get-RSCUserRoleAssignments
+    # Getting roles
+    $RSCRoles = Get-RSCRoles
+    # Getting objects list if not already pulled as a global variable in this session
+    if ($RSCGlobalObjects -eq $null) { $RSCObjects = Get-RSCObjects; $Global:RSCGlobalObjects = $RSCObjects }else { $RSCObjects = $RSCGlobalObjects }
+    # If passed RoleID only querying that role, if not passed any, querying all
+    if ($RoleID -ne $null) { $RoleIDs = $RoleID }else { $RoleIDs = $RSCRoles | Select-Object -ExpandProperty RoleID }
+    # Creating array
+    $RSCRoleObjects = [System.Collections.ArrayList]@()
+    ################################################
+    # Querying RSC GraphQL API
+    ################################################
+    foreach ($RoleID in $RoleIDs) {
+        # Building GraphQL query
+        $RSCGraphQL = @{"operationName" = "RoleDetailsQuery";
 
-"variables" = @{
-"roleIds" = "$RoleID"
-};
+            "variables"                 = @{
+                "roleIds" = "$RoleID"
+            };
 
-"query" = "query RoleDetailsQuery(`$roleIds: [String!]!) {
+            "query"                     = "query RoleDetailsQuery(`$roleIds: [String!]!) {
   getRolesByIds(roleIds: `$roleIds) {
     id
     name
@@ -102,68 +101,66 @@ fragment PermissionsFragment on Permission {
   }
   __typename
 }"
+        }
+        ################################################
+        # API Call To RSC GraphQL URI
+        ################################################
+        # Querying API
+        $RSCResponse = Invoke-RestMethod -Method POST -Uri $RSCGraphqlURL -Body $($RSCGraphQL | ConvertTo-Json -Depth 20) -Headers $RSCSessionHeader
+        # Getting detail
+        $RoleDetail = $RSCResponse.data.getRolesByIds
+        # Setting variables
+        $RoleName = $RoleDetail.name
+        $RoleDescription = $RoleDetail.description
+        $IsOrgAdmin = $RoleDetail.isOrgAdmin
+        $IsReadOnly = $RoleDetail.IsReadOnly
+        $RoleObjectsList = $RoleDetail.effectiveRbacPermissions.rbacObject
+        ################################################
+        # Processing List
+        ################################################
+        foreach ($RoleObject in $RoleObjectsList) {
+            # Setting variables
+            $RoleObjectId = $RoleObject.objectId
+            $RoleClusterId = $RoleObject.clusterId
+            # Counting characters
+            $RoleCharCount = $RoleObjectId | Measure-Object -Character | Select-Object -ExpandProperty Characters
+            # If 36 characters, it's an actual object ID, so getting the object name
+            if ($RoleCharCount -eq 36) {
+                $RoleObjectDetail = $RSCObjects | Where-Object { $_.ObjectID -eq $RoleObjectId }
+                $RoleObjectName = $RoleObjectDetail.Object
+                $RoleObjectType = $RoleObjectDetail.Type
+                # Getting URL for the object
+                $URL = Get-RSCObjectURL -ObjectType $RoleObjectType -ObjectID $RoleID
+            }
+            else {
+                # Setting name to be ID and type to null
+                $RoleObjectName = "ALL"
+                $RoleObjectType = $RoleObjectId
+                # Getting URL for role
+                $URL = Get-RSCObjectURL -ObjectType "Role" -ObjectID $RoleID
+            }
+            # Adding To Array
+            $Object = New-Object PSObject
+            $Object | Add-Member -MemberType NoteProperty -Name "RSCInstance" -Value $RSCInstance
+            $Object | Add-Member -MemberType NoteProperty -Name "Role" -Value $RoleName
+            $Object | Add-Member -MemberType NoteProperty -Name "Object" -Value $RoleObjectName
+            $Object | Add-Member -MemberType NoteProperty -Name "Type" -Value $RoleObjectType
+            $Object | Add-Member -MemberType NoteProperty -Name "ObjectID" -Value $RoleObjectId
+            $Object | Add-Member -MemberType NoteProperty -Name "ClusterID" -Value $RoleClusterId
+            $Object | Add-Member -MemberType NoteProperty -Name "RoleID" -Value $RoleID
+            $Object | Add-Member -MemberType NoteProperty -Name "URL" -Value $URL
+            # Adding
+            $RSCRoleObjects.Add($Object) | Out-Null
+            # End of for each object below
+        }
+        # End of for each object above
+        #
+        # End of for each role below
+    }
+    # End of for each role above
+    #
+    # Returning array
+    return $RSCRoleObjects
+    # End of function
 }
-################################################
-# API Call To RSC GraphQL URI
-################################################
-# Querying API
-$RSCResponse = Invoke-RestMethod -Method POST -Uri $RSCGraphqlURL -Body $($RSCGraphQL | ConvertTo-JSON -Depth 20) -Headers $RSCSessionHeader
-# Getting detail
-$RoleDetail = $RSCResponse.data.getRolesByIds
-# Setting variables
-$RoleName = $RoleDetail.name
-$RoleDescription = $RoleDetail.description
-$IsOrgAdmin = $RoleDetail.isOrgAdmin
-$IsReadOnly = $RoleDetail.IsReadOnly
-$RoleObjectsList = $RoleDetail.effectiveRbacPermissions.rbacObject
-################################################
-# Processing List
-################################################
-ForEach ($RoleObject in $RoleObjectsList)
-{
-# Setting variables
-$RoleObjectId = $RoleObject.objectId
-$RoleClusterId = $RoleObject.clusterId
-# Counting characters
-$RoleCharCount = $RoleObjectId | Measure-Object -Character | Select-Object -ExpandProperty Characters
-# If 36 characters, it's an actual object ID, so getting the object name
-IF($RoleCharCount -eq 36)
-{
-$RoleObjectDetail = $RSCObjects | Where-Object {$_.ObjectID -eq $RoleObjectId}
-$RoleObjectName = $RoleObjectDetail.Object
-$RoleObjectType = $RoleObjectDetail.Type
-# Getting URL for the object
-$URL = Get-RSCObjectURL -ObjectType $RoleObjectType -ObjectID $RoleID
-}
-ELSE
-{
-# Setting name to be ID and type to null
-$RoleObjectName = "ALL"
-$RoleObjectType = $RoleObjectId
-# Getting URL for role
-$URL = Get-RSCObjectURL -ObjectType "Role" -ObjectID $RoleID
-}
-# Adding To Array
-$Object = New-Object PSObject
-$Object | Add-Member -MemberType NoteProperty -Name "RSCInstance" -Value $RSCInstance
-$Object | Add-Member -MemberType NoteProperty -Name "Role" -Value $RoleName
-$Object | Add-Member -MemberType NoteProperty -Name "Object" -Value $RoleObjectName
-$Object | Add-Member -MemberType NoteProperty -Name "Type" -Value $RoleObjectType
-$Object | Add-Member -MemberType NoteProperty -Name "ObjectID" -Value $RoleObjectId
-$Object | Add-Member -MemberType NoteProperty -Name "ClusterID" -Value $RoleClusterId
-$Object | Add-Member -MemberType NoteProperty -Name "RoleID" -Value $RoleID
-$Object | Add-Member -MemberType NoteProperty -Name "URL" -Value $URL
-# Adding
-$RSCRoleObjects.Add($Object) | Out-Null
-# End of for each object below
-}
-# End of for each object above
-#
-# End of for each role below
-}
-# End of for each role above
-#
-# Returning array
-Return $RSCRoleObjects
-# End of function
-}
+

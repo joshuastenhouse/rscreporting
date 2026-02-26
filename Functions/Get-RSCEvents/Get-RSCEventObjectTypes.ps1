@@ -1,9 +1,9 @@
 ################################################
 # Function - Get-RSCEventObjectTypes - Getting all object types usable on the Events API in RSC
 ################################################
-Function Get-RSCEventObjectType {
+function Get-RSCEventObjectType {
 
-<#
+    <#
 .SYNOPSIS
 A Rubrik Security Cloud (RSC) Reporting Module Function returning a list of all valid ObjectTypes for filtering Get-RSCEvent and Write-RSCEvent functions.
 
@@ -23,11 +23,11 @@ Get-RSCEventObjectTypes
 Author: Joshua Stenhouse
 Date: 05/11/2023
 #>
-[CmdletBinding()]
-[Alias('Get-RSCEventObjectTypes')]
-param()
-# Static array of object types last updated 05/25/23
-$EventObjectTypes = "UNKNOWN_EVENT_OBJECT_TYPE, RUBRIK_SAAS_ACCOUNT, APP_BLUEPRINT, APP_FLOWS, OBJECT_TYPE_AUTH_DOMAIN, AWS_ACCOUNT, 
+    [CmdletBinding()]
+    [Alias('Get-RSCEventObjectTypes')]
+    param()
+    # Static array of object types last updated 05/25/23
+    $EventObjectTypes = "UNKNOWN_EVENT_OBJECT_TYPE, RUBRIK_SAAS_ACCOUNT, APP_BLUEPRINT, APP_FLOWS, OBJECT_TYPE_AUTH_DOMAIN, AWS_ACCOUNT, 
 AWS_EVENT_TYPE, AZURE_NATIVE_SUBSCRIPTION, AZURE_NATIVE_VM, AZURE_NATIVE_DISK, AZURE_SQL_DATABASE, AZURE_SQL_MANAGED_INSTANCE, 
 AZURE_SQL_DATABASE_SERVER, AZURE_SQL_MANAGED_INSTANCE_DATABASE, CAPACITY_BUNDLE, OBJECT_TYPE_CLOUD_NATIVE_VIRTUAL_MACHINE, 
 OBJECT_TYPE_CLOUD_NATIVE_VM, CERTIFICATE, CLUSTER, COMPUTE_INSTANCE, DATA_LOCATION, DB2_DATABASE, DB2_INSTANCE, EC2_INSTANCE, ENVOY, 
@@ -44,16 +44,17 @@ CASSANDRA_COLUMN_FAMILY, CASSANDRA_KEYSPACE, CASSANDRA_SOURCE, MONGODB_COLLECTIO
 CLOUD_DIRECT_NAS_EXPORT, MONGO_COLLECTION, MONGO_DATABASE, MONGO_SOURCE, CERTIFICATE_MANAGEMENT, AWS_NATIVE_S3_BUCKET, 
 AZURE_STORAGE_ACCOUNT, K8S_CLUSTER, K8S_RESOURCE_SET, AZURE_AD_DIRECTORY, ENCRYPTION_MANAGEMENT, ACTIVE_DIRECTORY_DOMAIN, 
 ACTIVE_DIRECTORY_DOMAIN_CONTROLLER, OBJECT_TYPE_NUTANIX_PRISM_CENTRAL, VMWARE_HOST, ATLASSIAN_SITE, JIRA_PROJECT, JIRA_SETTINGS"
-# Removing spaces
-$EventObjectTypes = $EventObjectTypes.Replace(" ","")
-# Removing line breaks
-$EventObjectTypes = [string]::join("",($EventObjectTypes.Split("`n")))
-# Splitting
-$EventObjectTypes = $EventObjectTypes.Split(",")
-# Ordering
-$EventObjectTypes = $EventObjectTypes| Sort-Object
+    # Removing spaces
+    $EventObjectTypes = $EventObjectTypes.Replace(" ", "")
+    # Removing line breaks
+    $EventObjectTypes = [string]::join("", ($EventObjectTypes.Split("`n")))
+    # Splitting
+    $EventObjectTypes = $EventObjectTypes.Split(",")
+    # Ordering
+    $EventObjectTypes = $EventObjectTypes | Sort-Object
 
-# Returning array
-Return $EventObjectTypes
-# End of function
+    # Returning array
+    return $EventObjectTypes
+    # End of function
 }
+

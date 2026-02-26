@@ -1,9 +1,9 @@
 ################################################
 # Function - Write-RSCFilesets - Getting all active file sets in RSC and writing them to a SQL database table
 ################################################
-Function Write-RSCFileset {
+function Write-RSCFileset {
 
-<#
+    <#
 .SYNOPSIS
 A Rubrik Security Cloud (RSC) Reporting Module Function for writing RSC fileset data into a MSSQL DB/Table of your choosing.
 
@@ -44,71 +44,68 @@ Author: Joshua Stenhouse
 Date: 11/04/2025
 #>
 
-################################################
-# Paramater Config
-################################################
-[CmdletBinding()]
-[Alias('Write-RSCFilesets')]
-	Param
+    ################################################
+    # Paramater Config
+    ################################################
+    [CmdletBinding()]
+    [Alias('Write-RSCFilesets')]
+    param
     (
-        [Parameter(Mandatory=$true)]$SQLInstance,
-		[Parameter(Mandatory=$true)]$SQLDB,
-        [Parameter(Mandatory=$false)]$SQLTable,
+        [Parameter(Mandatory = $true)]$SQLInstance,
+        [Parameter(Mandatory = $true)]$SQLDB,
+        [Parameter(Mandatory = $false)]$SQLTable,
         [switch]$DropExistingRows,
         [switch]$DontUseTempDB,
         [switch]$DisablePerFilesetLogging
     )
-################################################
-# Getting times required
-################################################
-$ScriptStart = Get-Date
-$MachineDateTime = Get-Date
-$UTCDateTime = [System.DateTime]::UtcNow
-################################################
-# Importing SQL Server Module
-################################################
-# Getting the name of the SQL Server module to use (either SqlServer or SQLPS)
-$PSModules = Get-Module -ListAvailable | Select-Object -ExpandProperty Name
-$SQLModuleName = $PSModules | Where-Object {(($_ -eq "SQLPS") -or ($_ -eq "SqlServer"))} | Select-Object -Last 1
-# Override to always select sqlserver if present to prevent conflict bug as of 11/04/25
-IF($PSModules -match "SqlServer"){$SQLModuleName = "SqlServer"}
-# Checking to see if SQL Server module is loaded
-$SQLModuleCheck = Get-Module -Name $SQLModuleName
-# If SQL module not found in current session importing
-IF($SQLModuleCheck -eq $null){Import-Module $SQLModuleName -ErrorAction SilentlyContinue}
-##########################
-# SQL - Checking Table Exists
-##########################
-# Manually setting SQL table name if not specified
-IF($SQLTable -eq $null){$SQLTable = "RSCFilesets"}
-# Creating query
-$SQLTableListQuery = "USE $SQLDB;
+    ################################################
+    # Getting times required
+    ################################################
+    $ScriptStart = Get-Date
+    $MachineDateTime = Get-Date
+    $UTCDateTime = [System.DateTime]::UtcNow
+    ################################################
+    # Importing SQL Server Module
+    ################################################
+    # Getting the name of the SQL Server module to use (either SqlServer or SQLPS)
+    $PSModules = Get-Module -ListAvailable | Select-Object -ExpandProperty Name
+    $SQLModuleName = $PSModules | Where-Object { (($_ -eq "SQLPS") -or ($_ -eq "SqlServer")) } | Select-Object -Last 1
+    # Override to always select sqlserver if present to prevent conflict bug as of 11/04/25
+    if ($PSModules -match "SqlServer") { $SQLModuleName = "SqlServer" }
+    # Checking to see if SQL Server module is loaded
+    $SQLModuleCheck = Get-Module -Name $SQLModuleName
+    # If SQL module not found in current session importing
+    if ($SQLModuleCheck -eq $null) { Import-Module $SQLModuleName -ErrorAction SilentlyContinue }
+    ##########################
+    # SQL - Checking Table Exists
+    ##########################
+    # Manually setting SQL table name if not specified
+    if ($SQLTable -eq $null) { $SQLTable = "RSCFilesets" }
+    # Creating query
+    $SQLTableListQuery = "USE $SQLDB;
 SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES;"
-# Run SQL query
-Try
-{
-$SQLTableList = Invoke-SQLCmd -Query $SQLTableListQuery -ServerInstance $SQLInstance -QueryTimeout 300 
-}
-Catch
-{
-$Error[0] | Format-List -Force
-}
-# Selecting
-$SQLTableList = $SQLTableList | Select-Object -ExpandProperty TABLE_NAME
-# Checking
-IF($SQLTableList -match $SQLTable){$SQLTableExists = $TRUE}ELSE{$SQLTableExists = $FALSE}
-##########################
-# SQL - Creating table if doesn't exist
-##########################
-IF($SQLTableExists -eq $FALSE)
-{
-# Logging
-Write-Host "----------------------------------
+    # Run SQL query
+    try {
+        $SQLTableList = Invoke-Sqlcmd -Query $SQLTableListQuery -ServerInstance $SQLInstance -QueryTimeout 300 
+    }
+    catch {
+        $Error[0] | Format-List -Force
+    }
+    # Selecting
+    $SQLTableList = $SQLTableList | Select-Object -ExpandProperty TABLE_NAME
+    # Checking
+    if ($SQLTableList -match $SQLTable) { $SQLTableExists = $TRUE }else { $SQLTableExists = $FALSE }
+    ##########################
+    # SQL - Creating table if doesn't exist
+    ##########################
+    if ($SQLTableExists -eq $FALSE) {
+        # Logging
+        Write-Host "----------------------------------
 SQLTableNotFound
 CreatingSQLTable: $SQLTable"
-Start-Sleep 3
-# SQL query
-$SQLCreateTable = "USE $SQLDB;
+        Start-Sleep 3
+        # SQL query
+        $SQLCreateTable = "USE $SQLDB;
 CREATE TABLE [dbo].[$SQLTable](
 	[RowID] [int] IDENTITY(1,1) NOT NULL,
 	[RSCInstance] [varchar](max) NULL,
@@ -149,144 +146,133 @@ CREATE TABLE [dbo].[$SQLTable](
 	[RowID] ASC
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON) ON [PRIMARY]
 ) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY];"
-# Run SQL query
-Try
-{
-Invoke-SQLCmd -Query $SQLCreateTable -ServerInstance $SQLInstance -QueryTimeout 300 | Out-Null
-}
-Catch
-{
-$Error[0] | Format-List -Force
-}
-# End of SQL table creation below
-}
-# End of SQL table creation above
-##########################
-# SQL - Creating temp table
-##########################
-IF($DontUseTempDB)
-{
-# Nothing to create, bypassing
-}
-ELSE
-{
-$RandomID = 0..10000 | Get-Random
-# Create temp table name
-$TempTableName =  $SQLTable + [string]$RandomID
-# Create the table from an existing structure
-$SQLCreateTable = "USE tempdb;
+        # Run SQL query
+        try {
+            Invoke-Sqlcmd -Query $SQLCreateTable -ServerInstance $SQLInstance -QueryTimeout 300 | Out-Null
+        }
+        catch {
+            $Error[0] | Format-List -Force
+        }
+        # End of SQL table creation below
+    }
+    # End of SQL table creation above
+    ##########################
+    # SQL - Creating temp table
+    ##########################
+    if ($DontUseTempDB) {
+        # Nothing to create, bypassing
+    }
+    else {
+        $RandomID = 0..10000 | Get-Random
+        # Create temp table name
+        $TempTableName = $SQLTable + [string]$RandomID
+        # Create the table from an existing structure
+        $SQLCreateTable = "USE tempdb;
 SELECT *   
 INTO $TempTableName  
 FROM $SQLDB.dbo.$SQLTable  
 WHERE 1 > 2;"
-# Run SQL query
-Try
-{
-Invoke-SQLCmd -Query $SQLCreateTable -ServerInstance $SQLInstance -QueryTimeout 300 | Out-Null
-}
-Catch
-{
-$Error[0] | Format-List -Force
-}
-# Logging
-Write-Host "----------------------------------
+        # Run SQL query
+        try {
+            Invoke-Sqlcmd -Query $SQLCreateTable -ServerInstance $SQLInstance -QueryTimeout 300 | Out-Null
+        }
+        catch {
+            $Error[0] | Format-List -Force
+        }
+        # Logging
+        Write-Host "----------------------------------
 CreatingTableInTempDB: $TempTableName"
-Start-Sleep 2
-}
-##################################
-# SQL - Deleting Data From Existing Table if Switch
-##################################
-IF($DropExistingRows)
-{
-# Creating SQL query
-$SQLDrop = "USE $SQLDB
+        Start-Sleep 2
+    }
+    ##################################
+    # SQL - Deleting Data From Existing Table if Switch
+    ##################################
+    if ($DropExistingRows) {
+        # Creating SQL query
+        $SQLDrop = "USE $SQLDB
 DELETE FROM $SQLTable;"
-# Run SQL query
-Try
-{
-Invoke-SQLCmd -Query $SQLDrop -ServerInstance $SQLInstance -QueryTimeout 300 | Out-Null
-}
-Catch
-{
-$Error[0] | Format-List -Force
-}
-# Logging
-Write-Host "----------------------------------
+        # Run SQL query
+        try {
+            Invoke-Sqlcmd -Query $SQLDrop -ServerInstance $SQLInstance -QueryTimeout 300 | Out-Null
+        }
+        catch {
+            $Error[0] | Format-List -Force
+        }
+        # Logging
+        Write-Host "----------------------------------
 DeletingExistingRowsIn: $SQLTable"
-}
-################################################
-# Importing Module & Running Required Functions
-################################################
-# Importing the module is it needs other modules
-Import-Module RSCReporting
-# Checking connectivity, exiting function with error if not connected
-Test-RSCConnection
-################################################
-# Getting Filesets
-################################################
-Write-Host "Running: Get-RSCFilesets
+    }
+    ################################################
+    # Importing Module & Running Required Functions
+    ################################################
+    # Importing the module is it needs other modules
+    Import-Module RSCReporting
+    # Checking connectivity, exiting function with error if not connected
+    Test-RSCConnection
+    ################################################
+    # Getting Filesets
+    ################################################
+    Write-Host "Running: Get-RSCFilesets
 ----------------------------------"
-# Getting mounts
-$RSCFileSets = Get-RSCFilesets
-# Removing any entries without a fileset ID
-$RSCFileSets = $RSCFileSets | Where-Object {$_.FilesetID -ne $null}
-################################################
-# Processing All Objects 
-################################################
-# Creating array
-$RSCObjects = [System.Collections.ArrayList]@()
-# Counting
-$RSCObjectsCount = $RSCFileSets | Measure-Object | Select-Object -ExpandProperty Count
-$RSCObjectsCounter = 0
-# Getting current time for last snapshot age
-$UTCDateTime = [System.DateTime]::UtcNow
-# Processing
-ForEach ($RSCFileSet in $RSCFileSets)
-{
-# Logging
-$RSCObjectsCounter ++
-IF($DisablePerMountLogging){}ELSE{Write-Host "ProcessingFileset: $RSCObjectsCounter/$RSCObjectsCount"}
-# Setting variables
-$FilesetType = $RSCFileSet.FilesetType
-$Fileset = $RSCFileSet.Fileset
-$FilesetID = $RSCFileSet.FilesetID
-$FilesetCDMID = $RSCFileSet.FilesetCDMID
-$HostObject = $RSCFileSet.Host
-$HostID = $RSCFileSet.HostID
-$HostCDMID = $RSCFileSet.HostCDMID
-$HostType = $RSCFileSet.HostType
-$OSType = $RSCFileSet.OSType
-$PathsIncluded = $RSCFileSet.PathsIncluded
-$PathsExcluded = $RSCFileSet.PathsExcluded
-$PathsExceptions = $RSCFileSet.PathsExceptions
-$SLADomain = $RSCFileSet.SLADomain
-$SLADomainID = $RSCFileSet.SLADomainID
-$SLAAssignment = $RSCFileSet.SLAAssignment
-$SLAPaused = $RSCFileSet.SLAPaused
-$LatestSnapshotUTC = $RSCFileSet.LatestSnapshotUTC
-$LatestSnapshotUTCAgeHours = $RSCFileSet.LatestSnapshotUTCAgeHours
-$ReplicatedSnapshotUTC = $RSCFileSet.ReplicatedSnapshotUTC
-$ReplicatedSnapshotUTCAgeHours = $RSCFileSet.ReplicatedSnapshotUTCAgeHours
-$ArchivedSnapshotUTC = $RSCFileSet.ArchivedSnapshotUTC
-$ArchivedSnapshotUTCAgeHours = $RSCFileSet.ArchivedSnapshotUTCAgeHours
-$OldestSnapshotUTC = $RSCFileSet.OldestSnapshotUTC
-$OldestSnapshotUTCAgeDays = $RSCFileSet.OldestSnapshotUTCAgeDays
-$LatestRSCNote = $RSCFileSet.LatestRSCNote
-$LatestNoteCreator = $RSCFileSet.LatestNoteCreator
-$LatestNoteDateUTC = $RSCFileSet.LatestNoteDateUTC
-$SymlinkEnabled = $RSCFileSet.SymlinkEnabled
-$IsPassThrough = $RSCFileSet.IsPassThrough
-$HardlinkEnabled = $RSCFileSet.HardlinkEnabled
-$ObjectID = $RSCFileSet.ObjectID
-$RubrikCluster = $RSCFileSet.RubrikCluster
-$RubrikClusterID = $RSCFileSet.RubrikClusterID
-$URL = $RSCFileSet.URL
-############################
-# Adding To SQL Table directly if no tempDB
-############################
-IF($DontUseTempDB)
-{
-$SQLInsert = "USE $SQLDB
+    # Getting mounts
+    $RSCFileSets = Get-RSCFilesets
+    # Removing any entries without a fileset ID
+    $RSCFileSets = $RSCFileSets | Where-Object { $_.FilesetID -ne $null }
+    ################################################
+    # Processing All Objects 
+    ################################################
+    # Creating array
+    $RSCObjects = [System.Collections.ArrayList]@()
+    # Counting
+    $RSCObjectsCount = $RSCFileSets | Measure-Object | Select-Object -ExpandProperty Count
+    $RSCObjectsCounter = 0
+    # Getting current time for last snapshot age
+    $UTCDateTime = [System.DateTime]::UtcNow
+    # Processing
+    foreach ($RSCFileSet in $RSCFileSets) {
+        # Logging
+        $RSCObjectsCounter ++
+        if ($DisablePerMountLogging) {}else { Write-Host "ProcessingFileset: $RSCObjectsCounter/$RSCObjectsCount" }
+        # Setting variables
+        $FilesetType = $RSCFileSet.FilesetType
+        $Fileset = $RSCFileSet.Fileset
+        $FilesetID = $RSCFileSet.FilesetID
+        $FilesetCDMID = $RSCFileSet.FilesetCDMID
+        $HostObject = $RSCFileSet.Host
+        $HostID = $RSCFileSet.HostID
+        $HostCDMID = $RSCFileSet.HostCDMID
+        $HostType = $RSCFileSet.HostType
+        $OSType = $RSCFileSet.OSType
+        $PathsIncluded = $RSCFileSet.PathsIncluded
+        $PathsExcluded = $RSCFileSet.PathsExcluded
+        $PathsExceptions = $RSCFileSet.PathsExceptions
+        $SLADomain = $RSCFileSet.SLADomain
+        $SLADomainID = $RSCFileSet.SLADomainID
+        $SLAAssignment = $RSCFileSet.SLAAssignment
+        $SLAPaused = $RSCFileSet.SLAPaused
+        $LatestSnapshotUTC = $RSCFileSet.LatestSnapshotUTC
+        $LatestSnapshotUTCAgeHours = $RSCFileSet.LatestSnapshotUTCAgeHours
+        $ReplicatedSnapshotUTC = $RSCFileSet.ReplicatedSnapshotUTC
+        $ReplicatedSnapshotUTCAgeHours = $RSCFileSet.ReplicatedSnapshotUTCAgeHours
+        $ArchivedSnapshotUTC = $RSCFileSet.ArchivedSnapshotUTC
+        $ArchivedSnapshotUTCAgeHours = $RSCFileSet.ArchivedSnapshotUTCAgeHours
+        $OldestSnapshotUTC = $RSCFileSet.OldestSnapshotUTC
+        $OldestSnapshotUTCAgeDays = $RSCFileSet.OldestSnapshotUTCAgeDays
+        $LatestRSCNote = $RSCFileSet.LatestRSCNote
+        $LatestNoteCreator = $RSCFileSet.LatestNoteCreator
+        $LatestNoteDateUTC = $RSCFileSet.LatestNoteDateUTC
+        $SymlinkEnabled = $RSCFileSet.SymlinkEnabled
+        $IsPassThrough = $RSCFileSet.IsPassThrough
+        $HardlinkEnabled = $RSCFileSet.HardlinkEnabled
+        $ObjectID = $RSCFileSet.ObjectID
+        $RubrikCluster = $RSCFileSet.RubrikCluster
+        $RubrikClusterID = $RSCFileSet.RubrikClusterID
+        $URL = $RSCFileSet.URL
+        ############################
+        # Adding To SQL Table directly if no tempDB
+        ############################
+        if ($DontUseTempDB) {
+            $SQLInsert = "USE $SQLDB
 INSERT INTO $SQLTable (
 -- RSC & Object IDs
 RSCInstance,FilesetType,Fileset,FilesetID,FilesetCDMID,
@@ -333,22 +319,19 @@ VALUES(
 
 -- Closing data
 '$UTCDateTime','FALSE','$URL');"
-# Inserting
-Try
-{
-Invoke-SQLCmd -Query $SQLInsert -ServerInstance $SQLInstance -QueryTimeout 300 | Out-Null
-}
-Catch
-{
-$Error[0] | Format-List -Force
-}
-}
-ELSE
-{
-############################
-# Adding To SQL temp table
-############################
-$SQLInsert = "USE tempdb
+            # Inserting
+            try {
+                Invoke-Sqlcmd -Query $SQLInsert -ServerInstance $SQLInstance -QueryTimeout 300 | Out-Null
+            }
+            catch {
+                $Error[0] | Format-List -Force
+            }
+        }
+        else {
+            ############################
+            # Adding To SQL temp table
+            ############################
+            $SQLInsert = "USE tempdb
 INSERT INTO $TempTableName (
 -- RSC & Object IDs
 RSCInstance,FilesetType,Fileset,FilesetID,FilesetCDMID,
@@ -395,45 +378,41 @@ VALUES(
 
 -- Closing data
 '$UTCDateTime','FALSE','$URL');"
-# Inserting
-Try
-{
-Invoke-SQLCmd -Query $SQLInsert -ServerInstance $SQLInstance -QueryTimeout 300 | Out-Null
-}
-Catch
-{
-$Error[0] | Format-List -Force
-}
-# End of bypass for using tempdb below
-}
-# End of bypass for using tempdb above
-#
-# End of for each live mount below
-}
-# End of for each live mount above
+            # Inserting
+            try {
+                Invoke-Sqlcmd -Query $SQLInsert -ServerInstance $SQLInstance -QueryTimeout 300 | Out-Null
+            }
+            catch {
+                $Error[0] | Format-List -Force
+            }
+            # End of bypass for using tempdb below
+        }
+        # End of bypass for using tempdb above
+        #
+        # End of for each live mount below
+    }
+    # End of for each live mount above
 
-##################################
-# Finishing SQL Work
-##################################
-Write-Host "----------------------------------
+    ##################################
+    # Finishing SQL Work
+    ##################################
+    Write-Host "----------------------------------
 Finished Processing RSC Filesets
 ----------------------------------"
-############################
-# Removing Duplicates if not using TempDB
-############################
-IF($DontUseTempDB)
-{
-# Nothing to do, this table is supposed to have multiple entries
-}
-ELSE
-{
-############################
-# Merging if using TempDB
-############################
-Write-Host "MergingTableInTempDB: $TempTableName"
-Start-Sleep 3
-# Creating SQL query
-$SQLMergeTable = "MERGE $SQLDB.dbo.$SQLTable Target
+    ############################
+    # Removing Duplicates if not using TempDB
+    ############################
+    if ($DontUseTempDB) {
+        # Nothing to do, this table is supposed to have multiple entries
+    }
+    else {
+        ############################
+        # Merging if using TempDB
+        ############################
+        Write-Host "MergingTableInTempDB: $TempTableName"
+        Start-Sleep 3
+        # Creating SQL query
+        $SQLMergeTable = "MERGE $SQLDB.dbo.$SQLTable Target
 USING tempdb.dbo.$TempTableName Source
 ON (Target.FilesetID = Source.FilesetID)
 WHEN MATCHED 
@@ -488,96 +467,87 @@ THEN INSERT (RSCInstance,FilesetType,Fileset,FilesetID,FilesetCDMID,
             Source.SymlinkEnabled,Source.IsPassThrough,Source.HardlinkEnabled,
             Source.ObjectID,Source.RubrikCluster,Source.RubrikClusterID,
             Source.LastUpdated,Source.IsRelic,Source.URL);"
-# Run SQL query
-Try
-{
-Invoke-SQLCmd -Query $SQLMergeTable -ServerInstance $SQLInstance -QueryTimeout 300 | Out-Null
-$SQLMergeSuccess = $TRUE
-}
-Catch
-{
-$SQLMergeSuccess = $FALSE
-$Error[0] | Format-List -Force
-}
-##################################
-# SQL - Updating Relics 
-##################################
-Write-Host "UpdatingRelics: $SQLTable"
-Start-Sleep 3
-# Creating SQL query
-$SQLUpdateRelics = "USE $SQLDB
+        # Run SQL query
+        try {
+            Invoke-Sqlcmd -Query $SQLMergeTable -ServerInstance $SQLInstance -QueryTimeout 300 | Out-Null
+            $SQLMergeSuccess = $TRUE
+        }
+        catch {
+            $SQLMergeSuccess = $FALSE
+            $Error[0] | Format-List -Force
+        }
+        ##################################
+        # SQL - Updating Relics 
+        ##################################
+        Write-Host "UpdatingRelics: $SQLTable"
+        Start-Sleep 3
+        # Creating SQL query
+        $SQLUpdateRelics = "USE $SQLDB
 UPDATE $SQLTable
 SET IsRelic = 'TRUE'
 FROM $SQLTable target
 LEFT JOIN tempdb.dbo.$TempTableName source
   ON target.FilesetID = source.FilesetID
 WHERE source.FilesetID IS NULL;"
-# Run SQL query
-Try
-{
-Invoke-SQLCmd -Query $SQLUpdateRelics -ServerInstance $SQLInstance -QueryTimeout 300 | Out-Null
-}
-Catch
-{
-$Error[0] | Format-List -Force
-}
-##################################
-# SQL - Deleting Temp Table
-##################################
-IF($SQLMergeSuccess -eq $TRUE)
-{
-# Creating SQL query
-$SQLDropTable = "USE tempdb;
+        # Run SQL query
+        try {
+            Invoke-Sqlcmd -Query $SQLUpdateRelics -ServerInstance $SQLInstance -QueryTimeout 300 | Out-Null
+        }
+        catch {
+            $Error[0] | Format-List -Force
+        }
+        ##################################
+        # SQL - Deleting Temp Table
+        ##################################
+        if ($SQLMergeSuccess -eq $TRUE) {
+            # Creating SQL query
+            $SQLDropTable = "USE tempdb;
 DROP TABLE $TempTableName;"
-# Run SQL query
-Try
-{
-Invoke-SQLCmd -Query $SQLDropTable -ServerInstance $SQLInstance -QueryTimeout 300 | Out-Null
-}
-Catch
-{
-$Error[0] | Format-List -Force
-}
-# Logging
-Write-Host "----------------------------------
+            # Run SQL query
+            try {
+                Invoke-Sqlcmd -Query $SQLDropTable -ServerInstance $SQLInstance -QueryTimeout 300 | Out-Null
+            }
+            catch {
+                $Error[0] | Format-List -Force
+            }
+            # Logging
+            Write-Host "----------------------------------
 DroppedTableInTempDB: $TempTableName
 ----------------------------------"
-}
-ELSE
-{
-# Logging
-Write-Host "----------------------------------
+        }
+        else {
+            # Logging
+            Write-Host "----------------------------------
 NotDroppedTableInTempDB: $TempTableName
 SQLMergeSuccess: $SQLMergeSuccess
 ----------------------------------"	
-}
-Start-Sleep 2
-# End of bypass for using tempDB below
-}
-# End of bypass for using tempDB above
-##########################
-# Benching
-##########################
-$ScriptEnd = Get-Date
-IF (($ScriptStart -ne $null) -and ($ScriptEnd -ne $null))
-{
-$Timespan = New-TimeSpan -Start $ScriptStart -End $ScriptEnd
-$ScriptDurationSeconds = $Timespan.TotalSeconds
-$ScriptDurationSeconds = [Math]::Round($ScriptDurationSeconds)
-$ScriptDuration = "{0:}" -f $Timespan;$ScriptDuration = $ScriptDuration.Substring(0,8)
-}
-ELSE
-{
-$ScriptDuration = 0
-}
-# Logging
-Write-Host "Script Execution Summary
+        }
+        Start-Sleep 2
+        # End of bypass for using tempDB below
+    }
+    # End of bypass for using tempDB above
+    ##########################
+    # Benching
+    ##########################
+    $ScriptEnd = Get-Date
+    if (($ScriptStart -ne $null) -and ($ScriptEnd -ne $null)) {
+        $Timespan = New-TimeSpan -Start $ScriptStart -End $ScriptEnd
+        $ScriptDurationSeconds = $Timespan.TotalSeconds
+        $ScriptDurationSeconds = [Math]::Round($ScriptDurationSeconds)
+        $ScriptDuration = "{0:}" -f $Timespan; $ScriptDuration = $ScriptDuration.Substring(0, 8)
+    }
+    else {
+        $ScriptDuration = 0
+    }
+    # Logging
+    Write-Host "Script Execution Summary
 ----------------------------------
 Start: $ScriptStart
 End: $ScriptEnd
 TotalObjects: $RSCObjectsCount
 Runtime: $ScriptDuration"
-# Returning null
-Return $null
-# End of function
+    # Returning null
+    return $null
+    # End of function
 }
+

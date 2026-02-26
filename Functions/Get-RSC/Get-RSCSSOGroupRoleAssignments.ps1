@@ -1,11 +1,11 @@
 ################################################
 # Function - Get-RSCSSOGroupRoleAssignments - Getting SSO Group Role Assignments within RSC
 ################################################
-Function Get-RSCSSOGroupRoleAssignment {
-[CmdletBinding()]
-[Alias('Get-RSCSSOGroupRoleAssignments')]
-param()
-<#
+function Get-RSCSSOGroupRoleAssignment {
+    [CmdletBinding()]
+    [Alias('Get-RSCSSOGroupRoleAssignments')]
+    param()
+    <#
 .SYNOPSIS
 A Rubrik Security Cloud (RSC) Reporting Module Function returns a list of all role assignments per user/service account.
 
@@ -27,26 +27,26 @@ Author: Joshua Stenhouse
 Date: 05/11/2023
 #>
 
-################################################
-# Importing Module & Running Required Functions
-################################################
-# Importing the module is it needs other modules
-Import-Module RSCReporting
-# Checking connectivity, exiting function with error if not connected
-Test-RSCConnection
-################################################
-# Querying RSC GraphQL API
-################################################
-# Creating array for objects
-$RSCList = @()
-# Building GraphQL query
-$RSCGraphQL = @{"operationName" = "UserGroupsOrgQuery";
+    ################################################
+    # Importing Module & Running Required Functions
+    ################################################
+    # Importing the module is it needs other modules
+    Import-Module RSCReporting
+    # Checking connectivity, exiting function with error if not connected
+    Test-RSCConnection
+    ################################################
+    # Querying RSC GraphQL API
+    ################################################
+    # Creating array for objects
+    $RSCList = @()
+    # Building GraphQL query
+    $RSCGraphQL = @{"operationName" = "UserGroupsOrgQuery";
 
-"variables" = @{
-"first" = 1000
-};
+        "variables"                 = @{
+            "first" = 1000
+        };
 
-"query" = "query UserGroupsOrgQuery(`$after: String, `$before: String, `$first: Int, `$last: Int, `$filter: GroupFilterInput, `$shouldIncludeGroupsWithoutRole: Boolean = false, `$isOrgDataVisible: Boolean = false) {
+        "query"                     = "query UserGroupsOrgQuery(`$after: String, `$before: String, `$first: Int, `$last: Int, `$filter: GroupFilterInput, `$shouldIncludeGroupsWithoutRole: Boolean = false, `$isOrgDataVisible: Boolean = false) {
   groupsInCurrentAndDescendantOrganization(after: `$after, before: `$before, first: `$first, last: `$last, filter: `$filter, shouldIncludeGroupsWithoutRole: `$shouldIncludeGroupsWithoutRole) {
     edges {
       node {
@@ -78,62 +78,60 @@ fragment OrganizationGroupFragment on Group {
   }
   __typename
 }"
+    }
+    ################################################
+    # API Call To RSC GraphQL URI
+    ################################################
+    # Querying API
+    $RSCResponse = Invoke-RestMethod -Method POST -Uri $RSCGraphqlURL -Body $($RSCGraphQL | ConvertTo-Json -Depth 20) -Headers $RSCSessionHeader
+    $RSCList += $RSCResponse.data.groupsInCurrentAndDescendantOrganization.edges.node
+    # Getting all results from paginations
+    while ($RSCResponse.data.groupsInCurrentAndDescendantOrganization.pageInfo.hasNextPage) {
+        # Getting next set
+        $RSCGraphQL.variables.after = $RSCResponse.data.groupsInCurrentAndDescendantOrganization.pageInfo.endCursor
+        $RSCResponse = Invoke-RestMethod -Method POST -Uri $RSCGraphqlURL -Body $($RSCGraphQL | ConvertTo-Json -Depth 20) -Headers $RSCSessionHeader
+        $RSCList += $RSCResponse.data.groupsInCurrentAndDescendantOrganization.edges.node
+    }
+    ################################################
+    # Processing List
+    ################################################
+    # Creating array
+    $RSCSSOGroupRoleAssignments = [System.Collections.ArrayList]@()
+    # For Each Object Getting Data
+    foreach ($Group in $RSCList) {
+        # Setting variables
+        $GroupName = $Group.groupname
+        $GroupID = $Group.groupId
+        $GroupRoles = $Group.roles
+        $GroupUsers = $Group.users
+        # Counting
+        $GroupRoleCount = $GroupRoles | Measure-Object | Select-Object -ExpandProperty Count
+        $GroupUserCount = $GroupUsers | Measure-Object | Select-Object -ExpandProperty Count
+        # For each role assignment
+        foreach ($Role in $GroupRoles) {
+            # Checking if in default admin group
+            if ($Role.id -match "00000000-0000-0000-0000-000000000000") { $IsDefaultAdminRole = $TRUE }else { $IsDefaultAdminRole = $FALSE }
+            # Adding To Array
+            $Object = New-Object PSObject
+            $Object | Add-Member -MemberType NoteProperty -Name "RSCInstance" -Value $RSCInstance
+            $Object | Add-Member -MemberType NoteProperty -Name "Group" -Value $GroupName
+            $Object | Add-Member -MemberType NoteProperty -Name "GroupID" -Value $GroupID
+            $Object | Add-Member -MemberType NoteProperty -Name "Role" -Value $Role.name
+            $Object | Add-Member -MemberType NoteProperty -Name "RoleID" -Value $Role.id
+            $Object | Add-Member -MemberType NoteProperty -Name "IsDefaultAdminRole" -Value $IsDefaultAdminRole
+            $Object | Add-Member -MemberType NoteProperty -Name "Description" -Value $Role.description
+            $Object | Add-Member -MemberType NoteProperty -Name "UserCount" -Value $GroupUserCount
+            $Object | Add-Member -MemberType NoteProperty -Name "Users" -Value $GroupUsers
+            $Object | Add-Member -MemberType NoteProperty -Name "Permissions" -Value $Role.effectivePermissions
+            # Adding
+            $RSCSSOGroupRoleAssignments.Add($Object) | Out-Null
+        }
+        # End of for each object below
+    }
+    # End of for each object above
+    #
+    # Returning array
+    return $RSCSSOGroupRoleAssignments
+    # End of function
 }
-################################################
-# API Call To RSC GraphQL URI
-################################################
-# Querying API
-$RSCResponse = Invoke-RestMethod -Method POST -Uri $RSCGraphqlURL -Body $($RSCGraphQL | ConvertTo-JSON -Depth 20) -Headers $RSCSessionHeader
-$RSCList += $RSCResponse.data.groupsInCurrentAndDescendantOrganization.edges.node
-# Getting all results from paginations
-While ($RSCResponse.data.groupsInCurrentAndDescendantOrganization.pageInfo.hasNextPage) 
-{
-# Getting next set
-$RSCGraphQL.variables.after = $RSCResponse.data.groupsInCurrentAndDescendantOrganization.pageInfo.endCursor
-$RSCResponse = Invoke-RestMethod -Method POST -Uri $RSCGraphqlURL -Body $($RSCGraphQL | ConvertTo-JSON -Depth 20) -Headers $RSCSessionHeader
-$RSCList += $RSCResponse.data.groupsInCurrentAndDescendantOrganization.edges.node
-}
-################################################
-# Processing List
-################################################
-# Creating array
-$RSCSSOGroupRoleAssignments = [System.Collections.ArrayList]@()
-# For Each Object Getting Data
-ForEach ($Group in $RSCList)
-{
-# Setting variables
-$GroupName = $Group.groupname
-$GroupID = $Group.groupId
-$GroupRoles = $Group.roles
-$GroupUsers = $Group.users
-# Counting
-$GroupRoleCount = $GroupRoles | Measure-Object | Select-Object -ExpandProperty Count
-$GroupUserCount = $GroupUsers | Measure-Object | Select-Object -ExpandProperty Count
-# For each role assignment
-ForEach($Role in $GroupRoles)
-{
-# Checking if in default admin group
-IF($Role.id -match "00000000-0000-0000-0000-000000000000"){$IsDefaultAdminRole = $TRUE}ELSE{$IsDefaultAdminRole = $FALSE}
-# Adding To Array
-$Object = New-Object PSObject
-$Object | Add-Member -MemberType NoteProperty -Name "RSCInstance" -Value $RSCInstance
-$Object | Add-Member -MemberType NoteProperty -Name "Group" -Value $GroupName
-$Object | Add-Member -MemberType NoteProperty -Name "GroupID" -Value $GroupID
-$Object | Add-Member -MemberType NoteProperty -Name "Role" -Value $Role.name
-$Object | Add-Member -MemberType NoteProperty -Name "RoleID" -Value $Role.id
-$Object | Add-Member -MemberType NoteProperty -Name "IsDefaultAdminRole" -Value $IsDefaultAdminRole
-$Object | Add-Member -MemberType NoteProperty -Name "Description" -Value $Role.description
-$Object | Add-Member -MemberType NoteProperty -Name "UserCount" -Value $GroupUserCount
-$Object | Add-Member -MemberType NoteProperty -Name "Users" -Value $GroupUsers
-$Object | Add-Member -MemberType NoteProperty -Name "Permissions" -Value $Role.effectivePermissions
-# Adding
-$RSCSSOGroupRoleAssignments.Add($Object) | Out-Null
-}
-# End of for each object below
-}
-# End of for each object above
-#
-# Returning array
-Return $RSCSSOGroupRoleAssignments
-# End of function
-}
+

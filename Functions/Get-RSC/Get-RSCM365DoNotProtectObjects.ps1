@@ -1,11 +1,11 @@
 ################################################
 # Function - Get-RSCM365DoNotProtectObjects - Getting o365 o365DoNotProtectedObjects connected to RSC
 ################################################
-Function Get-RSCM365DoNotProtectObject {
-[CmdletBinding()]
-[Alias('Get-RSCM365DoNotProtectObjects')]
-param()
-<#
+function Get-RSCM365DoNotProtectObject {
+    [CmdletBinding()]
+    [Alias('Get-RSCM365DoNotProtectObjects')]
+    param()
+    <#
 .SYNOPSIS
 A Rubrik Security Cloud (RSC) Reporting Module Function returning a list of all M365 objects set to DoNotProtect.
 
@@ -27,18 +27,19 @@ Author: Joshua Stenhouse
 Date: 05/11/2023
 #>
 
-################################################
-# Importing Module & Running Required Functions
-################################################
-# Importing the module is it needs other modules
-Import-Module RSCReporting
-# Checking connectivity, exiting function with error if not connected
-Test-RSCConnection
-################################################
-# Getting All o365 Objects 
-################################################
-$o365DoNotProtectObjects = Get-RSCM365Objects | Where-Object {$_.ProtectionStatus -eq "DoNotProtect"}
-# Returning array
-Return $o365DoNotProtectObjects
-# End of function
+    ################################################
+    # Importing Module & Running Required Functions
+    ################################################
+    # Importing the module is it needs other modules
+    Import-Module RSCReporting
+    # Checking connectivity, exiting function with error if not connected
+    Test-RSCConnection
+    ################################################
+    # Getting All o365 Objects 
+    ################################################
+    $o365DoNotProtectObjects = Get-RSCM365Objects | Where-Object { $_.ProtectionStatus -eq "DoNotProtect" }
+    # Returning array
+    return $o365DoNotProtectObjects
+    # End of function
 }
+

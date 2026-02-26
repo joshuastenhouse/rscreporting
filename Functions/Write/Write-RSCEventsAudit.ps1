@@ -1,9 +1,9 @@
 ################################################
 # Function - Write-RSCEventsAudit - Inserting all RSC Audit events into SQL
 ################################################
-Function Write-RSCEventsAudit {
+function Write-RSCEventsAudit {
 
-<#
+    <#
 .SYNOPSIS
 Collects the event type specified and writes them to an existing MS SQL databse of your choosing, if not specified the default table name RSCEventsAudit will created (so you don't need to know the required structure).
 
@@ -52,73 +52,70 @@ Author: Joshua Stenhouse
 Date: 05/11/2023
 #>
 
-################################################
-# Paramater Config
-################################################
-[CmdletBinding()]
-    Param (
-        [Parameter(Mandatory=$true)]$SQLInstance,
-        [Parameter(Mandatory=$true)]$SQLDB,
-        [Parameter(Mandatory=$false)]$SQLTable,
-        [Parameter(Mandatory=$false)]$DaysToCapture,
-        [Parameter(Mandatory=$false)]$HoursToCapture,
-        [Parameter(Mandatory=$false)]$MinutesToCapture,
+    ################################################
+    # Paramater Config
+    ################################################
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory = $true)]$SQLInstance,
+        [Parameter(Mandatory = $true)]$SQLDB,
+        [Parameter(Mandatory = $false)]$SQLTable,
+        [Parameter(Mandatory = $false)]$DaysToCapture,
+        [Parameter(Mandatory = $false)]$HoursToCapture,
+        [Parameter(Mandatory = $false)]$MinutesToCapture,
         [switch]$DontUseTempDB,
-		[switch]$LogProgress
+        [switch]$LogProgress
     )
 
-################################################
-# Importing Module & Running Required Functions
-################################################
-Import-Module RSCReporting
-# Checking connectivity, exiting function with error if not
-Test-RSCConnection
-# Checking SQL module
-Test-RSCSQLModule
-################################################
-# Importing SQL Server Module
-################################################
-# Getting the name of the SQL Server module to use (either SqlServer or SQLPS)
-$PSModules = Get-Module -ListAvailable | Select-Object -ExpandProperty Name
-$SQLModuleName = $PSModules | Where-Object {(($_ -eq "SQLPS") -or ($_ -eq "SqlServer"))} | Select-Object -Last 1
-# Checking to see if SQL Server module is loaded
-$SQLModuleCheck = Get-Module $SQLModuleName
-# If SQL module not found in current session importing
-IF($SQLModuleCheck -eq $null){Import-Module $SQLModuleName -ErrorAction SilentlyContinue}
-##########################
-# SQL - Checking Table Exists
-##########################
-# Manually setting SQL table name if not specified
-IF($SQLTable -eq $null){$SQLTable = "RSCEventsAudit"}
-# Creating query
-$SQLTableListQuery = "USE $SQLDB;
+    ################################################
+    # Importing Module & Running Required Functions
+    ################################################
+    Import-Module RSCReporting
+    # Checking connectivity, exiting function with error if not
+    Test-RSCConnection
+    # Checking SQL module
+    Test-RSCSQLModule
+    ################################################
+    # Importing SQL Server Module
+    ################################################
+    # Getting the name of the SQL Server module to use (either SqlServer or SQLPS)
+    $PSModules = Get-Module -ListAvailable | Select-Object -ExpandProperty Name
+    $SQLModuleName = $PSModules | Where-Object { (($_ -eq "SQLPS") -or ($_ -eq "SqlServer")) } | Select-Object -Last 1
+    # Checking to see if SQL Server module is loaded
+    $SQLModuleCheck = Get-Module $SQLModuleName
+    # If SQL module not found in current session importing
+    if ($SQLModuleCheck -eq $null) { Import-Module $SQLModuleName -ErrorAction SilentlyContinue }
+    ##########################
+    # SQL - Checking Table Exists
+    ##########################
+    # Manually setting SQL table name if not specified
+    if ($SQLTable -eq $null) { $SQLTable = "RSCEventsAudit" }
+    # Creating query
+    $SQLTableListQuery = "USE $SQLDB;
 SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES;"
-# Run SQL query
-Try
-{
-$SQLTableList = Invoke-SQLCmd -Query $SQLTableListQuery -ServerInstance $SQLInstance -QueryTimeout 300 
-}
-Catch
-{
-$Error[0] | Format-List -Force
-}
-# Selecting
-$SQLTableList = $SQLTableList | Select-Object -ExpandProperty TABLE_NAME
-# Checking
-IF($SQLTableList -match $SQLTable){$SQLTableExists = $TRUE}ELSE{$SQLTableExists = $FALSE}
-##########################
-# SQL - Creating table if doesn't exist
-##########################
-IF($SQLTableExists -eq $FALSE)
-{
-# Logging
-Write-Host "----------------------------------
+    # Run SQL query
+    try {
+        $SQLTableList = Invoke-Sqlcmd -Query $SQLTableListQuery -ServerInstance $SQLInstance -QueryTimeout 300 
+    }
+    catch {
+        $Error[0] | Format-List -Force
+    }
+    # Selecting
+    $SQLTableList = $SQLTableList | Select-Object -ExpandProperty TABLE_NAME
+    # Checking
+    if ($SQLTableList -match $SQLTable) { $SQLTableExists = $TRUE }else { $SQLTableExists = $FALSE }
+    ##########################
+    # SQL - Creating table if doesn't exist
+    ##########################
+    if ($SQLTableExists -eq $FALSE) {
+        # Logging
+        Write-Host "----------------------------------
 SQLTableNotFound
 CreatingSQLTable: $SQLTable
 ----------------------------------"
-Start-Sleep 3
-# SQL query
-$SQLCreateTable = "USE $SQLDB;
+        Start-Sleep 3
+        # SQL query
+        $SQLCreateTable = "USE $SQLDB;
 CREATE TABLE [dbo].[$SQLTable](
 	[RowID] [int] IDENTITY(1,1) NOT NULL,
     [RSCInstance] [varchar](max) NULL,
@@ -138,110 +135,100 @@ CREATE TABLE [dbo].[$SQLTable](
 	[RowID] ASC
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON) ON [PRIMARY]
 ) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY];"
-# Run SQL query
-Try
-{
-Invoke-SQLCmd -Query $SQLCreateTable -ServerInstance $SQLInstance -QueryTimeout 300 | Out-Null
-}
-Catch
-{
-$Error[0] | Format-List -Force
-}
-# End of SQL table creation below
-}
-# End of SQL table creation above
-##########################
-# SQL - Creating temp table
-##########################
-IF($DontUseTempDB)
-{
-# Nothing to create, bypassing
-}
-ELSE
-{
-$RandomID = 0..10000 | Get-Random
-# Create temp table name
-$TempTableName =  $SQLTable + [string]$RandomID
-# Create the table from an existing structure
-$SQLCreateTable = "USE tempdb;
+        # Run SQL query
+        try {
+            Invoke-Sqlcmd -Query $SQLCreateTable -ServerInstance $SQLInstance -QueryTimeout 300 | Out-Null
+        }
+        catch {
+            $Error[0] | Format-List -Force
+        }
+        # End of SQL table creation below
+    }
+    # End of SQL table creation above
+    ##########################
+    # SQL - Creating temp table
+    ##########################
+    if ($DontUseTempDB) {
+        # Nothing to create, bypassing
+    }
+    else {
+        $RandomID = 0..10000 | Get-Random
+        # Create temp table name
+        $TempTableName = $SQLTable + [string]$RandomID
+        # Create the table from an existing structure
+        $SQLCreateTable = "USE tempdb;
 SELECT *   
 INTO $TempTableName  
 FROM $SQLDB.dbo.$SQLTable  
 WHERE 1 > 2;"
-# Run SQL query
-Try
-{
-Invoke-SQLCmd -Query $SQLCreateTable -ServerInstance $SQLInstance -QueryTimeout 300 | Out-Null
-}
-Catch
-{
-$Error[0] | Format-List -Force
-}
-# Logging
-Write-Host "----------------------------------
+        # Run SQL query
+        try {
+            Invoke-Sqlcmd -Query $SQLCreateTable -ServerInstance $SQLInstance -QueryTimeout 300 | Out-Null
+        }
+        catch {
+            $Error[0] | Format-List -Force
+        }
+        # Logging
+        Write-Host "----------------------------------
 CreatingTableInTempDB: $TempTableName"
-Start-Sleep 2
-}
-################################################
-# Getting times required
-################################################
-$ScriptStart = Get-Date
-$MachineDateTime = Get-Date
-$UTCDateTime = [System.DateTime]::UtcNow
-# If null, setting to 24 hours
-IF(($MinutesToCapture -eq $null) -and ($HoursToCapture -eq $null))
-{
-$HoursToCapture = 24
-}
-# Calculating time range if hours specified
-IF($HoursToCapture -ne $null)
-{
-$TimeRangeUTC = $UTCDateTime.AddHours(-$HoursToCapture)
-$TimeRange = $MachineDateTime.AddHours(-$HoursToCapture)
-}
-# Calculating time range if minutes specified
-IF($MinutesToCapture -ne $null)
-{
-$TimeRangeUTC = $UTCDateTime.AddMinutes(-$MinutesToCapture)
-$TimeRange = $MachineDateTime.AddMinutes(-$MinutesToCapture)
-# Overring hours if minutes specified
-$HoursToCapture = 60 / $MinutesToCapture
-$HoursToCapture = [Math]::Round($HoursToCapture,2)
-}
-# Overriding both if days to capture specified
-IF($DaysToCapture -ne $null)
-{
-$TimeRangeUTC = $UTCDateTime.AddDays(-$DaysToCapture)
-$TimeRange = $MachineDateTime.AddDays(-$DaysToCapture)	
-}
-# Converting to UNIX time format
-$TimeRangeUNIX = $TimeRangeUTC.ToString("yyyy-MM-ddTHH:mm:ss.000Z")
-# Logging
-Write-Host "----------------------------------
+        Start-Sleep 2
+    }
+    ################################################
+    # Getting times required
+    ################################################
+    $ScriptStart = Get-Date
+    $MachineDateTime = Get-Date
+    $UTCDateTime = [System.DateTime]::UtcNow
+    # If null, setting to 24 hours
+    if (($MinutesToCapture -eq $null) -and ($HoursToCapture -eq $null)) {
+        $HoursToCapture = 24
+    }
+    # Calculating time range if hours specified
+    if ($HoursToCapture -ne $null) {
+        $TimeRangeUTC = $UTCDateTime.AddHours(-$HoursToCapture)
+        $TimeRange = $MachineDateTime.AddHours(-$HoursToCapture)
+    }
+    # Calculating time range if minutes specified
+    if ($MinutesToCapture -ne $null) {
+        $TimeRangeUTC = $UTCDateTime.AddMinutes(-$MinutesToCapture)
+        $TimeRange = $MachineDateTime.AddMinutes(-$MinutesToCapture)
+        # Overring hours if minutes specified
+        $HoursToCapture = 60 / $MinutesToCapture
+        $HoursToCapture = [Math]::Round($HoursToCapture, 2)
+    }
+    # Overriding both if days to capture specified
+    if ($DaysToCapture -ne $null) {
+        $TimeRangeUTC = $UTCDateTime.AddDays(-$DaysToCapture)
+        $TimeRange = $MachineDateTime.AddDays(-$DaysToCapture)	
+    }
+    # Converting to UNIX time format
+    $TimeRangeUNIX = $TimeRangeUTC.ToString("yyyy-MM-ddTHH:mm:ss.000Z")
+    # Logging
+    Write-Host "----------------------------------
 HoursToCapture: $HoursToCapture
 CollectingEventsFrom: $TimeRange
 SQLDB: $SQLDB
 SQLTable: $SQLTable
 ----------------------------------
 Querying RSC API..."
-Start-Sleep 1
-################################################
-# Getting RSC Events
-################################################
-# Creating array for events
-$RSCEventsList = @()
-# Building GraphQL query
-$RSCEventsGraphQL = @{"operationName"="AuditLogListQuery";
+    Start-Sleep 1
+    ################################################
+    # Getting RSC Events
+    ################################################
+    # Creating array for events
+    $RSCEventsList = @()
+    # Building GraphQL query
+    $RSCEventsGraphQL = @{"operationName" ="AuditLogListQuery";
 
-"variables" = @{
-"filters" = @{
-    "timeGt" = "$TimeRangeUNIX"
-  }
-"first" = 1000
-"sortOrder" = "DESC"
-};
+        "variables"                       = @{
+            "filters"   = @{
+                "timeGt" = "$TimeRangeUNIX"
+            }
+            "first"     = 1000
+            "sortOrder" = "DESC"
+        };
 
-"query"="query AuditLogListQuery(`$after: String, `$first: Int, `$filters: UserAuditFilter, `$sortOrder: SortOrder) 
+        "query"                           ="query AuditLogListQuery(`$after: String, `$first: Int, `$filters: UserAuditFilter, `$sortOrder: SortOrder) 
 
 {userAuditConnection(after: `$after, first: `$first, filters: `$filters, sortOrder: `$sortOrder) 
 
@@ -274,82 +261,82 @@ $RSCEventsGraphQL = @{"operationName"="AuditLogListQuery";
             __typename
             }
         }
-"}
-# Converting to JSON
-$RSCEventsResponse = Invoke-RestMethod -Method POST -Uri $RSCGraphqlURL -Body $($RSCEventsGraphQL | ConvertTo-JSON -Depth 32) -Headers $RSCSessionHeader
-$RSCEventsList += $RSCEventsResponse.data.userAuditConnection.edges.node
-# Getting all results from paginations
-While ($RSCEventsResponse.data.userAuditConnection.pageInfo.hasNextPage) 
-{
-# Getting next set
-$RSCEventsGraphQL.variables.after = $RSCEventsResponse.data.userAuditConnection.pageInfo.endCursor
-$RSCEventsResponse = Invoke-RestMethod -Method POST -Uri $RSCGraphqlURL -Body $($RSCEventsGraphQL | ConvertTo-JSON -Depth 20) -Headers $RSCSessionHeader
-$RSCEventsList += $RSCEventsResponse.data.userAuditConnection.edges.node
-}
-# Counting
-$RSCEventsCount = $RSCEventsList | Measure-Object | Select-Object -ExpandProperty Count
-# Logging
-Write-Host "----------------------------------
+"
+    }
+    # Converting to JSON
+    $RSCEventsResponse = Invoke-RestMethod -Method POST -Uri $RSCGraphqlURL -Body $($RSCEventsGraphQL | ConvertTo-Json -Depth 32) -Headers $RSCSessionHeader
+    $RSCEventsList += $RSCEventsResponse.data.userAuditConnection.edges.node
+    # Getting all results from paginations
+    while ($RSCEventsResponse.data.userAuditConnection.pageInfo.hasNextPage) {
+        # Getting next set
+        $RSCEventsGraphQL.variables.after = $RSCEventsResponse.data.userAuditConnection.pageInfo.endCursor
+        $RSCEventsResponse = Invoke-RestMethod -Method POST -Uri $RSCGraphqlURL -Body $($RSCEventsGraphQL | ConvertTo-Json -Depth 20) -Headers $RSCSessionHeader
+        $RSCEventsList += $RSCEventsResponse.data.userAuditConnection.edges.node
+    }
+    # Counting
+    $RSCEventsCount = $RSCEventsList | Measure-Object | Select-Object -ExpandProperty Count
+    # Logging
+    Write-Host "----------------------------------
 EventsReturnedByAPI: $RSCEventsCount
 ----------------------------------
 Processing events..."
-################################################
-# Processing Events
-################################################
-$RSCEvents = [System.Collections.ArrayList]@()
-# For Each Getting info
-ForEach ($Event in $RSCEventsList)
-{
-# Setting variables
-$EventID = $Event.id
-$EventUserName = $Event.userName
-$EventUserNote = $Event.userNote
-$EventMessage = $Event.message
-$EventTimeUNIX = $Event.time
-$EventStatus = $Event.status
-$EventSeverity = $Event.severity
-# Counting failed login attemps
-IF($EventStatus -eq "Failure"){$EventFailedAttempts = $RSCEventsList | Where-Object {(($_.userName -eq $EventUserName) -and ($_.status -eq "Failure"))} | Measure-Object | Select-Object -ExpandProperty Count}ELSE{$EventFailedAttempts = 0}
-# Converting event times
-$EventDate = Convert-RSCUNIXTime $EventTimeUNIX
-# Removing illegal SQL characters from user or message
-IF($EventUserName -ne $null){$EventUserName = $EventUserName.Replace("'","");$EventUserName = $EventUserName.Replace(",","")}
-IF($EventMessage -ne $null){$EventMessage = $EventMessage.Replace("'","");$EventMessage = $EventMessage.Replace(",","")
-$EventMessage = $EventMessage.Replace("(","");$EventMessage = $EventMessage.Replace(")","")
-$EventMessage = $EventMessage.Replace(":","");$EventMessage = $EventMessage -Replace ".$"}
-# Parsing source
-# IF($EventMessage -match "logged in from"){$EventSource = ($EventMessage -split 'from ',2)[-1]}ELSE{$EventSource = $null}
-# Getting cluster
-$EventCluster = $Event.cluster
-$EventClusterID = $EventCluster.id
-$EventClusterName = $EventCluster.name
-# Overriding Polaris in cluster name
-IF($EventClusterName -eq "Polaris"){$EventClusterName = "RSC";$EventSource = "RSC"}ELSE{$EventSource = "RubrikCluster"}
-############################
-# Adding To Array
-############################
-$Object = New-Object PSObject
-$Object | Add-Member -MemberType NoteProperty -Name "RSCInstance" -Value $RSCURL
-$Object | Add-Member -MemberType NoteProperty -Name "DateUTC" -Value $EventDate
-$Object | Add-Member -MemberType NoteProperty -Name "Status" -Value $EventStatus
-$Object | Add-Member -MemberType NoteProperty -Name "Severity" -Value $EventSeverity
-$Object | Add-Member -MemberType NoteProperty -Name "UserName" -Value $EventUserName
-$Object | Add-Member -MemberType NoteProperty -Name "Source" -Value $EventSource
-$Object | Add-Member -MemberType NoteProperty -Name "RubrikCluster" -Value $EventClusterName
-$Object | Add-Member -MemberType NoteProperty -Name "Message" -Value $EventMessage
-# Always null so leaving out for now 08/29/22 # $Object | Add-Member -MemberType NoteProperty -Name "UserNote" -Value $EventUserNote
-$Object | Add-Member -MemberType NoteProperty -Name "Failures" -Value $EventFailedAttempts
-# IDs 
-$Object | Add-Member -MemberType NoteProperty -Name "EventID" -Value $EventID
-$Object | Add-Member -MemberType NoteProperty -Name "RubrikClusterID" -Value $EventClusterID
-# Adding to array (optional, not needed)
-$RSCEvents.Add($Object) | Out-Null
-############################
-# Adding To SQL Table directly if no tempDB
-############################
-IF($DontUseTempDB)
-{
-$SQLInsert = "USE $SQLDB
+    ################################################
+    # Processing Events
+    ################################################
+    $RSCEvents = [System.Collections.ArrayList]@()
+    # For Each Getting info
+    foreach ($Event in $RSCEventsList) {
+        # Setting variables
+        $EventID = $Event.id
+        $EventUserName = $Event.userName
+        $EventUserNote = $Event.userNote
+        $EventMessage = $Event.message
+        $EventTimeUNIX = $Event.time
+        $EventStatus = $Event.status
+        $EventSeverity = $Event.severity
+        # Counting failed login attemps
+        if ($EventStatus -eq "Failure") { $EventFailedAttempts = $RSCEventsList | Where-Object { (($_.userName -eq $EventUserName) -and ($_.status -eq "Failure")) } | Measure-Object | Select-Object -ExpandProperty Count }else { $EventFailedAttempts = 0 }
+        # Converting event times
+        $EventDate = Convert-RSCUNIXTime $EventTimeUNIX
+        # Removing illegal SQL characters from user or message
+        if ($EventUserName -ne $null) { $EventUserName = $EventUserName.Replace("'", ""); $EventUserName = $EventUserName.Replace(",", "") }
+        if ($EventMessage -ne $null) {
+            $EventMessage = $EventMessage.Replace("'", ""); $EventMessage = $EventMessage.Replace(",", "")
+            $EventMessage = $EventMessage.Replace("(", ""); $EventMessage = $EventMessage.Replace(")", "")
+            $EventMessage = $EventMessage.Replace(":", ""); $EventMessage = $EventMessage -replace ".$"
+        }
+        # Parsing source
+        # IF($EventMessage -match "logged in from"){$EventSource = ($EventMessage -split 'from ',2)[-1]}ELSE{$EventSource = $null}
+        # Getting cluster
+        $EventCluster = $Event.cluster
+        $EventClusterID = $EventCluster.id
+        $EventClusterName = $EventCluster.name
+        # Overriding Polaris in cluster name
+        if ($EventClusterName -eq "Polaris") { $EventClusterName = "RSC"; $EventSource = "RSC" }else { $EventSource = "RubrikCluster" }
+        ############################
+        # Adding To Array
+        ############################
+        $Object = New-Object PSObject
+        $Object | Add-Member -MemberType NoteProperty -Name "RSCInstance" -Value $RSCURL
+        $Object | Add-Member -MemberType NoteProperty -Name "DateUTC" -Value $EventDate
+        $Object | Add-Member -MemberType NoteProperty -Name "Status" -Value $EventStatus
+        $Object | Add-Member -MemberType NoteProperty -Name "Severity" -Value $EventSeverity
+        $Object | Add-Member -MemberType NoteProperty -Name "UserName" -Value $EventUserName
+        $Object | Add-Member -MemberType NoteProperty -Name "Source" -Value $EventSource
+        $Object | Add-Member -MemberType NoteProperty -Name "RubrikCluster" -Value $EventClusterName
+        $Object | Add-Member -MemberType NoteProperty -Name "Message" -Value $EventMessage
+        # Always null so leaving out for now 08/29/22 # $Object | Add-Member -MemberType NoteProperty -Name "UserNote" -Value $EventUserNote
+        $Object | Add-Member -MemberType NoteProperty -Name "Failures" -Value $EventFailedAttempts
+        # IDs 
+        $Object | Add-Member -MemberType NoteProperty -Name "EventID" -Value $EventID
+        $Object | Add-Member -MemberType NoteProperty -Name "RubrikClusterID" -Value $EventClusterID
+        # Adding to array (optional, not needed)
+        $RSCEvents.Add($Object) | Out-Null
+        ############################
+        # Adding To SQL Table directly if no tempDB
+        ############################
+        if ($DontUseTempDB) {
+            $SQLInsert = "USE $SQLDB
 INSERT INTO $SQLTable (
 -- Instance, Date & Status
 RSCInstance, DateUTC, Status, Severity,
@@ -368,22 +355,19 @@ VALUES(
 
 -- IDs
 '$EventID', '$EventClusterID','FALSE');"
-# Inserting
-Try
-{
-Invoke-SQLCmd -Query $SQLInsert -ServerInstance $SQLInstance -QueryTimeout 300 | Out-Null
-}
-Catch
-{
-$Error[0] | Format-List -Force
-}
-}
-ELSE
-{
-############################
-# Adding To SQL temp table
-############################
-$SQLInsert = "USE tempdb
+            # Inserting
+            try {
+                Invoke-Sqlcmd -Query $SQLInsert -ServerInstance $SQLInstance -QueryTimeout 300 | Out-Null
+            }
+            catch {
+                $Error[0] | Format-List -Force
+            }
+        }
+        else {
+            ############################
+            # Adding To SQL temp table
+            ############################
+            $SQLInsert = "USE tempdb
 INSERT INTO $TempTableName (
 -- Instance, Date & Status
 RSCInstance, DateUTC, Status, Severity,
@@ -402,59 +386,53 @@ VALUES(
 
 -- IDs
 '$EventID', '$EventClusterID','FALSE');"
-# Inserting
-Try
-{
-Invoke-SQLCmd -Query $SQLInsert -ServerInstance $SQLInstance -QueryTimeout 300 | Out-Null
-}
-Catch
-{
-$Error[0] | Format-List -Force
-}
-# End of bypass for using tempdb below
-}
-# End of bypass for using tempdb above
-#
-# End of for each event below
-}
-# End of for each event above
-##################################
-# Finishing SQL Work
-##################################
-# Logging
-Write-Host "----------------------------------
+            # Inserting
+            try {
+                Invoke-Sqlcmd -Query $SQLInsert -ServerInstance $SQLInstance -QueryTimeout 300 | Out-Null
+            }
+            catch {
+                $Error[0] | Format-List -Force
+            }
+            # End of bypass for using tempdb below
+        }
+        # End of bypass for using tempdb above
+        #
+        # End of for each event below
+    }
+    # End of for each event above
+    ##################################
+    # Finishing SQL Work
+    ##################################
+    # Logging
+    Write-Host "----------------------------------
 Finished Processing RSC Events
 ----------------------------------"
-############################
-# Removing Duplicates if not using TempDB
-############################
-IF($DontUseTempDB)
-{
-# Logging
-Write-Host "RemovingDuplicatEventsFrom: $SQLTable
+    ############################
+    # Removing Duplicates if not using TempDB
+    ############################
+    if ($DontUseTempDB) {
+        # Logging
+        Write-Host "RemovingDuplicatEventsFrom: $SQLTable
 ----------------------------------"
-# Creating SQL query
-$SQLQuery = "WITH cte AS (SELECT EventID, ROW_NUMBER() OVER (PARTITION BY EventID ORDER BY EventID) rownum FROM $SQLDB.dbo.$SQLTable )
+        # Creating SQL query
+        $SQLQuery = "WITH cte AS (SELECT EventID, ROW_NUMBER() OVER (PARTITION BY EventID ORDER BY EventID) rownum FROM $SQLDB.dbo.$SQLTable )
 DELETE FROM cte WHERE rownum>1;"
-# Run SQL query
-Try
-{
-Invoke-SQLCmd -Query $SQLQuery -ServerInstance $SQLInstance -QueryTimeout 300 | Out-Null
-}
-Catch
-{
-$Error[0] | Format-List -Force
-}
-}
-ELSE
-{
-############################
-# Merging if using TempDB
-############################
-Write-Host "MergingTableInTempDB: $TempTableName"
-Start-Sleep 3
-# Creating SQL query
-$SQLMergeTable = "MERGE $SQLDB.dbo.$SQLTable Target
+        # Run SQL query
+        try {
+            Invoke-Sqlcmd -Query $SQLQuery -ServerInstance $SQLInstance -QueryTimeout 300 | Out-Null
+        }
+        catch {
+            $Error[0] | Format-List -Force
+        }
+    }
+    else {
+        ############################
+        # Merging if using TempDB
+        ############################
+        Write-Host "MergingTableInTempDB: $TempTableName"
+        Start-Sleep 3
+        # Creating SQL query
+        $SQLMergeTable = "MERGE $SQLDB.dbo.$SQLTable Target
 USING tempdb.dbo.$TempTableName Source
 ON (Target.EventID = Source.EventID)
 WHEN MATCHED 
@@ -475,72 +453,64 @@ THEN INSERT (RSCInstance, DateUTC, Status, Severity,
      VALUES (Source.RSCInstance, Source.DateUTC, Source.Status, Source.Severity,
 			Source.Username, Source.Message, Source.Source, Source.RubrikCluster, Source.Failures,
 			Source.EventID, Source.RubrikClusterID, Source.Exported);"
-# Run SQL query
-Try
-{
-Invoke-SQLCmd -Query $SQLMergeTable -ServerInstance $SQLInstance -QueryTimeout 300 | Out-Null
-$SQLMergeSuccess = $TRUE
-}
-Catch
-{
-$SQLMergeSuccess = $FALSE
-$Error[0] | Format-List -Force
-}
-##################################
-# SQL - Deleting Temp Table
-##################################
-IF($SQLMergeSuccess -eq $TRUE)
-{
-# Creating SQL query
-$SQLDropTable = "USE tempdb;
+        # Run SQL query
+        try {
+            Invoke-Sqlcmd -Query $SQLMergeTable -ServerInstance $SQLInstance -QueryTimeout 300 | Out-Null
+            $SQLMergeSuccess = $TRUE
+        }
+        catch {
+            $SQLMergeSuccess = $FALSE
+            $Error[0] | Format-List -Force
+        }
+        ##################################
+        # SQL - Deleting Temp Table
+        ##################################
+        if ($SQLMergeSuccess -eq $TRUE) {
+            # Creating SQL query
+            $SQLDropTable = "USE tempdb;
 DROP TABLE $TempTableName;"
-# Run SQL query
-Try
-{
-Invoke-SQLCmd -Query $SQLDropTable -ServerInstance $SQLInstance -QueryTimeout 300 | Out-Null
-}
-Catch
-{
-$Error[0] | Format-List -Force
-}
-# Logging
-Write-Host "----------------------------------
+            # Run SQL query
+            try {
+                Invoke-Sqlcmd -Query $SQLDropTable -ServerInstance $SQLInstance -QueryTimeout 300 | Out-Null
+            }
+            catch {
+                $Error[0] | Format-List -Force
+            }
+            # Logging
+            Write-Host "----------------------------------
 DroppedTableInTempDB: $TempTableName
 ----------------------------------"
-}
-ELSE
-{
-# Logging
-Write-Host "----------------------------------
+        }
+        else {
+            # Logging
+            Write-Host "----------------------------------
 NotDroppedTableInTempDB: $TempTableName
 SQLMergeSuccess: $SQLMergeSuccess
 ----------------------------------"	
-}
-Start-Sleep 2
-# End of bypass for using tempDB below
-}
-# End of bypass for using tempDB above
-##########################
-# Benching
-##########################
-$RSCTotalEventsCount = $RSCEvents | Measure-Object | Select-Object -ExpandProperty Count
-$RSCTotalInsertedEventsCount = $RSCEvents | Where-Object {$_.InsertDisabled -eq $FALSE} | Measure-Object | Select-Object -ExpandProperty Count
-$ScriptEnd = Get-Date
-IF (($ScriptStart -ne $null) -and ($ScriptEnd -ne $null))
-{
-$Timespan = New-TimeSpan -Start $ScriptStart -End $ScriptEnd
-$ScriptDurationSeconds = $Timespan.TotalSeconds
-$ScriptDurationSeconds = [Math]::Round($ScriptDurationSeconds)
-$ScriptDuration = "{0:}" -f $Timespan;$ScriptDuration = $ScriptDuration.Substring(0,8)
-}
-ELSE
-{
-$ScriptDuration = 0
-}
-# Calculating seconds per event
-IF($RSCEventsCount -gt 0){$SecondsPerEvent = $ScriptDurationSeconds/$RSCTotalEventsCount;$SecondsPerEvent=[Math]::Round($SecondsPerEvent,2)}ELSE{$SecondsPerEvent=0}
-# Logging
-Write-Host "Script Execution Summary
+        }
+        Start-Sleep 2
+        # End of bypass for using tempDB below
+    }
+    # End of bypass for using tempDB above
+    ##########################
+    # Benching
+    ##########################
+    $RSCTotalEventsCount = $RSCEvents | Measure-Object | Select-Object -ExpandProperty Count
+    $RSCTotalInsertedEventsCount = $RSCEvents | Where-Object { $_.InsertDisabled -eq $FALSE } | Measure-Object | Select-Object -ExpandProperty Count
+    $ScriptEnd = Get-Date
+    if (($ScriptStart -ne $null) -and ($ScriptEnd -ne $null)) {
+        $Timespan = New-TimeSpan -Start $ScriptStart -End $ScriptEnd
+        $ScriptDurationSeconds = $Timespan.TotalSeconds
+        $ScriptDurationSeconds = [Math]::Round($ScriptDurationSeconds)
+        $ScriptDuration = "{0:}" -f $Timespan; $ScriptDuration = $ScriptDuration.Substring(0, 8)
+    }
+    else {
+        $ScriptDuration = 0
+    }
+    # Calculating seconds per event
+    if ($RSCEventsCount -gt 0) { $SecondsPerEvent = $ScriptDurationSeconds / $RSCTotalEventsCount; $SecondsPerEvent = [Math]::Round($SecondsPerEvent, 2) }else { $SecondsPerEvent = 0 }
+    # Logging
+    Write-Host "Script Execution Summary
 ----------------------------------
 Start: $ScriptStart
 End: $ScriptEnd
@@ -548,8 +518,9 @@ CollectedEventsFrom: $TimeRange
 TotalEvents: $RSCTotalEventsCount
 Runtime: $ScriptDuration
 SecondsPerEvent: $SecondsPerEvent"
-# Returning null
-Return $null
-# End of function
+    # Returning null
+    return $null
+    # End of function
 }
+
 
