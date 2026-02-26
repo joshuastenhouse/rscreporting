@@ -1,9 +1,9 @@
 ################################################
 # Function - Get-RSCClusterNodes - Getting CDM Cluster Nodes attached to RSC
 ################################################
-Function Get-RSCClusterNodes {
+function Get-RSCClusterNode {
 
-<#
+    <#
 .SYNOPSIS
 A Rubrik Security Cloud (RSC) Reporting Module Function returning a list of every node in every Rubrik cluster.
 
@@ -24,27 +24,29 @@ This example returns an array of all the information returned by the GraphQL end
 Author: Joshua Stenhouse
 Date: 05/11/2023
 #>
+    [CmdletBinding()]
+    [Alias('Get-RSCClusterNodes')]
+    param()
+    ################################################
+    # Importing Module & Running Required Functions
+    ################################################
+    # Importing the module is it needs other modules
+    Import-Module RSCReporting
+    # Checking connectivity, exiting function with error if not connected
+    Test-RSCConnection
+    ################################################
+    # Getting RSC Cluster Nodes
+    ################################################
+    # Creating array
+    $RSCClusterList = @()
+    # Creating query
+    $RSCGraphQL = @{"operationName" = "clusterConnection";
 
-################################################
-# Importing Module & Running Required Functions
-################################################
-# Importing the module is it needs other modules
-Import-Module RSCReporting
-# Checking connectivity, exiting function with error if not connected
-Test-RSCConnection
-################################################
-# Getting RSC Cluster Nodes
-################################################
-# Creating array
-$RSCClusterList = @()
-# Creating query
-$RSCGraphQL = @{"operationName" = "clusterConnection";
+        "variables"                 = @{
+            "first" = 1000
+        };
 
-"variables" = @{
-"first" = 1000
-};
-
-"query" = "query clusterConnection {
+        "query"                     = "query clusterConnection {
   clusterConnection {
     edges {
       node {
@@ -133,81 +135,78 @@ $RSCGraphQL = @{"operationName" = "clusterConnection";
     }
   }
 }"
-}
-################################################
-# API Call To RSC GraphQL URI
-################################################
-# Querying API
-$RSCClusterListResponse = Invoke-RestMethod -Method POST -Uri $RSCGraphqlURL -Body $($RSCGraphQL | ConvertTo-JSON -Depth 20) -Headers $RSCSessionHeader
-# Setting variable
-$RSCClusterList += $RSCClusterListResponse.data.clusterConnection.edges.node
-# Getting all results from paginations
-While ($RSCClusterListResponse.data.clusterConnection.pageInfo.hasNextPage) 
-{
-# Getting next set
-$RSCGraphQL.variables.after = $RSCClusterListResponse.data.clusterConnection.pageInfo.endCursor
-$RSCClusterListResponse = Invoke-RestMethod -Method POST -Uri $RSCGraphqlURL -Body $($RSCGraphQL | ConvertTo-JSON -Depth 20) -Headers $RSCSessionHeader
-$RSCClusterList += $RSCClusterListResponse.data.clusterConnection.edges.node
-}
-############################
-# Starting For Each Cluster
-############################
-$RSCClusterNodes = [System.Collections.ArrayList]@()
-ForEach ($RSCCluster in $RSCClusterList)
-{
-# Setting variables
-$Cluster = $RSCCluster.name
-$ClusterID = $RSCCluster.id
-$ClusterVersion = $RSCCluster.version
-$ClusterStatus = $RSCCluster.status
-$ClusterIsHealthy = $RSCCluster.isHealthy
-$ClusterType = $RSCCluster.type
-$ClusterProduct = $RSCCluster.productType
-$ClusterEncrypted = $RSCCluster.encryptionEnabled
-$ClusterSnapshots = $RSCCluster.snapshotCount
-$ClusterRunwayDays = $RSCCluster.estimatedRunway
-$ClusterNodes = $RSCCluster.clusterNodeConnection.nodes
-$ClusterDisks = $RSCCluster.clusterDiskConnection.nodes
-$ClusterLocation = $RSCCluster.geoLocation
-# Getting cluster location
-IF ($ClusterLocation -ne $null)
-{
-$ClusterAddress = $ClusterLocation.address
-$ClusterLatitude = $ClusterLocation.latitude
-$ClusterLongitude = $ClusterLocation.longitude
-}
-ForEach ($ClusterNode in $ClusterNodes)
-{
-# Setting variables
-$ClusterFullNodeID = $ClusterNode.id
-$ClusterNodeStatus = $ClusterNode.status
-$ClusterNodeIPAddress = $ClusterNode.ipAddress
-# Getting shorthand node ID
-$ClusterNodeID = $ClusterFullNodeID.Replace("cluster:::","")
-# Creating URL
-$ClusterNodeURL = $RSCURL + "/clusters/" + $ClusterID + "/nodes/" + $ClusterNodeID
-# Adding to array
-$Object = New-Object PSObject
-$Object | Add-Member -MemberType NoteProperty -Name "RSCInstance" -Value $RSCInstance
-$Object | Add-Member -MemberType NoteProperty -Name "Cluster" -Value $Cluster
-$Object | Add-Member -MemberType NoteProperty -Name "ClusterStatus" -Value $ClusterStatus
-$Object | Add-Member -MemberType NoteProperty -Name "Type" -Value $ClusterType
-$Object | Add-Member -MemberType NoteProperty -Name "NodeID" -Value $ClusterNodeID
-$Object | Add-Member -MemberType NoteProperty -Name "FullNodeID" -Value $ClusterFullNodeID
-$Object | Add-Member -MemberType NoteProperty -Name "NodeStatus" -Value $ClusterNodeStatus
-$Object | Add-Member -MemberType NoteProperty -Name "IPAddress" -Value $ClusterNodeIPAddress
-$Object | Add-Member -MemberType NoteProperty -Name "Encrypted" -Value $ClusterEncrypted
-$Object | Add-Member -MemberType NoteProperty -Name "Location" -Value $ClusterAddress
-$Object | Add-Member -MemberType NoteProperty -Name "Healthy" -Value $ClusterIsHealthy
-$Object | Add-Member -MemberType NoteProperty -Name "Version" -Value $ClusterVersion
-$Object | Add-Member -MemberType NoteProperty -Name "ClusterID" -Value $ClusterID
-$Object | Add-Member -MemberType NoteProperty -Name "URL" -Value $ClusterNodeURL
-$RSCClusterNodes.Add($Object) | Out-Null
-}
-# End of for each cluster below
-}
-# End of for each cluster above
+    }
+    ################################################
+    # API Call To RSC GraphQL URI
+    ################################################
+    # Querying API
+    $RSCClusterListResponse = Invoke-RestMethod -Method POST -Uri $RSCGraphqlURL -Body $($RSCGraphQL | ConvertTo-Json -Depth 20) -Headers $RSCSessionHeader
+    # Setting variable
+    $RSCClusterList += $RSCClusterListResponse.data.clusterConnection.edges.node
+    # Getting all results from paginations
+    while ($RSCClusterListResponse.data.clusterConnection.pageInfo.hasNextPage) {
+        # Getting next set
+        $RSCGraphQL.variables.after = $RSCClusterListResponse.data.clusterConnection.pageInfo.endCursor
+        $RSCClusterListResponse = Invoke-RestMethod -Method POST -Uri $RSCGraphqlURL -Body $($RSCGraphQL | ConvertTo-Json -Depth 20) -Headers $RSCSessionHeader
+        $RSCClusterList += $RSCClusterListResponse.data.clusterConnection.edges.node
+    }
+    ############################
+    # Starting For Each Cluster
+    ############################
+    $RSCClusterNodes = [System.Collections.ArrayList]@()
+    foreach ($RSCCluster in $RSCClusterList) {
+        # Setting variables
+        $Cluster = $RSCCluster.name
+        $ClusterID = $RSCCluster.id
+        $ClusterVersion = $RSCCluster.version
+        $ClusterStatus = $RSCCluster.status
+        $ClusterIsHealthy = $RSCCluster.isHealthy
+        $ClusterType = $RSCCluster.type
+        $ClusterProduct = $RSCCluster.productType
+        $ClusterEncrypted = $RSCCluster.encryptionEnabled
+        $ClusterSnapshots = $RSCCluster.snapshotCount
+        $ClusterRunwayDays = $RSCCluster.estimatedRunway
+        $ClusterNodes = $RSCCluster.clusterNodeConnection.nodes
+        $ClusterDisks = $RSCCluster.clusterDiskConnection.nodes
+        $ClusterLocation = $RSCCluster.geoLocation
+        # Getting cluster location
+        if ($ClusterLocation -ne $null) {
+            $ClusterAddress = $ClusterLocation.address
+            $ClusterLatitude = $ClusterLocation.latitude
+            $ClusterLongitude = $ClusterLocation.longitude
+        }
+        foreach ($ClusterNode in $ClusterNodes) {
+            # Setting variables
+            $ClusterFullNodeID = $ClusterNode.id
+            $ClusterNodeStatus = $ClusterNode.status
+            $ClusterNodeIPAddress = $ClusterNode.ipAddress
+            # Getting shorthand node ID
+            $ClusterNodeID = $ClusterFullNodeID.Replace("cluster:::", "")
+            # Creating URL
+            $ClusterNodeURL = $RSCURL + "/clusters/" + $ClusterID + "/nodes/" + $ClusterNodeID
+            # Adding to array
+            $Object = New-Object PSObject
+            $Object | Add-Member -MemberType NoteProperty -Name "RSCInstance" -Value $RSCInstance
+            $Object | Add-Member -MemberType NoteProperty -Name "Cluster" -Value $Cluster
+            $Object | Add-Member -MemberType NoteProperty -Name "ClusterStatus" -Value $ClusterStatus
+            $Object | Add-Member -MemberType NoteProperty -Name "Type" -Value $ClusterType
+            $Object | Add-Member -MemberType NoteProperty -Name "NodeID" -Value $ClusterNodeID
+            $Object | Add-Member -MemberType NoteProperty -Name "FullNodeID" -Value $ClusterFullNodeID
+            $Object | Add-Member -MemberType NoteProperty -Name "NodeStatus" -Value $ClusterNodeStatus
+            $Object | Add-Member -MemberType NoteProperty -Name "IPAddress" -Value $ClusterNodeIPAddress
+            $Object | Add-Member -MemberType NoteProperty -Name "Encrypted" -Value $ClusterEncrypted
+            $Object | Add-Member -MemberType NoteProperty -Name "Location" -Value $ClusterAddress
+            $Object | Add-Member -MemberType NoteProperty -Name "Healthy" -Value $ClusterIsHealthy
+            $Object | Add-Member -MemberType NoteProperty -Name "Version" -Value $ClusterVersion
+            $Object | Add-Member -MemberType NoteProperty -Name "ClusterID" -Value $ClusterID
+            $Object | Add-Member -MemberType NoteProperty -Name "URL" -Value $ClusterNodeURL
+            $RSCClusterNodes.Add($Object) | Out-Null
+        }
+        # End of for each cluster below
+    }
+    # End of for each cluster above
 
-Return $RSCClusterNodes
-# End of function
+    return $RSCClusterNodes
+    # End of function
 }
+

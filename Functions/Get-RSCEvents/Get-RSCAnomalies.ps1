@@ -1,9 +1,9 @@
 ################################################
 # Function - Get-RSCAnomalies - Getting all RSC Anomaly events
 ################################################
-Function Get-RSCAnomalies {
+function Get-RSCAnomaly {
 
-<#
+    <#
 .SYNOPSIS
 Returns an array of all anomalies within the time frame specified.
 
@@ -33,27 +33,30 @@ Author: Joshua Stenhouse
 Date: 05/11/2023
 #>
 
-################################################
-# Paramater Config
-################################################
-	Param
+    ################################################
+    # Paramater Config
+    ################################################
+    [CmdletBinding()]
+    [Alias('Get-RSCAnomalies')]
+    param
     (
         $DaysToCapture
     )
 
-################################################
-# Importing Module & Running Required Functions
-################################################
-# Importing the module is it needs other modules
-Import-Module RSCReporting
-# Checking connectivity, exiting function with error if not connected
-Test-RSCConnection
-################################################
-# Same function as RSCEventsAnomalies - So just running that...
-################################################
-$RSCEvents = Get-RSCEventsAnomalies -DaysToCapture $DaysToCapture
+    ################################################
+    # Importing Module & Running Required Functions
+    ################################################
+    # Importing the module is it needs other modules
+    Import-Module RSCReporting
+    # Checking connectivity, exiting function with error if not connected
+    Test-RSCConnection
+    ################################################
+    # Same function as RSCEventsAnomalies - So just running that...
+    ################################################
+    $RSCEvents = Get-RSCEventsAnomalies -DaysToCapture $DaysToCapture
 
-# Returning array
-Return $RSCEvents
-# End of function
+    # Returning array
+    return $RSCEvents
+    # End of function
 }
+

@@ -1,9 +1,9 @@
 ################################################
 # Function - Stop-RSCMSSQLLiveMount - Requests to stop live mount for an MSSQL database
 ################################################
-Function Stop-RSCMSSQLLiveMount {
+function Stop-RSCMSSQLLiveMount {
 	
-<#
+    <#
 .SYNOPSIS
 Requests to stop a live mount of an MSSQL database
 
@@ -27,48 +27,49 @@ This example prompts for the RSC URL, user ID and secret, then connects to RSC a
 Author: Joshua Stenhouse
 Date: 10/10/2023
 #>
-################################################
-# Paramater Config
-################################################
-[CmdletBinding()]
-    Param (
-        [Parameter(Mandatory=$true)]
+    ################################################
+    # Paramater Config
+    ################################################
+    [CmdletBinding(SupportsShouldProcess = $true)]
+    param (
+        [Parameter(Mandatory = $true)]
         [string]$LiveMountID
     )
-################################################
-# Importing Module & Running Required Functions
-################################################
-# Importing module
-Import-Module RSCReporting
-# Checking connectivity, exiting function with error if not
-Test-RSCConnection
-# Getting list of live mounts
-$SQLLiveMountList = Get-RSCMSSQLLiveMounts
-# Getting live mount ID
-$LiveMountID = $SQLLiveMountList | Where-Object {$_.LiveMountID -eq $LiveMountID} | Select-Object -ExpandProperty LiveMountID
-# If null exiting
-IF($LiveMountID -eq $null)
-{
-Write-Host "SQLLiveMountIDNotFound: $SQLLiveMountID
+    begin {}
+    process {
+        if ($pscmdlet.ShouldProcess("LiveMountID - $LiveMountID")) {
+            ################################################
+            # Importing Module & Running Required Functions
+            ################################################
+            # Importing module
+            Import-Module RSCReporting
+            # Checking connectivity, exiting function with error if not
+            Test-RSCConnection
+            # Getting list of live mounts
+            $SQLLiveMountList = Get-RSCMSSQLLiveMounts
+            # Getting live mount ID
+            $LiveMountID = $SQLLiveMountList | Where-Object { $_.LiveMountID -eq $LiveMountID } | Select-Object -ExpandProperty LiveMountID
+            # If null exiting
+            if ($LiveMountID -eq $null) {
+                Write-Host "SQLLiveMountIDNotFound: $SQLLiveMountID
 Check and try again..."
-Break
-}
-################################################
-# Requesting Live Mount IF Valid Settings
-################################################
-IF($SQLLiveMountID -ne $null)
-{
-# Building GraphQL query
-$RSCGraphQL = @{"operationName" = "MssqlLiveMountUnmountMutation";
+                break
+            }
+            ################################################
+            # Requesting Live Mount IF Valid Settings
+            ################################################
+            if ($SQLLiveMountID -ne $null) {
+                # Building GraphQL query
+                $RSCGraphQL = @{"operationName" = "MssqlLiveMountUnmountMutation";
 
-"variables" = @{
-        "input" = @{
-                    "id" = "$LiveMountID"
-                    "force" = $true
-                    }
-};
+                    "variables"                 = @{
+                        "input" = @{
+                            "id"    = "$LiveMountID"
+                            "force" = $true
+                        }
+                    };
 
-"query" = "mutation MssqlLiveMountUnmountMutation(`$input: DeleteMssqlLiveMountInput!) {
+                    "query"                     = "mutation MssqlLiveMountUnmountMutation(`$input: DeleteMssqlLiveMountInput!) {
   deleteMssqlLiveMount(input: `$input) {
     id
     links {
@@ -79,40 +80,42 @@ $RSCGraphQL = @{"operationName" = "MssqlLiveMountUnmountMutation";
     __typename
   }
 }"
-}
-# Querying API
-Try
-{
-$RSCResponse = Invoke-RestMethod -Method POST -Uri $RSCGraphqlURL -Body $($RSCGraphQL | ConvertTo-JSON -Depth 20) -Headers $RSCSessionHeader
-$RSCRequest = "SUCCESS"
-}
-Catch
-{
-$RSCRequest = "FAILED"
-}
-# Checking for permission errors
-IF($RSCResponse.errors.message){$RSCResponse.errors.message}
-# Getting response
-$JobURL = $RSCResponse.data.createMssqlLiveMount.links.href
-$JobID = $RSCResponse.data.createMssqlLiveMount.id
-################################################
-# Returing Job Info
-################################################
-# Adding To Array
-$Object = New-Object PSObject
-$Object | Add-Member -MemberType NoteProperty -Name "RSCInstance" -Value $RSCInstance
-$Object | Add-Member -MemberType NoteProperty -Name "Mutation" -Value "MssqlLiveMountUnmountMutation"
-$Object | Add-Member -MemberType NoteProperty -Name "RequestStatus" -Value $RSCRequest
-$Object | Add-Member -MemberType NoteProperty -Name "TargetDBName" -Value $TargetDBName
-$Object | Add-Member -MemberType NoteProperty -Name "SourceDBID" -Value $SourceDBID
-$Object | Add-Member -MemberType NoteProperty -Name "RequestStatus" -Value $RequestStatus
-$Object | Add-Member -MemberType NoteProperty -Name "JobID" -Value $JobID
-$Object | Add-Member -MemberType NoteProperty -Name "ErrorMessage" -Value $RSCResponse.errors.message
-# Returning array
-Return $Object
-# Not returning anything if didn't pass validation below
-}
-# Not returning anything if didn't pass validation above
+                }
+                # Querying API
+                try {
+                    $RSCResponse = Invoke-RestMethod -Method POST -Uri $RSCGraphqlURL -Body $($RSCGraphQL | ConvertTo-Json -Depth 20) -Headers $RSCSessionHeader
+                    $RSCRequest = "SUCCESS"
+                }
+                catch {
+                    $RSCRequest = "FAILED"
+                }
+                # Checking for permission errors
+                if ($RSCResponse.errors.message) { $RSCResponse.errors.message }
+                # Getting response
+                $JobURL = $RSCResponse.data.createMssqlLiveMount.links.href
+                $JobID = $RSCResponse.data.createMssqlLiveMount.id
+                ################################################
+                # Returing Job Info
+                ################################################
+                # Adding To Array
+                $Object = New-Object PSObject
+                $Object | Add-Member -MemberType NoteProperty -Name "RSCInstance" -Value $RSCInstance
+                $Object | Add-Member -MemberType NoteProperty -Name "Mutation" -Value "MssqlLiveMountUnmountMutation"
+                $Object | Add-Member -MemberType NoteProperty -Name "RequestStatus" -Value $RSCRequest
+                $Object | Add-Member -MemberType NoteProperty -Name "TargetDBName" -Value $TargetDBName
+                $Object | Add-Member -MemberType NoteProperty -Name "SourceDBID" -Value $SourceDBID
+                $Object | Add-Member -MemberType NoteProperty -Name "RequestStatus" -Value $RequestStatus
+                $Object | Add-Member -MemberType NoteProperty -Name "JobID" -Value $JobID
+                $Object | Add-Member -MemberType NoteProperty -Name "ErrorMessage" -Value $RSCResponse.errors.message
+                # Returning array
+                return $Object
+                # Not returning anything if didn't pass validation below
+            }
+            # Not returning anything if didn't pass validation above
 
-# End of function
+            # End of function
+        }
+    }
 }
+end {}
+

@@ -1,9 +1,9 @@
 ################################################
 # Creating the Import-RSCReportTemplate function
 ################################################
-Function Import-RSCReportTemplate {
+function Import-RSCReportTemplate {
 	
-<#
+    <#
 .SYNOPSIS
 A Rubrik Security Cloud (RSC) Reporting Module Function that imports the included HTML templates, used by Send-RSCReport functions only.
 
@@ -31,49 +31,46 @@ This example prompts for the RSC URL, user ID and secret, then connects to RSC a
 Author: Joshua Stenhouse
 Date: 05/11/2023
 #>
-# Paramater Config
-	Param
+    # Paramater Config
+    param
     (
-        [Parameter(Mandatory=$true)][String]$Template
+        [Parameter(Mandatory = $true)][String]$Template
     )
-# Loading template
-$HTMLTemplate = Get-Content $Template
-# Creating array
-$HTMLCode = @()
-# Creating Counter
-$SectionCounter = 0
-# Parsing HTML code
-ForEach ($Line in $HTMLTemplate)
-{
-# Incrementing counter
-$LineCounter ++
-# Checking if split
-IF ($Line -match "HTMLSPLIT")
-{
-# Incrementing section counter
-$SectionCounter ++
-# Selecting split name
-$HTMLSectionName = $Line.Replace("<!--HTMLSPLIT-","").Replace("-->","").TrimStart().TrimEnd()
-# Adding code to array
-$HTMLCodeSection = New-Object PSObject
-$HTMLCodeSection | Add-Member -MemberType NoteProperty -Name "Section" -Value $SectionCounter
-$HTMLCodeSection | Add-Member -MemberType NoteProperty -Name "SectionName" -Value $HTMLSectionName
-$HTMLCodeSection | Add-Member -MemberType NoteProperty -Name "HTMLCode" -Value $HTMLLine
-$HTMLCode += $HTMLCodeSection
-# Resetting HTML lines for next section
-$HTMLLine = @()
-}
-ELSE
-{
-# Not at split yet, building rows
-$HTMLLine += $Line
-}
-# End of processing HTML line below
-}
-# End of processing HTML line above
+    # Loading template
+    $HTMLTemplate = Get-Content $Template
+    # Creating array
+    $HTMLCode = @()
+    # Creating Counter
+    $SectionCounter = 0
+    # Parsing HTML code
+    foreach ($Line in $HTMLTemplate) {
+        # Incrementing counter
+        $LineCounter ++
+        # Checking if split
+        if ($Line -match "HTMLSPLIT") {
+            # Incrementing section counter
+            $SectionCounter ++
+            # Selecting split name
+            $HTMLSectionName = $Line.Replace("<!--HTMLSPLIT-", "").Replace("-->", "").TrimStart().TrimEnd()
+            # Adding code to array
+            $HTMLCodeSection = New-Object PSObject
+            $HTMLCodeSection | Add-Member -MemberType NoteProperty -Name "Section" -Value $SectionCounter
+            $HTMLCodeSection | Add-Member -MemberType NoteProperty -Name "SectionName" -Value $HTMLSectionName
+            $HTMLCodeSection | Add-Member -MemberType NoteProperty -Name "HTMLCode" -Value $HTMLLine
+            $HTMLCode += $HTMLCodeSection
+            # Resetting HTML lines for next section
+            $HTMLLine = @()
+        }
+        else {
+            # Not at split yet, building rows
+            $HTMLLine += $Line
+        }
+        # End of processing HTML line below
+    }
+    # End of processing HTML line above
 
-# Returning data
-Return $HTMLCode
+    # Returning data
+    return $HTMLCode
 }
 ################################################
 # End of script

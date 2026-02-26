@@ -1,9 +1,9 @@
 ################################################
 # Function - Start-RSCThreatHunt - Start a threat hunt for the specified objects & IOCs
 ################################################
-Function Start-RSCThreatHunt {
+function Start-RSCThreatHunt {
 
-<#
+    <#
 .SYNOPSIS
 A Rubrik Security Cloud (RSC) Reporting Module Function that starts a threat hunt using the variables configured.
 
@@ -49,86 +49,86 @@ This example starts a threat hunt for the objects IDs specified with the built-i
 Author: Joshua Stenhouse
 Date: 05/11/2023
 #>
-################################################
-# Paramater Config
-################################################
-Param 
-  (
-  [Parameter(Mandatory=$true)]
-  $ObjectIDs,
-  [Parameter(Mandatory=$true)]
-  [String]$ThreatHuntName,
-  [Parameter(Mandatory=$false)]
-  [String]$IOCs,
-  [Parameter(Mandatory=$false)]
-  [ValidateSet("IOC_YARA","IOC_HASH")]
-  $IOCType,
-  [switch]$UseDemoIOCs,
-  $FileExclude,
-  $FileException,
-  $IOCMaxSizeBytes,
-  $IOCMinSizeBytes,
-  $MaxSnapshotsPerObject,
-  $MaxMatchesPerSnapshot,
-  $FileInclude
-  )
+    ################################################
+    # Paramater Config
+    ################################################
+    [CmdletBinding(SupportsShouldProcess = $true)]
+    param 
+    (
+        [Parameter(Mandatory = $true)]
+        $ObjectIDs,
+        [Parameter(Mandatory = $true)]
+        [String]$ThreatHuntName,
+        [Parameter(Mandatory = $false)]
+        [String]$IOCs,
+        [Parameter(Mandatory = $false)]
+        [ValidateSet("IOC_YARA", "IOC_HASH")]
+        $IOCType,
+        [switch]$UseDemoIOCs,
+        $FileExclude,
+        $FileException,
+        $IOCMaxSizeBytes,
+        $IOCMinSizeBytes,
+        $MaxSnapshotsPerObject,
+        $MaxMatchesPerSnapshot,
+        $FileInclude
+    )
+    begin {}
+    process {
+        if ($pscmdlet.ShouldProcess("ObjectID - $ObjectIDs")) {
+            # Setting defaults if null
+            if ($FileExclude -eq $null) { $FileExclude = "" }
+            if ($FileException -eq $null) { $FileException = "" }
+            if ($IOCMaxSizeBytes -eq $null) { $IOCMaxSizeBytes = 10000000 }
+            if ($IOCMinSizeBytes -eq $null) { $IOCMinSizeBytes = 256000 }
+            if ($MaxSnapshotsPerObject -eq $null) { $MaxSnapshotsPerObject = 1 }
+            if ($MaxMatchesPerSnapshot -eq $null) { $MaxMatchesPerSnapshot = 100 }
+            if ($FileInclude -eq $null) { $FileInclude = "**" }
 
-# Setting defaults if null
-IF($FileExclude -eq $null){$FileExclude = ""}
-IF($FileException -eq $null){$FileException = ""}
-IF($IOCMaxSizeBytes -eq $null){$IOCMaxSizeBytes = 10000000}
-IF($IOCMinSizeBytes -eq $null){$IOCMinSizeBytes = 256000}
-IF($MaxSnapshotsPerObject -eq $null){$MaxSnapshotsPerObject = 1}
-IF($MaxMatchesPerSnapshot -eq $null){$MaxMatchesPerSnapshot = 100}
-IF($FileInclude -eq $null){$FileInclude = "**"}
+            # Checking function hasn't been passed multiple To ObjectIs in a string, formatting if so
+            if ($ObjectIDs -match ",") { $ObjectIDs = $ObjectIDs.Split(",") }
 
-# Checking function hasn't been passed multiple To ObjectIs in a string, formatting if so
-IF($ObjectIDs -match ","){$ObjectIDs = $ObjectIDs.Split(",")}
+            # Getting RSC Protected Object list
+            $RSCObjects = Get-RSCProtectedObjects
 
-# Getting RSC Protected Object list
-$RSCObjects = Get-RSCProtectedObjects
+            # Verifying all object IDs are valid
+            $ObjectIDCheck = [System.Collections.ArrayList]@()
+            foreach ($ObjectID in $ObjectIDs) {
+                # Checking if exists in list
+                $ObjectIDList = $RSCObjects | Where-Object { $_.ObjectID -eq $ObjectID }
+                # Validating
+                if ($ObjectIDList -eq $null) { $ObjectIDInList = $FALSE }else { $ObjectIDInList = $TRUE }
+                # Getting Rubrik cluster ID
+                $RubrikClusterID = $ObjectIDList.RubrikClusterID 
+                # Adding To Array
+                $Object = New-Object PSObject
+                $Object | Add-Member -MemberType NoteProperty -Name "ObjectID" -Value $ObjectID
+                $Object | Add-Member -MemberType NoteProperty -Name "ObjectIDInList" -Value $ObjectIDInList
+                $Object | Add-Member -MemberType NoteProperty -Name "RubrikClusterID" -Value $RubrikClusterID
+                $ObjectIDCheck.Add($Object) | Out-Null
+            }
 
-# Verifying all object IDs are valid
-$ObjectIDCheck = [System.Collections.ArrayList]@()
-ForEach($ObjectID in $ObjectIDs)
-{
-# Checking if exists in list
-$ObjectIDList = $RSCObjects | Where-Object {$_.ObjectID -eq $ObjectID}
-# Validating
-IF($ObjectIDList -eq $null){$ObjectIDInList = $FALSE}ELSE{$ObjectIDInList = $TRUE}
-# Getting Rubrik cluster ID
-$RubrikClusterID = $ObjectIDList.RubrikClusterID 
-# Adding To Array
-$Object = New-Object PSObject
-$Object | Add-Member -MemberType NoteProperty -Name "ObjectID" -Value $ObjectID
-$Object | Add-Member -MemberType NoteProperty -Name "ObjectIDInList" -Value $ObjectIDInList
-$Object | Add-Member -MemberType NoteProperty -Name "RubrikClusterID" -Value $RubrikClusterID
-$ObjectIDCheck.Add($Object) | Out-Null
-}
+            # Exiting if not objects found
+            $ObjectIDCheckCount = $ObjectIDCheck | Where-Object { $_.ObjectIDInList -eq $FALSE } | Measure-Object | Select-Object -ExpandProperty Count
+            if ($ObjectIDCheckCount -gt 0) {
+                Write-Error "ERROR: One or more ObjectIDs not found in Get-RSCProtectedObjects, check and try again.."
+                Start-Sleep 2
+                break
+            }
 
-# Exiting if not objects found
-$ObjectIDCheckCount = $ObjectIDCheck | Where-Object {$_.ObjectIDInList -eq $FALSE} | Measure-Object | Select-Object -ExpandProperty Count
-IF($ObjectIDCheckCount -gt 0)
-{
-Write-Error "ERROR: One or more ObjectIDs not found in Get-RSCProtectedObjects, check and try again.."
-Start-Sleep 2
-Break
-}
+            # Exiting if all objects not on same Rubrik cluster
+            $RubrikClusterID = $ObjectIDCheck | Select-Object -ExpandProperty RubrikClusterID -Unique
+            $RubrikClusterIDCheckCount = $RubrikClusterID | Measure-Object | Select-Object -ExpandProperty Count
+            if ($RubrikClusterIDCheckCount -gt 0) {
+                Write-Error "ERROR: One or more ObjectIDs not on the same RubrikClusterID, ensure all ObjectIDs specified are on the same Rubrik cluster and try again.."
+                Start-Sleep 2
+                break
+            }
 
-# Exiting if all objects not on same Rubrik cluster
-$RubrikClusterID = $ObjectIDCheck | Select-Object -ExpandProperty RubrikClusterID -Unique
-$RubrikClusterIDCheckCount = $RubrikClusterID | Measure-Object | Select-Object -ExpandProperty Count
-IF($RubrikClusterIDCheckCount -gt 0)
-{
-Write-Error "ERROR: One or more ObjectIDs not on the same RubrikClusterID, ensure all ObjectIDs specified are on the same Rubrik cluster and try again.."
-Start-Sleep 2
-Break
-}
-
-# Creating demo has
-IF($UseDemoIOCs)
-{$IOCType = "IOC_YARA"
-$IOCs = "import `"hash`"
+            # Creating demo has
+            if ($UseDemoIOCs) {
+                $IOCType = "IOC_YARA"
+                $IOCs = "import `"hash`"
 
 rule StringMatch : Example Rubrik {
   meta:
@@ -150,90 +150,91 @@ rule MatchByHash : Example Rubrik {
     filesize == 12345 and
         hash.md5(0, filesize) == `"e30299799c4ece3b53f4a7b8897a35b6`"
 }"
-}
+            }
 
-# Validating an IOC is specified by this point otherwise exiting
-IF($IOCs -eq $null)
-{
-Write-Error "ERROR: No IOCs specified, check your variables and try again.."
-Start-Sleep 2
-Break
-}
+            # Validating an IOC is specified by this point otherwise exiting
+            if ($IOCs -eq $null) {
+                Write-Error "ERROR: No IOCs specified, check your variables and try again.."
+                Start-Sleep 2
+                break
+            }
 
-################################################
-# Importing Module & Running Required Functions
-################################################
-Import-Module RSCReporting
-# Checking connectivity, exiting function with error if not
-Test-RSCConnection
-################################################
-# Requesting Generic On Demand Snapshot
-################################################
-# Building GraphQL query
-$RSCGraphQL = @{"operationName" = "StartThreatHuntMutation";
+            ################################################
+            # Importing Module & Running Required Functions
+            ################################################
+            Import-Module RSCReporting
+            # Checking connectivity, exiting function with error if not
+            Test-RSCConnection
+            ################################################
+            # Requesting Generic On Demand Snapshot
+            ################################################
+            # Building GraphQL query
+            $RSCGraphQL = @{"operationName" = "StartThreatHuntMutation";
 
-"variables" = @{
-    "input" = @{
-        "clusterUuid" = "$RubrikClusterID"
-        "indicatorsOfCompromise" = @{
-               "iocKind" = "$IOCType"
-               "iocValue" = "$IOCs"
-               }
-        "objectFids" = $ObjectIDs
-        "maxMatchesPerSnapshot" = $MaxMatchesPerSnapshot
-        "shouldTrustFilesystemTimeInfo" = $true
-        "name" = "$ThreatHuntName"
-        "fileScanCriteria" = @{
-                "fileSizeLimits" = @{
-                "maximumSizeInBytes" = $IOCMaxSizeBytes
-                }
-                "pathFilter"= @{
-                "includes" = "**"
-                "excludes"= "$FileExclude"
-                "exceptions" = "$FileException "
-                }
-                }
-        "snapshotScanLimit" = @{
-            "maxSnapshotsPerObject" = $MaxSnapshotsPerObject
-                }
-      }
-};
+                "variables"                 = @{
+                    "input" = @{
+                        "clusterUuid"                   = "$RubrikClusterID"
+                        "indicatorsOfCompromise"        = @{
+                            "iocKind"  = "$IOCType"
+                            "iocValue" = "$IOCs"
+                        }
+                        "objectFids"                    = $ObjectIDs
+                        "maxMatchesPerSnapshot"         = $MaxMatchesPerSnapshot
+                        "shouldTrustFilesystemTimeInfo" = $true
+                        "name"                          = "$ThreatHuntName"
+                        "fileScanCriteria"              = @{
+                            "fileSizeLimits" = @{
+                                "maximumSizeInBytes" = $IOCMaxSizeBytes
+                            }
+                            "pathFilter"     = @{
+                                "includes"   = "**"
+                                "excludes"   = "$FileExclude"
+                                "exceptions" = "$FileException "
+                            }
+                        }
+                        "snapshotScanLimit"             = @{
+                            "maxSnapshotsPerObject" = $MaxSnapshotsPerObject
+                        }
+                    }
+                };
 
-"query" = "mutation StartThreatHuntMutation(`$input: StartThreatHuntInput!) {
+                "query"                     = "mutation StartThreatHuntMutation(`$input: StartThreatHuntInput!) {
   startThreatHunt(input: `$input) {
     huntId
     isSyncSuccessful
   }
 }"
+            }
+            # Querying API
+            try {
+                $RSCResponse = Invoke-RestMethod -Method POST -Uri $RSCGraphqlURL -Body $($RSCGraphQL | ConvertTo-Json -Depth 20) -Headers $RSCSessionHeader
+                $RSCRequest = "SUCCESS"
+            }
+            catch {
+                $RSCRequest = "FAILED"
+            }
+            # Checking for errors
+            if ($RSCResponse.errors.message) { $RSCResponse.errors.message }
+            # Getting result
+            $ThreatHuntStarted = $RSCResponse.data.startThreatHunt.isSyncSuccessful
+            $ThreatHuntID = $RSCResponse.data.startThreatHunt.huntId
+            ################################################
+            # Returing array
+            ################################################
+            $Object = New-Object PSObject
+            $Object | Add-Member -MemberType NoteProperty -Name "RSCInstance" -Value $RSCInstance
+            $Object | Add-Member -MemberType NoteProperty -Name "Mutation" -Value "StartThreatHuntMutation"
+            $Object | Add-Member -MemberType NoteProperty -Name "RequestStatus" -Value $RSCRequest
+            $Object | Add-Member -MemberType NoteProperty -Name "RubrikClusterID" -Value $RubrikClusterID
+            $Object | Add-Member -MemberType NoteProperty -Name "ObjectIDs" -Value $ObjectIDs
+            $Object | Add-Member -MemberType NoteProperty -Name "ThreatHuntStarted" -Value $ThreatHuntStarted
+            $Object | Add-Member -MemberType NoteProperty -Name "ThreatHuntID" -Value $ThreatHuntID
+            $Object | Add-Member -MemberType NoteProperty -Name "Errors" -Value $RSCResponse.errors.message
+            # Returning array
+            return $Object
+            # End of function
+        }
+    }
 }
-# Querying API
-Try
-{
-$RSCResponse = Invoke-RestMethod -Method POST -Uri $RSCGraphqlURL -Body $($RSCGraphQL | ConvertTo-JSON -Depth 20) -Headers $RSCSessionHeader
-$RSCRequest = "SUCCESS"
-}
-Catch
-{
-$RSCRequest = "FAILED"
-}
-# Checking for errors
-IF($RSCResponse.errors.message){$RSCResponse.errors.message}
-# Getting result
-$ThreatHuntStarted = $RSCResponse.data.startThreatHunt.isSyncSuccessful
-$ThreatHuntID = $RSCResponse.data.startThreatHunt.huntId
-################################################
-# Returing array
-################################################
-$Object = New-Object PSObject
-$Object | Add-Member -MemberType NoteProperty -Name "RSCInstance" -Value $RSCInstance
-$Object | Add-Member -MemberType NoteProperty -Name "Mutation" -Value "StartThreatHuntMutation"
-$Object | Add-Member -MemberType NoteProperty -Name "RequestStatus" -Value $RSCRequest
-$Object | Add-Member -MemberType NoteProperty -Name "RubrikClusterID" -Value $RubrikClusterID
-$Object | Add-Member -MemberType NoteProperty -Name "ObjectIDs" -Value $ObjectIDs
-$Object | Add-Member -MemberType NoteProperty -Name "ThreatHuntStarted" -Value $ThreatHuntStarted
-$Object | Add-Member -MemberType NoteProperty -Name "ThreatHuntID" -Value $ThreatHuntID
-$Object | Add-Member -MemberType NoteProperty -Name "Errors" -Value $RSCResponse.errors.message
-# Returning array
-Return $Object
-# End of function
-}
+end {}
+

@@ -1,9 +1,9 @@
 ################################################
 # Function - Get-RSCAWSS3BucketTagAssignments - Getting AWS Tags assigned to S3 Buckets visible to RSC
 ################################################
-Function Get-RSCAWSS3BucketTagAssignments {
+function Get-RSCAWSS3BucketTagAssignment {
 
-<#
+    <#
 .SYNOPSIS
 A Rubrik Security Cloud (RSC) Reporting Module Function a list of all AWS S3 bucket tag assignments.
 
@@ -24,52 +24,53 @@ This example returns an array of all the information returned by the GraphQL end
 Author: Joshua Stenhouse
 Date: 07/09/2024
 #>
+    [CmdletBinding()]
+    [Alias('Get-RSCAWSS3BucketTagAssignments')]
+    param()
+    ################################################
+    # Importing Module & Running Required Functions
+    ################################################
+    # Importing the module is it needs other modules
+    Import-Module RSCReporting
+    # Checking connectivity, exiting function with error if not connected
+    Test-RSCConnection
+    # Getting all Azure subscriptions
+    $AWSS3Buckets = Get-RSCAWSS3Buckets
+    ################################################
+    # Processing
+    ################################################
+    # Creating array
+    $RSCTagAssignments = [System.Collections.ArrayList]@()
+    # For Each Object Getting Data
+    foreach ($AWSS3Bucket in $AWSS3Buckets) {
+        # Setting variables
+        $Account = $AWSS3Bucket.Account
+        $AccountID = $AWSS3Bucket.AccountID
+        $Name = $AWSS3Bucket.S3Bucket
+        $ID = $AWSS3Bucket.S3BucketID
+        $Tags = $AWSS3Bucket.Tags
+        # Adding To Array for Each tag
+        foreach ($Tag in $Tags) {
+            $Object = New-Object PSObject
+            $Object | Add-Member -MemberType NoteProperty -Name "RSCInstance" -Value $RSCInstance
+            $Object | Add-Member -MemberType NoteProperty -Name "Cloud" -Value "Azure"
+            $Object | Add-Member -MemberType NoteProperty -Name "Tag" -Value $Tag.value
+            $Object | Add-Member -MemberType NoteProperty -Name "TagKey" -Value $Tag.key
+            $Object | Add-Member -MemberType NoteProperty -Name "S3Bucket" -Value $Name
+            $Object | Add-Member -MemberType NoteProperty -Name "S3BucketID" -Value $ID
+            $Object | Add-Member -MemberType NoteProperty -Name "Account" -Value $Account
+            $Object | Add-Member -MemberType NoteProperty -Name "AccountID" -Value $AccountID
+            # Adding
+            $RSCTagAssignments.Add($Object) | Out-Null
+            # End of for each tag assignment below
+        }
+        # End of for each tag assignment above
+        #
+        # End of for each object below
+    }
+    # End of for each object above
+    # Returning array
+    return $RSCTagAssignments
+    # End of function
+}
 
-################################################
-# Importing Module & Running Required Functions
-################################################
-# Importing the module is it needs other modules
-Import-Module RSCReporting
-# Checking connectivity, exiting function with error if not connected
-Test-RSCConnection
-# Getting all Azure subscriptions
-$AWSS3Buckets = Get-RSCAWSS3Buckets
-################################################
-# Processing
-################################################
-# Creating array
-$RSCTagAssignments = [System.Collections.ArrayList]@()
-# For Each Object Getting Data
-ForEach ($AWSS3Bucket in $AWSS3Buckets)
-{
-# Setting variables
-$Account = $AWSS3Bucket.Account
-$AccountID = $AWSS3Bucket.AccountID
-$Name = $AWSS3Bucket.S3Bucket
-$ID = $AWSS3Bucket.S3BucketID
-$Tags = $AWSS3Bucket.Tags
-# Adding To Array for Each tag
-ForEach($Tag in $Tags)
-{
-$Object = New-Object PSObject
-$Object | Add-Member -MemberType NoteProperty -Name "RSCInstance" -Value $RSCInstance
-$Object | Add-Member -MemberType NoteProperty -Name "Cloud" -Value "Azure"
-$Object | Add-Member -MemberType NoteProperty -Name "Tag" -Value $Tag.value
-$Object | Add-Member -MemberType NoteProperty -Name "TagKey" -Value $Tag.key
-$Object | Add-Member -MemberType NoteProperty -Name "S3Bucket" -Value $Name
-$Object | Add-Member -MemberType NoteProperty -Name "S3BucketID" -Value $ID
-$Object | Add-Member -MemberType NoteProperty -Name "Account" -Value $Account
-$Object | Add-Member -MemberType NoteProperty -Name "AccountID" -Value $AccountID
-# Adding
-$RSCTagAssignments.Add($Object) | Out-Null
-# End of for each tag assignment below
-}
-# End of for each tag assignment above
-#
-# End of for each object below
-}
-# End of for each object above
-# Returning array
-Return $RSCTagAssignments
-# End of function
-}

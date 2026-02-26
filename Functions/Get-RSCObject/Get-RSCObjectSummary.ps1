@@ -1,9 +1,9 @@
 ################################################
 # Function - Get-RSCObjectSummary - Getting summary all objects visible to the RSC instance
 ################################################
-Function Get-RSCObjectSummary {
+function Get-RSCObjectSummary {
 
-<#
+    <#
 .SYNOPSIS
 A RSC Reporting Function returning a summary count of objects in RSC. WARNING: Requires Get-RSCObject to be run first to generate the data to be summarized.
 
@@ -25,68 +25,67 @@ Author: Joshua Stenhouse
 Date: 05/11/2023
 #>
 
-################################################
-# Importing Module & Running Required Functions
-################################################
-# Importing the module is it needs other modules
-Import-Module RSCReporting
-# Checking connectivity, exiting function with error if not connected
-Test-RSCConnection
-################################################
-# Getting All Objects 
-################################################
-IF($RSCGlobalObjectIDs -eq $null)
-{
-Write-Error "ERROR: Run Get-RSCObjectIDs first to generate the data to summarize.."
-Start-Sleep 2
-Break
-}
-# Selecting unique objects
-$UniqueObjectTypes = $RSCGlobalObjectIDs | Sort-Object Type | Select-Object -ExpandProperty Type -Unique
- # Creating array
-$RSCObjectSummary = [System.Collections.ArrayList]@()
-# For each type getting counts
-ForEach($UniqueObjectType in $UniqueObjectTypes)
-{
-# Selecting objects
-$UniqueObjects = $RSCGlobalObjectIDs | Where-Object {$_.Type -eq $UniqueObjectType}
-# Counting
-$UniqueObjectsCount = $UniqueObjects | Measure-Object | Select-Object -ExpandProperty Count
-$UniqueProtectedObjects = $UniqueObjects | Where-Object {$_.ProtectionStatus -eq "Protected"} | Measure-Object| Select-Object -ExpandProperty Count
-$UniqueUnProtectedObjects = $UniqueObjects | Where-Object {$_.ProtectionStatus -eq "NoSla"} | Measure-Object | Select-Object -ExpandProperty Count
-$UniqueDoNotProtectObjects = $UniqueObjects | Where-Object {$_.ProtectionStatus -eq "DoNotProtect"} | Measure-Object | Select-Object -ExpandProperty Count
-$UniquePendingFirstFullObjects = $UniqueObjects | Where-Object {$_.PendingFirstFull -eq "True"} | Measure-Object | Select-Object -ExpandProperty Count
-# $UniqueRubrikClusters = $UniqueObjects | Select-Object -ExpandProperty RubrikClusterID -Unique | Measure-Object | Select-Object -ExpandProperty Count
-# Adding to array
-$Object = New-Object PSObject
-$Object | Add-Member -MemberType NoteProperty -Name "Type" -Value $UniqueObjectType
-$Object | Add-Member -MemberType NoteProperty -Name "Total" -Value $UniqueObjectsCount
-$Object | Add-Member -MemberType NoteProperty -Name "Protected" -Value $UniqueProtectedObjects
-$Object | Add-Member -MemberType NoteProperty -Name "Unprotected" -Value $UniqueUnProtectedObjects
-$Object | Add-Member -MemberType NoteProperty -Name "DoNotProtect" -Value $UniqueDoNotProtectObjects
-$Object | Add-Member -MemberType NoteProperty -Name "PendingFirstFull" -Value $UniquePendingFirstFullObjects
-# Adding
-$RSCObjectSummary.Add($Object) | Out-Null
-}
-# Summarizing all
-$UniqueObjectsCount = $RSCGlobalObjectIDs | Measure-Object | Select-Object -ExpandProperty Count
-$UniqueProtectedObjects = $RSCGlobalObjectIDs | Where-Object {$_.ProtectionStatus -eq "Protected"} | Measure-Object| Select-Object -ExpandProperty Count
-$UniqueUnProtectedObjects = $RSCGlobalObjectIDs | Where-Object {$_.ProtectionStatus -eq "NoSla"} | Measure-Object | Select-Object -ExpandProperty Count
-$UniqueDoNotProtectObjects = $RSCGlobalObjectIDs | Where-Object {$_.ProtectionStatus -ne "DoNotProtect"} | Measure-Object | Select-Object -ExpandProperty Count
-$UniquePendingFirstFullObjects = $RSCGlobalObjectIDs | Where-Object {$_.PendingFirstFull -eq "True"} | Measure-Object | Select-Object -ExpandProperty Count
-# $UniqueRubrikClusters = $RSCGlobalObjectIDs | Select-Object -ExpandProperty RubrikClusterID -Unique | Measure-Object | Select-Object -ExpandProperty Count
-# Adding to array
-$Object = New-Object PSObject
-$Object | Add-Member -MemberType NoteProperty -Name "Type" -Value "ALL"
-$Object | Add-Member -MemberType NoteProperty -Name "Total" -Value $UniqueObjectsCount
-$Object | Add-Member -MemberType NoteProperty -Name "Protected" -Value $UniqueProtectedObjects
-$Object | Add-Member -MemberType NoteProperty -Name "Unprotected" -Value $UniqueUnProtectedObjects
-$Object | Add-Member -MemberType NoteProperty -Name "DoNotProtect" -Value $UniqueDoNotProtectObjects
-$Object | Add-Member -MemberType NoteProperty -Name "PendingFirstFull" -Value $UniquePendingFirstFullObjects
-# Adding
-$RSCObjectSummary.Add($Object) | Out-Null
+    ################################################
+    # Importing Module & Running Required Functions
+    ################################################
+    # Importing the module is it needs other modules
+    Import-Module RSCReporting
+    # Checking connectivity, exiting function with error if not connected
+    Test-RSCConnection
+    ################################################
+    # Getting All Objects 
+    ################################################
+    if ($RSCGlobalObjectIDs -eq $null) {
+        Write-Error "ERROR: Run Get-RSCObjectIDs first to generate the data to summarize.."
+        Start-Sleep 2
+        break
+    }
+    # Selecting unique objects
+    $UniqueObjectTypes = $RSCGlobalObjectIDs | Sort-Object Type | Select-Object -ExpandProperty Type -Unique
+    # Creating array
+    $RSCObjectSummary = [System.Collections.ArrayList]@()
+    # For each type getting counts
+    foreach ($UniqueObjectType in $UniqueObjectTypes) {
+        # Selecting objects
+        $UniqueObjects = $RSCGlobalObjectIDs | Where-Object { $_.Type -eq $UniqueObjectType }
+        # Counting
+        $UniqueObjectsCount = $UniqueObjects | Measure-Object | Select-Object -ExpandProperty Count
+        $UniqueProtectedObjects = $UniqueObjects | Where-Object { $_.ProtectionStatus -eq "Protected" } | Measure-Object | Select-Object -ExpandProperty Count
+        $UniqueUnProtectedObjects = $UniqueObjects | Where-Object { $_.ProtectionStatus -eq "NoSla" } | Measure-Object | Select-Object -ExpandProperty Count
+        $UniqueDoNotProtectObjects = $UniqueObjects | Where-Object { $_.ProtectionStatus -eq "DoNotProtect" } | Measure-Object | Select-Object -ExpandProperty Count
+        $UniquePendingFirstFullObjects = $UniqueObjects | Where-Object { $_.PendingFirstFull -eq "True" } | Measure-Object | Select-Object -ExpandProperty Count
+        # $UniqueRubrikClusters = $UniqueObjects | Select-Object -ExpandProperty RubrikClusterID -Unique | Measure-Object | Select-Object -ExpandProperty Count
+        # Adding to array
+        $Object = New-Object PSObject
+        $Object | Add-Member -MemberType NoteProperty -Name "Type" -Value $UniqueObjectType
+        $Object | Add-Member -MemberType NoteProperty -Name "Total" -Value $UniqueObjectsCount
+        $Object | Add-Member -MemberType NoteProperty -Name "Protected" -Value $UniqueProtectedObjects
+        $Object | Add-Member -MemberType NoteProperty -Name "Unprotected" -Value $UniqueUnProtectedObjects
+        $Object | Add-Member -MemberType NoteProperty -Name "DoNotProtect" -Value $UniqueDoNotProtectObjects
+        $Object | Add-Member -MemberType NoteProperty -Name "PendingFirstFull" -Value $UniquePendingFirstFullObjects
+        # Adding
+        $RSCObjectSummary.Add($Object) | Out-Null
+    }
+    # Summarizing all
+    $UniqueObjectsCount = $RSCGlobalObjectIDs | Measure-Object | Select-Object -ExpandProperty Count
+    $UniqueProtectedObjects = $RSCGlobalObjectIDs | Where-Object { $_.ProtectionStatus -eq "Protected" } | Measure-Object | Select-Object -ExpandProperty Count
+    $UniqueUnProtectedObjects = $RSCGlobalObjectIDs | Where-Object { $_.ProtectionStatus -eq "NoSla" } | Measure-Object | Select-Object -ExpandProperty Count
+    $UniqueDoNotProtectObjects = $RSCGlobalObjectIDs | Where-Object { $_.ProtectionStatus -ne "DoNotProtect" } | Measure-Object | Select-Object -ExpandProperty Count
+    $UniquePendingFirstFullObjects = $RSCGlobalObjectIDs | Where-Object { $_.PendingFirstFull -eq "True" } | Measure-Object | Select-Object -ExpandProperty Count
+    # $UniqueRubrikClusters = $RSCGlobalObjectIDs | Select-Object -ExpandProperty RubrikClusterID -Unique | Measure-Object | Select-Object -ExpandProperty Count
+    # Adding to array
+    $Object = New-Object PSObject
+    $Object | Add-Member -MemberType NoteProperty -Name "Type" -Value "ALL"
+    $Object | Add-Member -MemberType NoteProperty -Name "Total" -Value $UniqueObjectsCount
+    $Object | Add-Member -MemberType NoteProperty -Name "Protected" -Value $UniqueProtectedObjects
+    $Object | Add-Member -MemberType NoteProperty -Name "Unprotected" -Value $UniqueUnProtectedObjects
+    $Object | Add-Member -MemberType NoteProperty -Name "DoNotProtect" -Value $UniqueDoNotProtectObjects
+    $Object | Add-Member -MemberType NoteProperty -Name "PendingFirstFull" -Value $UniquePendingFirstFullObjects
+    # Adding
+    $RSCObjectSummary.Add($Object) | Out-Null
 
-# Returning array
-Return $RSCObjectSummary
-# End of function
+    # Returning array
+    return $RSCObjectSummary
+    # End of function
 }
+

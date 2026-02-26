@@ -1,9 +1,9 @@
 ################################################
 # Function - Get-RSCClusterDisks - Getting CDM Cluster Disks in each node attached to RSC
 ################################################
-Function Get-RSCClusterDisks {
+function Get-RSCClusterDisk {
 
-<#
+    <#
 .SYNOPSIS
 A Rubrik Security Cloud (RSC) Reporting Module Function returning a list of every disk on every Rubrik cluster.
 
@@ -24,27 +24,29 @@ This example returns an array of all the information returned by the GraphQL end
 Author: Joshua Stenhouse
 Date: 05/11/2023
 #>
+    [CmdletBinding()]
+    [Alias('Get-RSCClusterDisks')]
+    param()
+    ################################################
+    # Importing Module & Running Required Functions
+    ################################################
+    # Importing the module is it needs other modules
+    Import-Module RSCReporting
+    # Checking connectivity, exiting function with error if not connected
+    Test-RSCConnection
+    ################################################
+    # Getting RSC Cluster Disks
+    ################################################
+    # Creating array
+    $RSCClusterList = @()
+    # Creating query
+    $RSCGraphQL = @{"operationName" = "clusterConnection";
 
-################################################
-# Importing Module & Running Required Functions
-################################################
-# Importing the module is it needs other modules
-Import-Module RSCReporting
-# Checking connectivity, exiting function with error if not connected
-Test-RSCConnection
-################################################
-# Getting RSC Cluster Disks
-################################################
-# Creating array
-$RSCClusterList = @()
-# Creating query
-$RSCGraphQL = @{"operationName" = "clusterConnection";
+        "variables"                 = @{
+            "first" = 1000
+        };
 
-"variables" = @{
-"first" = 1000
-};
-
-"query" = "query clusterConnection {
+        "query"                     = "query clusterConnection {
   clusterConnection {
     edges {
       node {
@@ -133,81 +135,78 @@ $RSCGraphQL = @{"operationName" = "clusterConnection";
     }
   }
 }"
-}
-################################################
-# API Call To RSC GraphQL URI
-################################################
-# Querying API
-$RSCClusterListResponse = Invoke-RestMethod -Method POST -Uri $RSCGraphqlURL -Body $($RSCGraphQL | ConvertTo-JSON -Depth 20) -Headers $RSCSessionHeader
-# Setting variable
-$RSCClusterList += $RSCClusterListResponse.data.clusterConnection.edges.node
-# Getting all results from paginations
-While ($RSCClusterListResponse.data.clusterConnection.pageInfo.hasNextPage) 
-{
-# Getting next set
-$RSCGraphQL.variables.after = $RSCClusterListResponse.data.clusterConnection.pageInfo.endCursor
-$RSCClusterListResponse = Invoke-RestMethod -Method POST -Uri $RSCGraphqlURL -Body $($RSCGraphQL | ConvertTo-JSON -Depth 20) -Headers $RSCSessionHeader
-$RSCClusterList += $RSCClusterListResponse.data.clusterConnection.edges.node
-}
-############################
-# Starting For Each Cluster
-############################
-$RSCClusterDisks = [System.Collections.ArrayList]@()
-ForEach ($RSCCluster in $RSCClusterList)
-{
-# Setting variables
-$Cluster = $RSCCluster.name
-$ClusterID = $RSCCluster.id
-$ClusterVersion = $RSCCluster.version
-$ClusterStatus = $RSCCluster.passesConnectivityCheck
-$ClusterIsHealthy = $RSCCluster.isHealthy
-$ClusterType = $RSCCluster.type
-$ClusterProduct = $RSCCluster.productType
-$ClusterEncrypted = $RSCCluster.encryptionEnabled
-$ClusterSnapshots = $RSCCluster.snapshotCount
-$ClusterRunwayDays = $RSCCluster.estimatedRunway
-$ClusterNodes = $RSCCluster.clusterNodeConnection.nodes
-$ClusterDisks = $RSCCluster.clusterDiskConnection.nodes
-$ClusterLocation = $RSCCluster.geoLocation
-# Getting cluster location
-IF ($ClusterLocation -ne $null)
-{
-$ClusterAddress = $ClusterLocation.address
-$ClusterLatitude = $ClusterLocation.latitude
-$ClusterLongitude = $ClusterLocation.longitude
-}
-# Adding each disk
-ForEach ($ClusterDisk in $ClusterDisks)
-{
-# Setting variables
-$ClusterDiskFullNodeID = $ClusterDisk.nodeId
-$ClusterDiskStatus = $ClusterDisk.status
-$ClusterDiskType = $ClusterDisk.diskType
-$ClusterDiskID = $ClusterDisk.id
-$ClusterDiskEncryption = $ClusterDisk.isEncrypted
-# Getting shorthand node ID
-$ClusterDiskNodeID = $ClusterDiskFullNodeID.Replace("cluster:::","")
-# Creating URL for disks
-$ClusterDiskURL = $RSCURL + "/clusters/" + $ClusterID + "/nodes/" + $ClusterDiskNodeID
-# https://rubrik-gaia.my.rubrik.com/clusters/e711ef1b-83cb-4679-9ef7-44c4de751102/nodes/RVMHM21AS002647
-# Adding to array
-$Object = New-Object PSObject
-$Object | Add-Member -MemberType NoteProperty -Name "RSCInstance" -Value $RSCInstance
-$Object | Add-Member -MemberType NoteProperty -Name "Cluster" -Value $Cluster
-$Object | Add-Member -MemberType NoteProperty -Name "ClusterID" -Value $ClusterID
-$Object | Add-Member -MemberType NoteProperty -Name "NodeID" -Value $ClusterDiskNodeID
-$Object | Add-Member -MemberType NoteProperty -Name "FullNodeID" -Value $ClusterDiskFullNodeID
-$Object | Add-Member -MemberType NoteProperty -Name "Type" -Value $ClusterDiskType
-$Object | Add-Member -MemberType NoteProperty -Name "Status" -Value $ClusterDiskStatus
-$Object | Add-Member -MemberType NoteProperty -Name "ID" -Value $ClusterDiskID
-$Object | Add-Member -MemberType NoteProperty -Name "Encrypted" -Value $ClusterDiskEncryption
-$Object | Add-Member -MemberType NoteProperty -Name "URL" -Value $ClusterDiskURL
-$RSCClusterDisks.Add($Object) | Out-Null
-}
-# End of for each cluster below
-}
-# End of for each cluster above
+    }
+    ################################################
+    # API Call To RSC GraphQL URI
+    ################################################
+    # Querying API
+    $RSCClusterListResponse = Invoke-RestMethod -Method POST -Uri $RSCGraphqlURL -Body $($RSCGraphQL | ConvertTo-Json -Depth 20) -Headers $RSCSessionHeader
+    # Setting variable
+    $RSCClusterList += $RSCClusterListResponse.data.clusterConnection.edges.node
+    # Getting all results from paginations
+    while ($RSCClusterListResponse.data.clusterConnection.pageInfo.hasNextPage) {
+        # Getting next set
+        $RSCGraphQL.variables.after = $RSCClusterListResponse.data.clusterConnection.pageInfo.endCursor
+        $RSCClusterListResponse = Invoke-RestMethod -Method POST -Uri $RSCGraphqlURL -Body $($RSCGraphQL | ConvertTo-Json -Depth 20) -Headers $RSCSessionHeader
+        $RSCClusterList += $RSCClusterListResponse.data.clusterConnection.edges.node
+    }
+    ############################
+    # Starting For Each Cluster
+    ############################
+    $RSCClusterDisks = [System.Collections.ArrayList]@()
+    foreach ($RSCCluster in $RSCClusterList) {
+        # Setting variables
+        $Cluster = $RSCCluster.name
+        $ClusterID = $RSCCluster.id
+        $ClusterVersion = $RSCCluster.version
+        $ClusterStatus = $RSCCluster.passesConnectivityCheck
+        $ClusterIsHealthy = $RSCCluster.isHealthy
+        $ClusterType = $RSCCluster.type
+        $ClusterProduct = $RSCCluster.productType
+        $ClusterEncrypted = $RSCCluster.encryptionEnabled
+        $ClusterSnapshots = $RSCCluster.snapshotCount
+        $ClusterRunwayDays = $RSCCluster.estimatedRunway
+        $ClusterNodes = $RSCCluster.clusterNodeConnection.nodes
+        $ClusterDisks = $RSCCluster.clusterDiskConnection.nodes
+        $ClusterLocation = $RSCCluster.geoLocation
+        # Getting cluster location
+        if ($ClusterLocation -ne $null) {
+            $ClusterAddress = $ClusterLocation.address
+            $ClusterLatitude = $ClusterLocation.latitude
+            $ClusterLongitude = $ClusterLocation.longitude
+        }
+        # Adding each disk
+        foreach ($ClusterDisk in $ClusterDisks) {
+            # Setting variables
+            $ClusterDiskFullNodeID = $ClusterDisk.nodeId
+            $ClusterDiskStatus = $ClusterDisk.status
+            $ClusterDiskType = $ClusterDisk.diskType
+            $ClusterDiskID = $ClusterDisk.id
+            $ClusterDiskEncryption = $ClusterDisk.isEncrypted
+            # Getting shorthand node ID
+            $ClusterDiskNodeID = $ClusterDiskFullNodeID.Replace("cluster:::", "")
+            # Creating URL for disks
+            $ClusterDiskURL = $RSCURL + "/clusters/" + $ClusterID + "/nodes/" + $ClusterDiskNodeID
+            # https://rubrik-gaia.my.rubrik.com/clusters/e711ef1b-83cb-4679-9ef7-44c4de751102/nodes/RVMHM21AS002647
+            # Adding to array
+            $Object = New-Object PSObject
+            $Object | Add-Member -MemberType NoteProperty -Name "RSCInstance" -Value $RSCInstance
+            $Object | Add-Member -MemberType NoteProperty -Name "Cluster" -Value $Cluster
+            $Object | Add-Member -MemberType NoteProperty -Name "ClusterID" -Value $ClusterID
+            $Object | Add-Member -MemberType NoteProperty -Name "NodeID" -Value $ClusterDiskNodeID
+            $Object | Add-Member -MemberType NoteProperty -Name "FullNodeID" -Value $ClusterDiskFullNodeID
+            $Object | Add-Member -MemberType NoteProperty -Name "Type" -Value $ClusterDiskType
+            $Object | Add-Member -MemberType NoteProperty -Name "Status" -Value $ClusterDiskStatus
+            $Object | Add-Member -MemberType NoteProperty -Name "ID" -Value $ClusterDiskID
+            $Object | Add-Member -MemberType NoteProperty -Name "Encrypted" -Value $ClusterDiskEncryption
+            $Object | Add-Member -MemberType NoteProperty -Name "URL" -Value $ClusterDiskURL
+            $RSCClusterDisks.Add($Object) | Out-Null
+        }
+        # End of for each cluster below
+    }
+    # End of for each cluster above
 
-Return $RSCClusterDisks
-# End of function
+    return $RSCClusterDisks
+    # End of function
 }
+

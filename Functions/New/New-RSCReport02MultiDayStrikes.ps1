@@ -1,9 +1,9 @@
-﻿################################################
+################################################
 # Function - New-RSCReport02MultiDayStrikes - Create RSC Report in the directory specified
 ################################################
-Function New-RSCReport02MultiDayStrikes {
+function New-RSCReport02MultiDayStrike {
 
-<#
+    <#
 .SYNOPSIS
 Creates and emails a pre-canned HTML report for multi-day strikes and backups (days missing a backup/snapshot) across all protected objects, also known as a christmas tree report.
 
@@ -63,341 +63,332 @@ Creates a HTML report of all protected DB2 full backups within the last 5 days.
 Author: Joshua Stenhouse
 Date: 05/11/2023
 #>
-################################################
-# Paramater Config
-################################################
-Param
+    ################################################
+    # Paramater Config
+    ################################################
+    [CmdletBinding(SupportsShouldProcess = $true)]
+    [Alias('New-RSCReport02MultiDayStrikes')]
+    param
     (
-        $DaysToReport,$ReportName,$Directory,$ObjectType,$BackupWindowStartHour,$BackupWindowStartMinutes,$ExcludeObjectType,$SLADomain,
-        [Parameter(ParameterSetName="User")][switch]$SwitchOrder,
-        [Parameter(ParameterSetName="User")][switch]$UseSymbols,
-        [Parameter(ParameterSetName="User")][switch]$SSLRequired,
-        [Parameter(ParameterSetName="User")][switch]$ExcludeSystemDBs,
-        [Parameter(ParameterSetName="User")][switch]$OnlyShowObjectsWithStrikes,
-        [Parameter(ParameterSetName="User")][switch]$OnlyShowObjectsWithAllStrikes,
-        [Parameter(ParameterSetName="User")][switch]$SampleFirst100Objects,
-        [Parameter(ParameterSetName="User")][switch]$ExportReportHTML
+        $DaysToReport, $ReportName, $Directory, $ObjectType, $BackupWindowStartHour, $BackupWindowStartMinutes, $ExcludeObjectType, $SLADomain,
+        [Parameter(ParameterSetName = "User")][switch]$SwitchOrder,
+        [Parameter(ParameterSetName = "User")][switch]$UseSymbols,
+        [Parameter(ParameterSetName = "User")][switch]$SSLRequired,
+        [Parameter(ParameterSetName = "User")][switch]$ExcludeSystemDBs,
+        [Parameter(ParameterSetName = "User")][switch]$OnlyShowObjectsWithStrikes,
+        [Parameter(ParameterSetName = "User")][switch]$OnlyShowObjectsWithAllStrikes,
+        [Parameter(ParameterSetName = "User")][switch]$SampleFirst100Objects,
+        [Parameter(ParameterSetName = "User")][switch]$ExportReportHTML
     )
+    begin {}
+    process {
+        if ($pscmdlet.ShouldProcess("multi-day strikes and backups across all protected projects ")) {
+            # Reportname subject
+            if ($ReportName -eq $null) { $ReportName = "Rubrik Multi-Day Strikes" }
 
+            # Setting days to report to be 7 if null
+            if ($DaysToReport -eq $null) { $DaysToReport = 7 }
 
-# Reportname subject
-IF($ReportName -eq $null){$ReportName = "Rubrik Multi-Day Strikes"}
+            # Setting backup window start hour to be 8pm if null
+            if ($BackupWindowStartHour -eq $null) { $BackupWindowStartHour = 20 }
 
-# Setting days to report to be 7 if null
-IF($DaysToReport -eq $null){$DaysToReport = 7}
+            # Setting backup window start minutes to b 0 if null
+            if ($BackupWindowStartMinutes -eq $null) { $BackupWindowStartMinutes = 0 }
 
-# Setting backup window start hour to be 8pm if null
-IF($BackupWindowStartHour -eq $null){$BackupWindowStartHour = 20}
+            # Setting switch order
+            if ($SwitchOrder) { $SwitchOrder = $TRUE }else { $SwitchOrder = $FALSE }
 
-# Setting backup window start minutes to b 0 if null
-IF($BackupWindowStartMinutes -eq $null){$BackupWindowStartMinutes = 0}
+            # If multiple emails passed converting to an array
+            if ($EmailTo -match """") { $EmailTo = Invoke-Expression $EmailTo }
 
-# Setting switch order
-IF($SwitchOrder){$SwitchOrder = $TRUE}ELSE{$SwitchOrder = $FALSE}
-
-# If multiple emails passed converting to an array
-IF($EmailTo -match """"){$EmailTo = Invoke-Expression $EmailTo}
-
-################################################
-# Importing Module & Running Required Functions
-################################################
-Import-Module RSCReporting
-# Getting RSC files
-$RSCFiles = Get-RSCModuleFiles
-# Getting templates
-$RSCTemplates = Get-RSCReportTemplates
-# Getting file path of required template
-$RSCTemplatePath = $RSCTemplates | Where-Object {$_.Report -match "02-MultiDayStrikes"} | Select-Object -ExpandProperty FilePath
-# Getting logo file included with module
-$LogoFile = $RSCFiles | Where-Object {$_.File -match "logo"} | Select-Object -ExpandProperty FilePath -First 1
-# Getting the machine time
-$SystemDateTime = Get-Date
-##################################
-# Setting file names required
-##################################
-IF ($IsLinux -eq $TRUE)
-{
-$CSVExportDir = $RSCScriptDirectory + "CSVExports/" + $ReportName + "/"
-$ReportExportDir = $RSCScriptDirectory + "ReportExports/" + $ReportName + "/"
-}
-ELSE
-{
-$CSVExportDir = $RSCScriptDirectory + "CSVExports\" + $ReportName + "\"
-$ReportExportDir = $RSCScriptDirectory + "ReportExports\" + $ReportName + "\"
-}
-##################################
-# Creating export directories if not exists
-##################################
-$ReportExportDirTest = Test-Path $ReportExportDir
-IF ($ReportExportDirTest -eq $False)
-{
-New-Item -Path $ReportExportDir -ItemType "directory" | Out-Null
-}
-$CSVExportDirTest = Test-Path $CSVExportDir
-IF ($CSVExportDirTest -eq $False)
-{
-New-Item -Path $CSVExportDir -ItemType "directory" | Out-Null
-}
-###########################
-# Getting RSC Data & Template
-###########################
-IF($SampleFirst100Objects)
-{
-# Switch set for sample, only getting first 100 objects
-$ObjectCompliance = Get-RSCObjectComplianceAll -DaysToReport $DaysToReport -BackupWindowStartHour $BackupWindowStartHour -BackupWindowStartminutes $BackupWindowStartMinutes -SampleFirst100Objects -ObjectType $ObjectType -ExcludeObjectType $ExcludeObjectType -SLADomain $SLADomain
-}
-ELSE
-{
-# Deciding if excluding system DBs or not
-IF($ExcludeSystemDBs)
-{
-# Switch set to exclude system DBs, removes them on function
-$ObjectCompliance = Get-RSCObjectComplianceAll -DaysToReport $DaysToReport -BackupWindowStartHour $BackupWindowStartHour -BackupWindowStartminutes $BackupWindowStartMinutes -ExcludeSystemDBs -ObjectType $ObjectType -ExcludeObjectType $ExcludeObjectType -SLADomain $SLADomain
-}
-ELSE
-{
-# No switches set, getting all objects
-$ObjectCompliance = Get-RSCObjectComplianceAll -DaysToReport $DaysToReport -BackupWindowStartHour $BackupWindowStartHour -BackupWindowStartminutes $BackupWindowStartMinutes -ObjectType $ObjectType -ExcludeObjectType $ExcludeObjectType -SLADomain $SLADomain
-}
-}
-# Importing template
-$HTMLCode = Import-RSCReportTemplate $RSCTemplatePath
-####################################################################
-# Calculating totals
-####################################################################
-"----------------------------
+            ################################################
+            # Importing Module & Running Required Functions
+            ################################################
+            Import-Module RSCReporting
+            # Getting RSC files
+            $RSCFiles = Get-RSCModuleFiles
+            # Getting templates
+            $RSCTemplates = Get-RSCReportTemplates
+            # Getting file path of required template
+            $RSCTemplatePath = $RSCTemplates | Where-Object { $_.Report -match "02-MultiDayStrikes" } | Select-Object -ExpandProperty FilePath
+            # Getting logo file included with module
+            $LogoFile = $RSCFiles | Where-Object { $_.File -match "logo" } | Select-Object -ExpandProperty FilePath -First 1
+            # Getting the machine time
+            $SystemDateTime = Get-Date
+            ##################################
+            # Setting file names required
+            ##################################
+            if ($IsLinux -eq $TRUE) {
+                $CSVExportDir = $RSCScriptDirectory + "CSVExports/" + $ReportName + "/"
+                $ReportExportDir = $RSCScriptDirectory + "ReportExports/" + $ReportName + "/"
+            }
+            else {
+                $CSVExportDir = $RSCScriptDirectory + "CSVExports\" + $ReportName + "\"
+                $ReportExportDir = $RSCScriptDirectory + "ReportExports\" + $ReportName + "\"
+            }
+            ##################################
+            # Creating export directories if not exists
+            ##################################
+            $ReportExportDirTest = Test-Path $ReportExportDir
+            if ($ReportExportDirTest -eq $False) {
+                New-Item -Path $ReportExportDir -ItemType "directory" | Out-Null
+            }
+            $CSVExportDirTest = Test-Path $CSVExportDir
+            if ($CSVExportDirTest -eq $False) {
+                New-Item -Path $CSVExportDir -ItemType "directory" | Out-Null
+            }
+            ###########################
+            # Getting RSC Data & Template
+            ###########################
+            if ($SampleFirst100Objects) {
+                # Switch set for sample, only getting first 100 objects
+                $ObjectCompliance = Get-RSCObjectComplianceAll -DaysToReport $DaysToReport -BackupWindowStartHour $BackupWindowStartHour -BackupWindowStartminutes $BackupWindowStartMinutes -SampleFirst100Objects -ObjectType $ObjectType -ExcludeObjectType $ExcludeObjectType -SLADomain $SLADomain
+            }
+            else {
+                # Deciding if excluding system DBs or not
+                if ($ExcludeSystemDBs) {
+                    # Switch set to exclude system DBs, removes them on function
+                    $ObjectCompliance = Get-RSCObjectComplianceAll -DaysToReport $DaysToReport -BackupWindowStartHour $BackupWindowStartHour -BackupWindowStartminutes $BackupWindowStartMinutes -ExcludeSystemDBs -ObjectType $ObjectType -ExcludeObjectType $ExcludeObjectType -SLADomain $SLADomain
+                }
+                else {
+                    # No switches set, getting all objects
+                    $ObjectCompliance = Get-RSCObjectComplianceAll -DaysToReport $DaysToReport -BackupWindowStartHour $BackupWindowStartHour -BackupWindowStartminutes $BackupWindowStartMinutes -ObjectType $ObjectType -ExcludeObjectType $ExcludeObjectType -SLADomain $SLADomain
+                }
+            }
+            # Importing template
+            $HTMLCode = Import-RSCReportTemplate $RSCTemplatePath
+            ####################################################################
+            # Calculating totals
+            ####################################################################
+            "----------------------------
 Calculating Totals & Creating HTML Report"
-# Totals
-$ObjectCount = $ObjectCompliance | Select-Object ObjectID -Unique | Measure-Object | Select-Object -ExpandProperty Count
-$ObjectClusterCount = $ObjectCompliance | Select-Object ClusterID -Unique | Measure-Object | Select-Object -ExpandProperty Count
-$ObjectSLADomainCount = $ObjectCompliance | Select-Object SLADomainID -Unique | Measure-Object | Select-Object -ExpandProperty Count
-# Totals
-$TotalBackups = $ObjectCompliance | Select-Object -ExpandProperty Backups | Measure-Object -Sum | Select-Object -ExpandProperty Sum
-$TotalStrikes = $ObjectCompliance | Select-Object -ExpandProperty Strikes | Measure-Object -Sum | Select-Object -ExpandProperty Sum
-# Objects
-$ObjectsWithStrikes = $ObjectCompliance | Where-Object {$_.Strikes -gt 0} 
-$ObjectsWithoutStrikes = $ObjectCompliance | Where-Object {$_.Strikes -eq 0}
-$ObjectsWithStrikesCount = $ObjectsWithStrikes | Measure-Object | Select-Object -ExpandProperty Count
-$ObjectsWithoutStrikesCount = $ObjectsWithoutStrikes | Measure-Object | Select-Object -ExpandProperty Count
-# Getting total backups that should exist for success rate calc
-$TotalBackupsThatShouldExist = $ObjectCount * $DaysToReport
-# Calculating percent, but only if there are strikes
-IF ($TotalStrikes -eq 0){$ObjectSuccessRate = "100%"}ELSE{$ObjectSuccessRate = ($TotalBackups / $TotalBackupsThatShouldExist).ToString("P")}
-# Getting integer
-$ObjectSuccessRateINT = $ObjectSuccessRate.Replace("%"," ").TrimEnd()
-# Last 24 hour totals
-$LastDayBackups = $ObjectCompliance | Select-Object -ExpandProperty Last24HoursBackups | Measure-Object -Sum | Select-Object -ExpandProperty Sum
-$LastDayStrikes = $ObjectCompliance | Select-Object -ExpandProperty Last24HoursStrikes | Measure-Object -Sum | Select-Object -ExpandProperty Sum
-# Calculating percent, but only if there are strikes
-IF ($LastDayStrikes -eq 0){$LastDaySuccessRate = "100%"}ELSE{$LastDaySuccessRate = ($LastDayBackups / $ObjectCount).ToString("P")}
-# Getting integer
-$LastDaySuccessRateINT = $LastDaySuccessRate.Replace("%"," ").TrimEnd()
-##################################
-# SMTP Body - HTML Email style settings
-##################################
-$HTMLStart = $HTMLCode | Where-Object {$_.SectionName -eq "Header"} | Select-Object -ExpandProperty HTMLCode
-$HTMLEnd = $HTMLCode | Where-Object {$_.SectionName -eq "End"} | Select-Object -ExpandProperty HTMLCode
-# Updating title in HTML start
-$HTMLStart = $HTMLStart.Replace("#HTMLReportTitle",$EmailSubject)
-##################################
-# Creating HTML Summary table
-##################################
-$HTMLSummaryTable = $HTMLCode | Where-Object {$_.SectionName -eq "SUMMARYTABLE"} | Select-Object -ExpandProperty HTMLCode
-# Updating variables in HTML code
-$HTMLSummaryTable = $HTMLSummaryTable.Replace("#SystemDateTime",$SystemDateTime)
-$HTMLSummaryTable = $HTMLSummaryTable.Replace("#DaysToReport",$DaysToReport)
-$HTMLSummaryTable = $HTMLSummaryTable.Replace("#ObjectCount",$ObjectCount)
-$HTMLSummaryTable = $HTMLSummaryTable.Replace("#ObjectsWithStrikes",$ObjectsWithStrikesCount)
-$HTMLSummaryTable = $HTMLSummaryTable.Replace("#ObjectsWithoutStrikes",$ObjectsWithoutStrikesCount)
-$HTMLSummaryTable = $HTMLSummaryTable.Replace("#ObjectSuccessRate",$ObjectSuccessRate)
-$HTMLSummaryTable = $HTMLSummaryTable.Replace("#TotalBackups",$TotalBackups)
-$HTMLSummaryTable = $HTMLSummaryTable.Replace("#TotalStrikes",$TotalStrikes)
-$HTMLSummaryTable = $HTMLSummaryTable.Replace("#LastDayBackups",$LastDayBackups)
-$HTMLSummaryTable = $HTMLSummaryTable.Replace("#LastDayStrikes",$LastDayStrikes)
-$HTMLSummaryTable = $HTMLSummaryTable.Replace("#LastDaySuccessRate",$LastDaySuccessRate)
-##################################
-# Creating Table 1 HTML structure
-##################################
-# Creating column for every day
-$HTMLTable1Colunms = @()
-# Switching order if enabled, pulling date ranges from global variable on RSCAllObjectCompliance
-IF ($SwitchOrder -eq $TRUE)
-{
-[array]::Reverse($RSCDateRanges)
-}
-# For Each
-ForEach ($Date in $RSCDateRanges)
-{
-# Setting day
-$HTMLDay = $Date.DayHTML
-$HTMLDate = $Date.DateHTML
-# Creating column
-$HTMLTable1Column = $HTMLCode | Where-Object {$_.SectionName -eq "TABLE1COLUMNSTART"} | Select-Object -ExpandProperty HTMLCode
-$HTMLTable1Column = $HTMLTable1Column.Replace("#HTMLDay",$HTMLDay)
-$HTMLTable1Column = $HTMLTable1Column.Replace("#HTMLDate",$HTMLDate)
-# Adding column
-$HTMLTable1Colunms += $HTMLTable1Column
-}
-# Adding end to columns
-$HTMLTable1ColumnEnd = $HTMLCode | Where-Object {$_.SectionName -eq "TABLE1COLUMNEND"} | Select-Object -ExpandProperty HTMLCode
-$HTMLTable1Colunms += $HTMLTable1ColumnEnd
-# Creating end of table
-$HTMLTable1End = $HTMLCode | Where-Object {$_.SectionName -eq "TABLE1END"} | Select-Object -ExpandProperty HTMLCode
-####################################################################
-# Getting Unique Object Types With Strikes & Creating Table Array
-####################################################################
-$ObjectTypes = $ObjectCompliance | Sort-Object Type | Select-Object -ExpandProperty Type -Unique
-$HTMLTables = @()
-##################################
-# For Each Object Type Creating Table
-##################################
-ForEach ($ObjectType in $ObjectTypes)
-{
-# Setting object type
-$HTML1ObjectType = $ObjectType
-# Getting table 1 code
-$HTMLTable1Start = $HTMLCode | Where-Object {$_.SectionName -eq "TABLE1START"} | Select-Object -ExpandProperty HTMLCode
-# Output to host
-"----------------------------
+            # Totals
+            $ObjectCount = $ObjectCompliance | Select-Object ObjectID -Unique | Measure-Object | Select-Object -ExpandProperty Count
+            $ObjectClusterCount = $ObjectCompliance | Select-Object ClusterID -Unique | Measure-Object | Select-Object -ExpandProperty Count
+            $ObjectSLADomainCount = $ObjectCompliance | Select-Object SLADomainID -Unique | Measure-Object | Select-Object -ExpandProperty Count
+            # Totals
+            $TotalBackups = $ObjectCompliance | Select-Object -ExpandProperty Backups | Measure-Object -Sum | Select-Object -ExpandProperty Sum
+            $TotalStrikes = $ObjectCompliance | Select-Object -ExpandProperty Strikes | Measure-Object -Sum | Select-Object -ExpandProperty Sum
+            # Objects
+            $ObjectsWithStrikes = $ObjectCompliance | Where-Object { $_.Strikes -gt 0 } 
+            $ObjectsWithoutStrikes = $ObjectCompliance | Where-Object { $_.Strikes -eq 0 }
+            $ObjectsWithStrikesCount = $ObjectsWithStrikes | Measure-Object | Select-Object -ExpandProperty Count
+            $ObjectsWithoutStrikesCount = $ObjectsWithoutStrikes | Measure-Object | Select-Object -ExpandProperty Count
+            # Getting total backups that should exist for success rate calc
+            $TotalBackupsThatShouldExist = $ObjectCount * $DaysToReport
+            # Calculating percent, but only if there are strikes
+            if ($TotalStrikes -eq 0) { $ObjectSuccessRate = "100%" }else { $ObjectSuccessRate = ($TotalBackups / $TotalBackupsThatShouldExist).ToString("P") }
+            # Getting integer
+            $ObjectSuccessRateINT = $ObjectSuccessRate.Replace("%", " ").TrimEnd()
+            # Last 24 hour totals
+            $LastDayBackups = $ObjectCompliance | Select-Object -ExpandProperty Last24HoursBackups | Measure-Object -Sum | Select-Object -ExpandProperty Sum
+            $LastDayStrikes = $ObjectCompliance | Select-Object -ExpandProperty Last24HoursStrikes | Measure-Object -Sum | Select-Object -ExpandProperty Sum
+            # Calculating percent, but only if there are strikes
+            if ($LastDayStrikes -eq 0) { $LastDaySuccessRate = "100%" }else { $LastDaySuccessRate = ($LastDayBackups / $ObjectCount).ToString("P") }
+            # Getting integer
+            $LastDaySuccessRateINT = $LastDaySuccessRate.Replace("%", " ").TrimEnd()
+            ##################################
+            # SMTP Body - HTML Email style settings
+            ##################################
+            $HTMLStart = $HTMLCode | Where-Object { $_.SectionName -eq "Header" } | Select-Object -ExpandProperty HTMLCode
+            $HTMLEnd = $HTMLCode | Where-Object { $_.SectionName -eq "End" } | Select-Object -ExpandProperty HTMLCode
+            # Updating title in HTML start
+            $HTMLStart = $HTMLStart.Replace("#HTMLReportTitle", $EmailSubject)
+            ##################################
+            # Creating HTML Summary table
+            ##################################
+            $HTMLSummaryTable = $HTMLCode | Where-Object { $_.SectionName -eq "SUMMARYTABLE" } | Select-Object -ExpandProperty HTMLCode
+            # Updating variables in HTML code
+            $HTMLSummaryTable = $HTMLSummaryTable.Replace("#SystemDateTime", $SystemDateTime)
+            $HTMLSummaryTable = $HTMLSummaryTable.Replace("#DaysToReport", $DaysToReport)
+            $HTMLSummaryTable = $HTMLSummaryTable.Replace("#ObjectCount", $ObjectCount)
+            $HTMLSummaryTable = $HTMLSummaryTable.Replace("#ObjectsWithStrikes", $ObjectsWithStrikesCount)
+            $HTMLSummaryTable = $HTMLSummaryTable.Replace("#ObjectsWithoutStrikes", $ObjectsWithoutStrikesCount)
+            $HTMLSummaryTable = $HTMLSummaryTable.Replace("#ObjectSuccessRate", $ObjectSuccessRate)
+            $HTMLSummaryTable = $HTMLSummaryTable.Replace("#TotalBackups", $TotalBackups)
+            $HTMLSummaryTable = $HTMLSummaryTable.Replace("#TotalStrikes", $TotalStrikes)
+            $HTMLSummaryTable = $HTMLSummaryTable.Replace("#LastDayBackups", $LastDayBackups)
+            $HTMLSummaryTable = $HTMLSummaryTable.Replace("#LastDayStrikes", $LastDayStrikes)
+            $HTMLSummaryTable = $HTMLSummaryTable.Replace("#LastDaySuccessRate", $LastDaySuccessRate)
+            ##################################
+            # Creating Table 1 HTML structure
+            ##################################
+            # Creating column for every day
+            $HTMLTable1Colunms = @()
+            # Switching order if enabled, pulling date ranges from global variable on RSCAllObjectCompliance
+            if ($SwitchOrder -eq $TRUE) {
+                [array]::Reverse($RSCDateRanges)
+            }
+            # For Each
+            foreach ($Date in $RSCDateRanges) {
+                # Setting day
+                $HTMLDay = $Date.DayHTML
+                $HTMLDate = $Date.DateHTML
+                # Creating column
+                $HTMLTable1Column = $HTMLCode | Where-Object { $_.SectionName -eq "TABLE1COLUMNSTART" } | Select-Object -ExpandProperty HTMLCode
+                $HTMLTable1Column = $HTMLTable1Column.Replace("#HTMLDay", $HTMLDay)
+                $HTMLTable1Column = $HTMLTable1Column.Replace("#HTMLDate", $HTMLDate)
+                # Adding column
+                $HTMLTable1Colunms += $HTMLTable1Column
+            }
+            # Adding end to columns
+            $HTMLTable1ColumnEnd = $HTMLCode | Where-Object { $_.SectionName -eq "TABLE1COLUMNEND" } | Select-Object -ExpandProperty HTMLCode
+            $HTMLTable1Colunms += $HTMLTable1ColumnEnd
+            # Creating end of table
+            $HTMLTable1End = $HTMLCode | Where-Object { $_.SectionName -eq "TABLE1END" } | Select-Object -ExpandProperty HTMLCode
+            ####################################################################
+            # Getting Unique Object Types With Strikes & Creating Table Array
+            ####################################################################
+            $ObjectTypes = $ObjectCompliance | Sort-Object Type | Select-Object -ExpandProperty Type -Unique
+            $HTMLTables = @()
+            ##################################
+            # For Each Object Type Creating Table
+            ##################################
+            foreach ($ObjectType in $ObjectTypes) {
+                # Setting object type
+                $HTML1ObjectType = $ObjectType
+                # Getting table 1 code
+                $HTMLTable1Start = $HTMLCode | Where-Object { $_.SectionName -eq "TABLE1START" } | Select-Object -ExpandProperty HTMLCode
+                # Output to host
+                "----------------------------
 CreatingHTMLTable: $HTML1ObjectType"
-# Getting objects
-$Table1Data = $ObjectCompliance | Where-Object {$_.Type -eq $HTML1ObjectType} | Sort-Object Object
-# Counting 
-$HTML1ObjectCount = $Table1Data | Measure-Object | Select-Object -ExpandProperty Count
-$HTML1ObjectStrikeCount = $Table1Data | Where-Object {$_.Strikes -gt 0} | Measure-Object | Select-Object -ExpandProperty Count
-# Updating table title
-$HTMLTable1Start = $HTMLTable1Start.Replace("#HTMLTableTitle","$HTML1ObjectType").Replace("#HTMLTableObjectStrikeCount","$HTML1ObjectStrikeCount").Replace("#HTMLTableObjectCount","$HTML1ObjectCount")
-# Removing non-strike objects for list if switch used
-IF($OnlyShowObjectsWithStrikes){$Table1Data = $Table1Data | Where-Object {$_.Strikes -gt 0}}
-# Showing only all-strike objects for list if switch used
-IF($OnlyShowObjectsWithAllStrikes){$Table1Data = $Table1Data | Where-Object {$_.Strikes -ge $DaysToReport}}
-##################################
-# Creating Table 1 HTML Rows
-##################################
-# Nulling out table, protects against issues with multiple runs in PowerShell ISE
-$HTMLReportTable1Rows = $null
-# Creating table row for each line
-ForEach ($Row in $Table1Data) 
-{
-# Setting values
-$HTML1Object = $Row.Object
-$HTML1ObjectID = $Row.ObjectID
-$HTML1Type = $Row.Type
-$HTML1Location = $Row.Location
-$HTML1LocationID = $Row.LocationID
-$HTML1Cluster = $Row.RubrikCluster
-$HTML1ClusterID = $Row.RubrikClusterID
-$HTML1SLADomain = $Row.SLADomain
-$HTML1SLADomainID = $Row.SLADomainID
-$HTML1TotalBackups = $Row.Backups
-$HTML1TotalStrikes = $Row.Strikes
-$HTML1LastBackup = $Row.LastBackup
-$HTML1HoursSince = $Row.HoursSince
-# Getting Object URLs
-$HTML1ClusterURL = Get-RSCObjectURL -ObjectType "Cluster" -ObjectID $HTML1ClusterID
-$HTML1SLAURL = Get-RSCObjectURL -ObjectType "SLADomain" -ObjectID $HTML1SLADomainID
-$HTML1ObjectURL = Get-RSCObjectURL -ObjectType $HTML1Type -ObjectID $HTML1ObjectID
-# Deciding status color
-IF ($HTML1TotalStrikes -gt 0){$HTMLStatusColor =  "red"}ELSE{$HTMLStatusColor =  "black"}
-# Building HTML table row
-$HTMLReportTable1Row = $HTMLCode | Where-Object {$_.SectionName -eq "TABLE1ROW"} | Select-Object -ExpandProperty HTMLCode
-$HTMLReportTable1Row = $HTMLReportTable1Row.Replace("#HTML1ObjectURL",$HTML1ObjectURL)
-$HTMLReportTable1Row = $HTMLReportTable1Row.Replace("#HTMLStatusColor",$HTMLStatusColor)
-$HTMLReportTable1Row = $HTMLReportTable1Row.Replace("#HTML1Object",$HTML1Object)
-$HTMLReportTable1Row = $HTMLReportTable1Row.Replace("#HTML1Location",$HTML1Location)
-$HTMLReportTable1Row = $HTMLReportTable1Row.Replace("#HTML1ClusterURL",$HTML1ClusterURL)
-$HTMLReportTable1Row = $HTMLReportTable1Row.Replace("#HTML1Cluster",$HTML1Cluster)
-$HTMLReportTable1Row = $HTMLReportTable1Row.Replace("#HTML1SLAURL",$HTML1SLAURL)
-$HTMLReportTable1Row = $HTMLReportTable1Row.Replace("#HTML1SLADomain",$HTML1SLADomain)
-$HTMLReportTable1Row = $HTMLReportTable1Row.Replace("#HTML1LastBackup",$HTML1LastBackup)
-$HTMLReportTable1Row = $HTMLReportTable1Row.Replace("#HTML1HoursSince",$HTML1HoursSince)
-# Getting columns for object
-$HTMLObjectHistory = $RSCObjectCompliance | Where-Object {$_.ObjectID -eq $HTML1ObjectID}
-# Switching order if enabled
-IF ($SwitchOrder -eq $TRUE)
-{
-[array]::Reverse($HTMLObjectHistory)
-}
-# Creating column for every day
-# For Each
-ForEach ($HTMLDate in $HTMLObjectHistory)
-{
-# Setting variables
-$HTML1BackupNotFound = $HTMLDate.BackupNotFound
-$HTML1BackupFound = $HTMLDate.BackupFound
-$HTML1Day = $HTMLDate.DayHTML
-$HTML1Date = $HTMLDate.DateHTML
-$HTML1DayDate = $HTML1Day + " " + $HTML1Date
-# Setting result - new way
-IF ($HTML1BackupFound -eq 1){$HTML1BackupStatus = "green"}ELSE{$HTML1BackupStatus = "red"}
-# Changing result if set to use symbols
-IF ($UseSymbols)
-{
-# Setting appropirate symbol
-IF ($HTML1BackupFound -eq 1){$HTML1Symbol = "&#10004"}ELSE{$HTML1Symbol = "&#10060"}
-# Setting cell background to nothing as using symbols
-$HTML1BackupStatus = $null
-}
-ELSE
-{
-# Not using symbols, so setting to null
-$HTML1Symbol = $null
-}
-# Creating column
-$HTMLTable1Column = $HTMLCode | Where-Object {$_.SectionName -eq "TABLE1COLUMN"} | Select-Object -ExpandProperty HTMLCode
-$HTMLTable1Column = $HTMLTable1Column.Replace("#HTML1BackupStatus",$HTML1BackupStatus)
-$HTMLTable1Column = $HTMLTable1Column.Replace("#HTML1Date",$HTML1DayDate)
-$HTMLTable1Column = $HTMLTable1Column.Replace("#HTML1Symbol",$HTML1Symbol)
-# Adding column
-$HTMLReportTable1Row += $HTMLTable1Column
-}
-# Adding end to columns
-$HTMLTable1ColumnEnd = $HTMLCode | Where-Object {$_.SectionName -eq "TABLE1COLUMNEND"} | Select-Object -ExpandProperty HTMLCode
-$HTMLReportTable1Row += $HTMLTable1ColumnEnd
-# Adding row to table
-$HTMLReportTable1Rows += $HTMLReportTable1Row
-}
-##################################
-# Putting Table 1 together
-##################################
-$HTMLTable1 = $HTMLTable1Start + $HTMLTable1Colunms + $HTMLReportTable1Rows + $HTMLTable1End
-# Adding to tables array
-$HTMLTables += $HTMLTable1
-##################################
-# End of for each object type below
-##################################
-}
-# End of for each object type above
-##################################
-# Creating Report
-##################################
-# Building HTML report:
-$HTMLReport = $HTMLStart + $HTMLSummaryTable + $HTMLTables + $HTMLEnd
-# Replacing any 100.00% strings with 100% for easier reading
-$HTMLReport = $HTMLReport.Replace("100.00%","100%").TrimEnd()
-##################################
-# Exporting Report
-##################################
-# Creating the file names
-$ObjectReportFile = $Directory + $ReportName + "-" + $SystemDateTime.ToString("yyyy-MM-dd") + "@" + $SystemDateTime.ToString("HH-mm-ss") + ".html"
-# Exporting the report, if enabled
-$HTMLReport | Out-File -FilePath $ObjectReportFile -Force
-# Output to host
-"----------------------------
+                # Getting objects
+                $Table1Data = $ObjectCompliance | Where-Object { $_.Type -eq $HTML1ObjectType } | Sort-Object Object
+                # Counting 
+                $HTML1ObjectCount = $Table1Data | Measure-Object | Select-Object -ExpandProperty Count
+                $HTML1ObjectStrikeCount = $Table1Data | Where-Object { $_.Strikes -gt 0 } | Measure-Object | Select-Object -ExpandProperty Count
+                # Updating table title
+                $HTMLTable1Start = $HTMLTable1Start.Replace("#HTMLTableTitle", "$HTML1ObjectType").Replace("#HTMLTableObjectStrikeCount", "$HTML1ObjectStrikeCount").Replace("#HTMLTableObjectCount", "$HTML1ObjectCount")
+                # Removing non-strike objects for list if switch used
+                if ($OnlyShowObjectsWithStrikes) { $Table1Data = $Table1Data | Where-Object { $_.Strikes -gt 0 } }
+                # Showing only all-strike objects for list if switch used
+                if ($OnlyShowObjectsWithAllStrikes) { $Table1Data = $Table1Data | Where-Object { $_.Strikes -ge $DaysToReport } }
+                ##################################
+                # Creating Table 1 HTML Rows
+                ##################################
+                # Nulling out table, protects against issues with multiple runs in PowerShell ISE
+                $HTMLReportTable1Rows = $null
+                # Creating table row for each line
+                foreach ($Row in $Table1Data) {
+                    # Setting values
+                    $HTML1Object = $Row.Object
+                    $HTML1ObjectID = $Row.ObjectID
+                    $HTML1Type = $Row.Type
+                    $HTML1Location = $Row.Location
+                    $HTML1LocationID = $Row.LocationID
+                    $HTML1Cluster = $Row.RubrikCluster
+                    $HTML1ClusterID = $Row.RubrikClusterID
+                    $HTML1SLADomain = $Row.SLADomain
+                    $HTML1SLADomainID = $Row.SLADomainID
+                    $HTML1TotalBackups = $Row.Backups
+                    $HTML1TotalStrikes = $Row.Strikes
+                    $HTML1LastBackup = $Row.LastBackup
+                    $HTML1HoursSince = $Row.HoursSince
+                    # Getting Object URLs
+                    $HTML1ClusterURL = Get-RSCObjectURL -ObjectType "Cluster" -ObjectID $HTML1ClusterID
+                    $HTML1SLAURL = Get-RSCObjectURL -ObjectType "SLADomain" -ObjectID $HTML1SLADomainID
+                    $HTML1ObjectURL = Get-RSCObjectURL -ObjectType $HTML1Type -ObjectID $HTML1ObjectID
+                    # Deciding status color
+                    if ($HTML1TotalStrikes -gt 0) { $HTMLStatusColor = "red" }else { $HTMLStatusColor = "black" }
+                    # Building HTML table row
+                    $HTMLReportTable1Row = $HTMLCode | Where-Object { $_.SectionName -eq "TABLE1ROW" } | Select-Object -ExpandProperty HTMLCode
+                    $HTMLReportTable1Row = $HTMLReportTable1Row.Replace("#HTML1ObjectURL", $HTML1ObjectURL)
+                    $HTMLReportTable1Row = $HTMLReportTable1Row.Replace("#HTMLStatusColor", $HTMLStatusColor)
+                    $HTMLReportTable1Row = $HTMLReportTable1Row.Replace("#HTML1Object", $HTML1Object)
+                    $HTMLReportTable1Row = $HTMLReportTable1Row.Replace("#HTML1Location", $HTML1Location)
+                    $HTMLReportTable1Row = $HTMLReportTable1Row.Replace("#HTML1ClusterURL", $HTML1ClusterURL)
+                    $HTMLReportTable1Row = $HTMLReportTable1Row.Replace("#HTML1Cluster", $HTML1Cluster)
+                    $HTMLReportTable1Row = $HTMLReportTable1Row.Replace("#HTML1SLAURL", $HTML1SLAURL)
+                    $HTMLReportTable1Row = $HTMLReportTable1Row.Replace("#HTML1SLADomain", $HTML1SLADomain)
+                    $HTMLReportTable1Row = $HTMLReportTable1Row.Replace("#HTML1LastBackup", $HTML1LastBackup)
+                    $HTMLReportTable1Row = $HTMLReportTable1Row.Replace("#HTML1HoursSince", $HTML1HoursSince)
+                    # Getting columns for object
+                    $HTMLObjectHistory = $RSCObjectCompliance | Where-Object { $_.ObjectID -eq $HTML1ObjectID }
+                    # Switching order if enabled
+                    if ($SwitchOrder -eq $TRUE) {
+                        [array]::Reverse($HTMLObjectHistory)
+                    }
+                    # Creating column for every day
+                    # For Each
+                    foreach ($HTMLDate in $HTMLObjectHistory) {
+                        # Setting variables
+                        $HTML1BackupNotFound = $HTMLDate.BackupNotFound
+                        $HTML1BackupFound = $HTMLDate.BackupFound
+                        $HTML1Day = $HTMLDate.DayHTML
+                        $HTML1Date = $HTMLDate.DateHTML
+                        $HTML1DayDate = $HTML1Day + " " + $HTML1Date
+                        # Setting result - new way
+                        if ($HTML1BackupFound -eq 1) { $HTML1BackupStatus = "green" }else { $HTML1BackupStatus = "red" }
+                        # Changing result if set to use symbols
+                        if ($UseSymbols) {
+                            # Setting appropirate symbol
+                            if ($HTML1BackupFound -eq 1) { $HTML1Symbol = "&#10004" }else { $HTML1Symbol = "&#10060" }
+                            # Setting cell background to nothing as using symbols
+                            $HTML1BackupStatus = $null
+                        }
+                        else {
+                            # Not using symbols, so setting to null
+                            $HTML1Symbol = $null
+                        }
+                        # Creating column
+                        $HTMLTable1Column = $HTMLCode | Where-Object { $_.SectionName -eq "TABLE1COLUMN" } | Select-Object -ExpandProperty HTMLCode
+                        $HTMLTable1Column = $HTMLTable1Column.Replace("#HTML1BackupStatus", $HTML1BackupStatus)
+                        $HTMLTable1Column = $HTMLTable1Column.Replace("#HTML1Date", $HTML1DayDate)
+                        $HTMLTable1Column = $HTMLTable1Column.Replace("#HTML1Symbol", $HTML1Symbol)
+                        # Adding column
+                        $HTMLReportTable1Row += $HTMLTable1Column
+                    }
+                    # Adding end to columns
+                    $HTMLTable1ColumnEnd = $HTMLCode | Where-Object { $_.SectionName -eq "TABLE1COLUMNEND" } | Select-Object -ExpandProperty HTMLCode
+                    $HTMLReportTable1Row += $HTMLTable1ColumnEnd
+                    # Adding row to table
+                    $HTMLReportTable1Rows += $HTMLReportTable1Row
+                }
+                ##################################
+                # Putting Table 1 together
+                ##################################
+                $HTMLTable1 = $HTMLTable1Start + $HTMLTable1Colunms + $HTMLReportTable1Rows + $HTMLTable1End
+                # Adding to tables array
+                $HTMLTables += $HTMLTable1
+                ##################################
+                # End of for each object type below
+                ##################################
+            }
+            # End of for each object type above
+            ##################################
+            # Creating Report
+            ##################################
+            # Building HTML report:
+            $HTMLReport = $HTMLStart + $HTMLSummaryTable + $HTMLTables + $HTMLEnd
+            # Replacing any 100.00% strings with 100% for easier reading
+            $HTMLReport = $HTMLReport.Replace("100.00%", "100%").TrimEnd()
+            ##################################
+            # Exporting Report
+            ##################################
+            # Creating the file names
+            $ObjectReportFile = $Directory + $ReportName + "-" + $SystemDateTime.ToString("yyyy-MM-dd") + "@" + $SystemDateTime.ToString("HH-mm-ss") + ".html"
+            # Exporting the report, if enabled
+            $HTMLReport | Out-File -FilePath $ObjectReportFile -Force
+            # Output to host
+            "----------------------------
 CreatedReport: $ObjectReportFile"
-##################################
-# Creating CSVs
-##################################
-# Creating the file names
-$ObjectCSVFile = $Directory + "Rubrik-AllObjects-" + $SystemDateTime.ToString("yyyy-MM-dd") + "@" + $SystemDateTime.ToString("HH-mm-ss") + ".csv"
-$ObjectStrikesCSVFile = $Directory + "Rubrik-Strikes-" + $SystemDateTime.ToString("yyyy-MM-dd") + "@" + $SystemDateTime.ToString("HH-mm-ss") + ".csv"
-# Exporting to CSV
-$ObjectCompliance | Sort-Object Strikes,Object | Export-Csv -Path $ObjectCSVFile -NoTypeInformation -Force
-$ObjectCompliance | Where-Object {$_.Strikes -gt 0} | Sort-Object Strikes,Object | Export-Csv -Path $ObjectStrikesCSVFile -NoTypeInformation -Force
+            ##################################
+            # Creating CSVs
+            ##################################
+            # Creating the file names
+            $ObjectCSVFile = $Directory + "Rubrik-AllObjects-" + $SystemDateTime.ToString("yyyy-MM-dd") + "@" + $SystemDateTime.ToString("HH-mm-ss") + ".csv"
+            $ObjectStrikesCSVFile = $Directory + "Rubrik-Strikes-" + $SystemDateTime.ToString("yyyy-MM-dd") + "@" + $SystemDateTime.ToString("HH-mm-ss") + ".csv"
+            # Exporting to CSV
+            $ObjectCompliance | Sort-Object Strikes, Object | Export-Csv -Path $ObjectCSVFile -NoTypeInformation -Force
+            $ObjectCompliance | Where-Object { $_.Strikes -gt 0 } | Sort-Object Strikes, Object | Export-Csv -Path $ObjectStrikesCSVFile -NoTypeInformation -Force
 
-# Returning status
-Return $EmailStatus
+            # Returning status
+            return $EmailStatus
+        }
+        ###############################################
+        # End of script
+        ###############################################
+    }
 }
-###############################################
-# End of script
-###############################################
+end {}
+

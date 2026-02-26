@@ -1,9 +1,9 @@
 ################################################
 # Function - Get-RSCEventsAudit - Getting all RSC Audit events
 ################################################
-Function Get-RSCEventsAudit {
+function Get-RSCEventsAudit {
 
-<#
+    <#
 .SYNOPSIS
 Returns all RSC audit events within the time frame specified, default is 24 hours with no parameters.
 
@@ -38,71 +38,67 @@ Author: Joshua Stenhouse
 Date: 05/11/2023
 #>
 
-################################################
-# Paramater Config
-################################################
-	Param
+    ################################################
+    # Paramater Config
+    ################################################
+    param
     (
-        $DaysToCapture,$HoursToCapture,$MinutesToCapture
+        $DaysToCapture, $HoursToCapture, $MinutesToCapture
     )
 
-################################################
-# Importing Module & Running Required Functions
-################################################
-# Importing the module is it needs other modules
-Import-Module RSCReporting
-# Checking connectivity, exiting function with error if not connected
-Test-RSCConnection
-################################################
-# Getting times required
-################################################
-$MachineDateTime = Get-Date
-$UTCDateTime = [System.DateTime]::UtcNow
-# If null, setting to 24 hours
-IF(($MinutesToCapture -eq $null) -and ($HoursToCapture -eq $null))
-{
-$HoursToCapture = 24
-}
-# Calculating time range if minutes specified
-IF($MinutesToCapture -ne $null)
-{
-$TimeRangeUTC = $UTCDateTime.AddMinutes(-$MinutesToCapture)
-$TimeRange = $MachineDateTime.AddMinutes(-$MinutesToCapture)
-}
-# Calculating time range if hours specified
-IF($HoursToCapture -ne $null)
-{
-$TimeRangeUTC = $UTCDateTime.AddHours(-$HoursToCapture)
-$TimeRange = $MachineDateTime.AddHours(-$HoursToCapture)
-}
-# Overriding both if days to capture specified
-IF($DaysToCapture -ne $null)
-{
-$TimeRangeUTC = $UTCDateTime.AddDays(-$DaysToCapture)
-$TimeRange = $MachineDateTime.AddDays(-$DaysToCapture)	
-}
-# Converting to UNIX time format
-$TimeRangeUNIX = $TimeRangeUTC.ToString("yyyy-MM-ddTHH:mm:ss.000Z")
-# Logging
-Write-Host "CollectingEventsFrom(UTC): $TimeRange
+    ################################################
+    # Importing Module & Running Required Functions
+    ################################################
+    # Importing the module is it needs other modules
+    Import-Module RSCReporting
+    # Checking connectivity, exiting function with error if not connected
+    Test-RSCConnection
+    ################################################
+    # Getting times required
+    ################################################
+    $MachineDateTime = Get-Date
+    $UTCDateTime = [System.DateTime]::UtcNow
+    # If null, setting to 24 hours
+    if (($MinutesToCapture -eq $null) -and ($HoursToCapture -eq $null)) {
+        $HoursToCapture = 24
+    }
+    # Calculating time range if minutes specified
+    if ($MinutesToCapture -ne $null) {
+        $TimeRangeUTC = $UTCDateTime.AddMinutes(-$MinutesToCapture)
+        $TimeRange = $MachineDateTime.AddMinutes(-$MinutesToCapture)
+    }
+    # Calculating time range if hours specified
+    if ($HoursToCapture -ne $null) {
+        $TimeRangeUTC = $UTCDateTime.AddHours(-$HoursToCapture)
+        $TimeRange = $MachineDateTime.AddHours(-$HoursToCapture)
+    }
+    # Overriding both if days to capture specified
+    if ($DaysToCapture -ne $null) {
+        $TimeRangeUTC = $UTCDateTime.AddDays(-$DaysToCapture)
+        $TimeRange = $MachineDateTime.AddDays(-$DaysToCapture)	
+    }
+    # Converting to UNIX time format
+    $TimeRangeUNIX = $TimeRangeUTC.ToString("yyyy-MM-ddTHH:mm:ss.000Z")
+    # Logging
+    Write-Host "CollectingEventsFrom(UTC): $TimeRange
 GraphQLAPI: EventSeriesListQuery"
-################################################
-# Getting RSC Events
-################################################
-# Creating array for events
-$RSCEventsList = @()
-# Building GraphQL query
-$RSCGraphQL = @{"operationName"="AuditLogListQuery";
+    ################################################
+    # Getting RSC Events
+    ################################################
+    # Creating array for events
+    $RSCEventsList = @()
+    # Building GraphQL query
+    $RSCGraphQL = @{"operationName" ="AuditLogListQuery";
 
-"variables" = @{
-"filters" = @{
-    "timeGt" = "$TimeRangeUNIX"
-  }
-"first" = 1000
-"sortOrder" = "DESC"
-};
+        "variables"                 = @{
+            "filters"   = @{
+                "timeGt" = "$TimeRangeUNIX"
+            }
+            "first"     = 1000
+            "sortOrder" = "DESC"
+        };
 
-"query"="query AuditLogListQuery(`$after: String, `$first: Int, `$filters: UserAuditFilter, `$sortOrder: SortOrder) 
+        "query"                     ="query AuditLogListQuery(`$after: String, `$first: Int, `$filters: UserAuditFilter, `$sortOrder: SortOrder) 
 
 {userAuditConnection(after: `$after, first: `$first, filters: `$filters, sortOrder: `$sortOrder) 
 
@@ -135,83 +131,85 @@ $RSCGraphQL = @{"operationName"="AuditLogListQuery";
             __typename
             }
         }
-"}
-################################################
-# API Call To RSC GraphQL URI
-################################################
-# Converting to JSON
-$RSCEventsResponse = Invoke-RestMethod -Method POST -Uri $RSCGraphqlURL -Body $($RSCGraphQL | ConvertTo-JSON -Depth 32) -Headers $RSCSessionHeader
-$RSCEventsList += $RSCEventsResponse.data.userAuditConnection.edges.node
-# Getting all results from paginations
-While ($RSCEventsResponse.data.userAuditConnection.pageInfo.hasNextPage) 
-{
-# Getting next set
-$RSCGraphQL.variables.after = $RSCEventsResponse.data.userAuditConnection.pageInfo.endCursor
-$RSCEventsResponse = Invoke-RestMethod -Method POST -Uri $RSCGraphqlURL -Body $($RSCGraphQL | ConvertTo-JSON -Depth 20) -Headers $RSCSessionHeader
-$RSCEventsList += $RSCEventsResponse.data.userAuditConnection.edges.node
-}
-# Counting
-$RSCEventsCount = $RSCEventsList | Measure-Object | Select-Object -ExpandProperty Count
-# Logging
-Write-Host "EventsReturnedByAPI: $RSCEventsCount
+"
+    }
+    ################################################
+    # API Call To RSC GraphQL URI
+    ################################################
+    # Converting to JSON
+    $RSCEventsResponse = Invoke-RestMethod -Method POST -Uri $RSCGraphqlURL -Body $($RSCGraphQL | ConvertTo-Json -Depth 32) -Headers $RSCSessionHeader
+    $RSCEventsList += $RSCEventsResponse.data.userAuditConnection.edges.node
+    # Getting all results from paginations
+    while ($RSCEventsResponse.data.userAuditConnection.pageInfo.hasNextPage) {
+        # Getting next set
+        $RSCGraphQL.variables.after = $RSCEventsResponse.data.userAuditConnection.pageInfo.endCursor
+        $RSCEventsResponse = Invoke-RestMethod -Method POST -Uri $RSCGraphqlURL -Body $($RSCGraphQL | ConvertTo-Json -Depth 20) -Headers $RSCSessionHeader
+        $RSCEventsList += $RSCEventsResponse.data.userAuditConnection.edges.node
+    }
+    # Counting
+    $RSCEventsCount = $RSCEventsList | Measure-Object | Select-Object -ExpandProperty Count
+    # Logging
+    Write-Host "EventsReturnedByAPI: $RSCEventsCount
 Processing audit events..."
-################################################
-# Processing Events
-################################################
-# Creating array
-$RSCEvents = [System.Collections.ArrayList]@()
-# For Each Getting info
-ForEach ($Event in $RSCEventsList)
-{
-# Setting variables
-$EventID = $Event.id
-$EventUserName = $Event.userName
-$EventUserNote = $Event.userNote
-$EventMessage = $Event.message
-$EventTimeUNIX = $Event.time
-$EventStatus = $Event.status
-$EventSeverity = $Event.severity
-# Counting failed login attemps if switch not used
-IF($EventStatus -eq "Failure"){$EventFailedAttempts = $RSCEventsList | Where-Object {(($_.userName -eq $EventUserName) -and ($_.status -eq "Failure"))} | Measure-Object | Select-Object -ExpandProperty Count}ELSE{$EventFailedAttempts = 0}
-# Converting event times
-$EventDate = Convert-RSCUNIXTime $EventTimeUNIX
-# Removing illegal SQL characters from user or message
-IF($EventUserName -ne $null){$EventUserName = $EventUserName.Replace("'","");$EventUserName = $EventUserName.Replace(",","")}
-IF($EventMessage -ne $null){$EventMessage = $EventMessage.Replace("'","");$EventMessage = $EventMessage.Replace(",","")
-$EventMessage = $EventMessage.Replace("(","");$EventMessage = $EventMessage.Replace(")","")
-$EventMessage = $EventMessage.Replace(":","");$EventMessage = $EventMessage -Replace ".$"}
-# Parsing source
-# IF($EventMessage -match "logged in from"){$EventSource = ($EventMessage -split 'from ',2)[-1]}ELSE{$EventSource = $null}
-# Getting cluster
-$EventCluster = $Event.cluster
-$EventClusterID = $EventCluster.id
-$EventClusterName = $EventCluster.name
-# Overriding Polaris in cluster name
-IF($EventClusterName -eq "Polaris"){$EventClusterName = "RSC";$EventSource = "RSC"}ELSE{$EventSource = "RubrikCluster"}
-############################
-# Adding To Array
-############################
-$Object = New-Object PSObject
-$Object | Add-Member -MemberType NoteProperty -Name "RSCInstance" -Value $RSCInstance
-$Object | Add-Member -MemberType NoteProperty -Name "DateUTC" -Value $EventDate
-$Object | Add-Member -MemberType NoteProperty -Name "Status" -Value $EventStatus
-$Object | Add-Member -MemberType NoteProperty -Name "Severity" -Value $EventSeverity
-$Object | Add-Member -MemberType NoteProperty -Name "UserName" -Value $EventUserName
-$Object | Add-Member -MemberType NoteProperty -Name "Source" -Value $EventSource
-$Object | Add-Member -MemberType NoteProperty -Name "RubrikCluster" -Value $EventClusterName
-$Object | Add-Member -MemberType NoteProperty -Name "Message" -Value $EventMessage
-# Always null so leaving out for now 08/29/22 # $Object | Add-Member -MemberType NoteProperty -Name "UserNote" -Value $EventUserNote
-$Object | Add-Member -MemberType NoteProperty -Name "Failures" -Value $EventFailedAttempts
-# IDs 
-$Object | Add-Member -MemberType NoteProperty -Name "EventID" -Value $EventID
-$Object | Add-Member -MemberType NoteProperty -Name "RubrikClusterID" -Value $EventClusterID
-# Adding to array (optional, not needed)
-$RSCEvents.Add($Object) | Out-Null
-# End of for each event below
-}
-# End of for each event above
+    ################################################
+    # Processing Events
+    ################################################
+    # Creating array
+    $RSCEvents = [System.Collections.ArrayList]@()
+    # For Each Getting info
+    foreach ($Event in $RSCEventsList) {
+        # Setting variables
+        $EventID = $Event.id
+        $EventUserName = $Event.userName
+        $EventUserNote = $Event.userNote
+        $EventMessage = $Event.message
+        $EventTimeUNIX = $Event.time
+        $EventStatus = $Event.status
+        $EventSeverity = $Event.severity
+        # Counting failed login attemps if switch not used
+        if ($EventStatus -eq "Failure") { $EventFailedAttempts = $RSCEventsList | Where-Object { (($_.userName -eq $EventUserName) -and ($_.status -eq "Failure")) } | Measure-Object | Select-Object -ExpandProperty Count }else { $EventFailedAttempts = 0 }
+        # Converting event times
+        $EventDate = Convert-RSCUNIXTime $EventTimeUNIX
+        # Removing illegal SQL characters from user or message
+        if ($EventUserName -ne $null) { $EventUserName = $EventUserName.Replace("'", ""); $EventUserName = $EventUserName.Replace(",", "") }
+        if ($EventMessage -ne $null) {
+            $EventMessage = $EventMessage.Replace("'", ""); $EventMessage = $EventMessage.Replace(",", "")
+            $EventMessage = $EventMessage.Replace("(", ""); $EventMessage = $EventMessage.Replace(")", "")
+            $EventMessage = $EventMessage.Replace(":", ""); $EventMessage = $EventMessage -replace ".$"
+        }
+        # Parsing source
+        # IF($EventMessage -match "logged in from"){$EventSource = ($EventMessage -split 'from ',2)[-1]}ELSE{$EventSource = $null}
+        # Getting cluster
+        $EventCluster = $Event.cluster
+        $EventClusterID = $EventCluster.id
+        $EventClusterName = $EventCluster.name
+        # Overriding Polaris in cluster name
+        if ($EventClusterName -eq "Polaris") { $EventClusterName = "RSC"; $EventSource = "RSC" }else { $EventSource = "RubrikCluster" }
+        ############################
+        # Adding To Array
+        ############################
+        $Object = New-Object PSObject
+        $Object | Add-Member -MemberType NoteProperty -Name "RSCInstance" -Value $RSCInstance
+        $Object | Add-Member -MemberType NoteProperty -Name "DateUTC" -Value $EventDate
+        $Object | Add-Member -MemberType NoteProperty -Name "Status" -Value $EventStatus
+        $Object | Add-Member -MemberType NoteProperty -Name "Severity" -Value $EventSeverity
+        $Object | Add-Member -MemberType NoteProperty -Name "UserName" -Value $EventUserName
+        $Object | Add-Member -MemberType NoteProperty -Name "Source" -Value $EventSource
+        $Object | Add-Member -MemberType NoteProperty -Name "RubrikCluster" -Value $EventClusterName
+        $Object | Add-Member -MemberType NoteProperty -Name "Message" -Value $EventMessage
+        # Always null so leaving out for now 08/29/22 # $Object | Add-Member -MemberType NoteProperty -Name "UserNote" -Value $EventUserNote
+        $Object | Add-Member -MemberType NoteProperty -Name "Failures" -Value $EventFailedAttempts
+        # IDs 
+        $Object | Add-Member -MemberType NoteProperty -Name "EventID" -Value $EventID
+        $Object | Add-Member -MemberType NoteProperty -Name "RubrikClusterID" -Value $EventClusterID
+        # Adding to array (optional, not needed)
+        $RSCEvents.Add($Object) | Out-Null
+        # End of for each event below
+    }
+    # End of for each event above
 
-# Returning array
-Return $RSCEvents
-# End of function
+    # Returning array
+    return $RSCEvents
+    # End of function
 }
+

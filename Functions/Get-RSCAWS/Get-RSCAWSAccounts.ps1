@@ -1,9 +1,9 @@
 ################################################
 # Function - Get-RSCAWSAccounts - Getting AWS Accounts connected to RSC
 ################################################
-Function Get-RSCAWSAccounts {
+function Get-RSCAWSAccount {
 
-<#
+    <#
 .SYNOPSIS
 Returns all the AWS Accounts seen by RSC.
 
@@ -21,29 +21,30 @@ This example returns an array of all the information returned by the GraphQL end
 Author: Joshua Stenhouse
 Date: 05/11/2023
 #>
+    [CmdletBinding()]
+    [Alias('Get-RSCAWSAccounts')]
+    param()
+    ################################################
+    # Importing Module & Running Required Functions
+    ################################################
+    # Importing the module is it needs other modules
+    Import-Module RSCReporting
+    # Checking connectivity, exiting function with error if not connected
+    Test-RSCConnection
+    ################################################
+    # Getting All RSCAWSAccounts 
+    ################################################
+    # Creating array for objects
+    $AWSAccountList = @()
+    # Building GraphQL query
+    $RSCGraphQL = @{"operationName" = "AWSAccountsListQuery";
 
+        "variables"                 = @{
+            "first"                      = 1000
+            "awsNativeProtectionFeature" = "EC2"
+        };
 
-################################################
-# Importing Module & Running Required Functions
-################################################
-# Importing the module is it needs other modules
-Import-Module RSCReporting
-# Checking connectivity, exiting function with error if not connected
-Test-RSCConnection
-################################################
-# Getting All RSCAWSAccounts 
-################################################
-# Creating array for objects
-$AWSAccountList = @()
-# Building GraphQL query
-$RSCGraphQL = @{"operationName" = "AWSAccountsListQuery";
-
-"variables" = @{
-"first" = 1000
-"awsNativeProtectionFeature" = "EC2"
-};
-
-"query" = "query AWSAccountsListQuery(`$first: Int!, `$after: String, `$filters: AwsNativeAccountFilters, `$awsNativeProtectionFeature: AwsNativeProtectionFeature!) {
+        "query"                     = "query AWSAccountsListQuery(`$first: Int!, `$after: String, `$filters: AwsNativeAccountFilters, `$awsNativeProtectionFeature: AwsNativeProtectionFeature!) {
   awsNativeAccounts(first: `$first, after: `$after, accountFilters: `$filters, awsNativeProtectionFeature: `$awsNativeProtectionFeature) {
     edges {
       cursor
@@ -135,71 +136,70 @@ fragment SLADomainFragment on SlaDomain {
   }
   __typename
 }"
+    }
+    ################################################
+    # API Call To RSC GraphQL URI
+    ################################################
+    # Querying API
+    $AWSAccountListResponse = Invoke-RestMethod -Method POST -Uri $RSCGraphqlURL -Body $($RSCGraphQL | ConvertTo-Json -Depth 20) -Headers $RSCSessionHeader
+    # Setting variable
+    $AWSAccountList += $AWSAccountListResponse.data.awsNativeAccounts.edges.node
+    # Getting all results from paginations
+    while ($AWSAccountListResponse.data.awsNativeAccounts.pageInfo.hasNextPage) {
+        # Getting next set
+        $RSCGraphQL.variables.after = $AWSAccountListResponse.data.awsNativeAccounts.pageInfo.endCursor
+        $AWSAccountListResponse = Invoke-RestMethod -Method POST -Uri $RSCGraphqlURL -Body $($RSCGraphQL | ConvertTo-Json -Depth 20) -Headers $RSCSessionHeader
+        $AWSAccountList += $AzureSubscriptionResponse.data.awsNativeAccounts.edges.node
+    }
+    ################################################
+    # Processing
+    ################################################
+    # Creating array
+    $AWSAccounts = [System.Collections.ArrayList]@()
+    # Time for refresh since
+    $UTCDateTime = [System.DateTime]::UtcNow
+    # For Each Object Getting Data
+    foreach ($AWSAccount in $AWSAccountList) {
+        # Setting variables
+        $AWSAccountName = $AWSAccount.name
+        $AWSAccountID = $AWSAccount.id
+        $AWSAccountVMCount = $AWSAccount.ec2InstanceCount
+        $AWSAccountDiskCount = $AWSAccount.ebsVolumeCount
+        $AWSAccountRDSCount = $AWSAccount.rdsInstanceCount
+        $AWSAccountSLADomainInfo = $AWSAccount.effectiveSlaDomain
+        $AWSAccountSLADomain = $AWSAccountSLADomainInfo.name
+        $AWSAccountSLADomainID = $AWSAccountSLADomainInfo.id
+        $AWSAccountStatus = $AWSAccount.status
+        $AWSAccountLastRefreshedUNIX = $AWSAccount.lastRefreshedAt
+        # Converting to UTC
+        try {
+            if ($AWSAccountLastRefreshedUNIX -ne $null) { $AWSAccountLastRefreshedUTC = Convert-RSCUNIXTime $AWSAccountLastRefreshedUNIX }else { $AWSAccountLastRefreshedUTC = $null }
+        }
+        catch { $AWSAccountLastRefreshedUTC = $null }
+        # Getting URLs
+        if ($AWSAccountVMCount -gt 0) { $AWSAccountEC2URL = Get-RSCObjectURL -ObjectType "awsEC2account" -ObjectID $AWSAccountID }else { $AWSAccountEC2URL = $null }
+        if ($AWSAccountRDSCount -gt 0) { $AWSAccountRDSURL = Get-RSCObjectURL -ObjectType "awsRDSaccount" -ObjectID $AWSAccountID }else { $AWSAccountRDSURL = $null }
+        # Adding To Array
+        $Object = New-Object PSObject
+        $Object | Add-Member -MemberType NoteProperty -Name "RSCInstance" -Value $RSCInstance
+        $Object | Add-Member -MemberType NoteProperty -Name "Account" -Value $AWSAccountName
+        $Object | Add-Member -MemberType NoteProperty -Name "AccountID" -Value $AWSAccountID
+        $Object | Add-Member -MemberType NoteProperty -Name "EC2Count" -Value $AWSAccountVMCount
+        $Object | Add-Member -MemberType NoteProperty -Name "EBSCount" -Value $AWSAccountDiskCount
+        $Object | Add-Member -MemberType NoteProperty -Name "RDSCount" -Value $AWSAccountRDSCount
+        $Object | Add-Member -MemberType NoteProperty -Name "SLADomain" -Value $AWSAccountSLADomain
+        $Object | Add-Member -MemberType NoteProperty -Name "SLADomainID" -Value $AWSAccountSLADomainID
+        $Object | Add-Member -MemberType NoteProperty -Name "Status" -Value $AWSAccountStatus
+        $Object | Add-Member -MemberType NoteProperty -Name "LastRefreshed" -Value $AWSAccountLastRefreshedUTC
+        $Object | Add-Member -MemberType NoteProperty -Name "EC2URL" -Value $AWSAccountEC2URL
+        $Object | Add-Member -MemberType NoteProperty -Name "RDSURL" -Value $AWSAccountRDSURL
+        # Adding
+        $AWSAccounts.Add($Object) | Out-Null
+        # End of for each object below
+    }
+    # End of for each object above
+    # Returning array
+    return $AWSAccounts
+    # End of function
 }
-################################################
-# API Call To RSC GraphQL URI
-################################################
-# Querying API
-$AWSAccountListResponse = Invoke-RestMethod -Method POST -Uri $RSCGraphqlURL -Body $($RSCGraphQL | ConvertTo-JSON -Depth 20) -Headers $RSCSessionHeader
-# Setting variable
-$AWSAccountList += $AWSAccountListResponse.data.awsNativeAccounts.edges.node
-# Getting all results from paginations
-While ($AWSAccountListResponse.data.awsNativeAccounts.pageInfo.hasNextPage) 
-{
-# Getting next set
-$RSCGraphQL.variables.after = $AWSAccountListResponse.data.awsNativeAccounts.pageInfo.endCursor
-$AWSAccountListResponse = Invoke-RestMethod -Method POST -Uri $RSCGraphqlURL -Body $($RSCGraphQL | ConvertTo-JSON -Depth 20) -Headers $RSCSessionHeader
-$AWSAccountList += $AzureSubscriptionResponse.data.awsNativeAccounts.edges.node
-}
-################################################
-# Processing
-################################################
-# Creating array
-$AWSAccounts = [System.Collections.ArrayList]@()
-# Time for refresh since
-$UTCDateTime = [System.DateTime]::UtcNow
-# For Each Object Getting Data
-ForEach ($AWSAccount in $AWSAccountList)
-{
-# Setting variables
-$AWSAccountName = $AWSAccount.name
-$AWSAccountID = $AWSAccount.id
-$AWSAccountVMCount = $AWSAccount.ec2InstanceCount
-$AWSAccountDiskCount = $AWSAccount.ebsVolumeCount
-$AWSAccountRDSCount = $AWSAccount.rdsInstanceCount
-$AWSAccountSLADomainInfo = $AWSAccount.effectiveSlaDomain
-$AWSAccountSLADomain = $AWSAccountSLADomainInfo.name
-$AWSAccountSLADomainID = $AWSAccountSLADomainInfo.id
-$AWSAccountStatus = $AWSAccount.status
-$AWSAccountLastRefreshedUNIX = $AWSAccount.lastRefreshedAt
-# Converting to UTC
-Try
-{
-IF($AWSAccountLastRefreshedUNIX -ne $null){$AWSAccountLastRefreshedUTC = Convert-RSCUNIXTime $AWSAccountLastRefreshedUNIX}ELSE{$AWSAccountLastRefreshedUTC = $null}
-}Catch{$AWSAccountLastRefreshedUTC = $null}
-# Getting URLs
-IF($AWSAccountVMCount -gt 0){$AWSAccountEC2URL = Get-RSCObjectURL -ObjectType "awsEC2account" -ObjectID $AWSAccountID}ELSE{$AWSAccountEC2URL = $null}
-IF($AWSAccountRDSCount -gt 0){$AWSAccountRDSURL = Get-RSCObjectURL -ObjectType "awsRDSaccount" -ObjectID $AWSAccountID}ELSE{$AWSAccountRDSURL = $null}
-# Adding To Array
-$Object = New-Object PSObject
-$Object | Add-Member -MemberType NoteProperty -Name "RSCInstance" -Value $RSCInstance
-$Object | Add-Member -MemberType NoteProperty -Name "Account" -Value $AWSAccountName
-$Object | Add-Member -MemberType NoteProperty -Name "AccountID" -Value $AWSAccountID
-$Object | Add-Member -MemberType NoteProperty -Name "EC2Count" -Value $AWSAccountVMCount
-$Object | Add-Member -MemberType NoteProperty -Name "EBSCount" -Value $AWSAccountDiskCount
-$Object | Add-Member -MemberType NoteProperty -Name "RDSCount" -Value $AWSAccountRDSCount
-$Object | Add-Member -MemberType NoteProperty -Name "SLADomain" -Value $AWSAccountSLADomain
-$Object | Add-Member -MemberType NoteProperty -Name "SLADomainID" -Value $AWSAccountSLADomainID
-$Object | Add-Member -MemberType NoteProperty -Name "Status" -Value $AWSAccountStatus
-$Object | Add-Member -MemberType NoteProperty -Name "LastRefreshed" -Value $AWSAccountLastRefreshedUTC
-$Object | Add-Member -MemberType NoteProperty -Name "EC2URL" -Value $AWSAccountEC2URL
-$Object | Add-Member -MemberType NoteProperty -Name "RDSURL" -Value $AWSAccountRDSURL
-# Adding
-$AWSAccounts.Add($Object) | Out-Null
-# End of for each object below
-}
-# End of for each object above
-# Returning array
-Return $AWSAccounts
-# End of function
-}
+

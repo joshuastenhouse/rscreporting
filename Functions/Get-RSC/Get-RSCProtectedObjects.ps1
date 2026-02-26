@@ -1,9 +1,11 @@
 ################################################
 # Function - Get-RSCProtectedObjects - Getting all Protected objects visible to the RSC instance
 ################################################
-Function Get-RSCProtectedObjects {
-
-<#
+function Get-RSCProtectedObject {
+    [CmdletBinding()]
+    [Alias('Get-RSCProtectedObjects')]
+    param()
+    <#
 .SYNOPSIS
 A Rubrik Security Cloud (RSC) Reporting Module Function returning a list of all current Protected objects.
 
@@ -25,19 +27,20 @@ Author: Joshua Stenhouse
 Date: 05/11/2023
 #>
 
-################################################
-# Importing Module & Running Required Functions
-################################################
-# Importing the module is it needs other modules
-Import-Module RSCReporting
-# Checking connectivity, exiting function with error if not connected
-Test-RSCConnection
-# Running existing function
-$RSCOjbects = Get-RSCObjects
-# Filtering
-$RSCProtectedObjects = $RSCOjbects | Where-Object {$_.ProtectionStatus -eq "Protected"}
+    ################################################
+    # Importing Module & Running Required Functions
+    ################################################
+    # Importing the module is it needs other modules
+    Import-Module RSCReporting
+    # Checking connectivity, exiting function with error if not connected
+    Test-RSCConnection
+    # Running existing function
+    $RSCOjbects = Get-RSCObjects
+    # Filtering
+    $RSCProtectedObjects = $RSCOjbects | Where-Object { $_.ProtectionStatus -eq "Protected" }
 
-# Returning array
-Return $RSCProtectedObjects
-# End of function
+    # Returning array
+    return $RSCProtectedObjects
+    # End of function
 }
+

@@ -1,9 +1,9 @@
 ################################################
 # Function - Start-RSCMSSQLLiveMount - Requests a live mount for an MSSQL database
 ################################################
-Function Start-RSCMSSQLLiveMount {
+function Start-RSCMSSQLLiveMount {
 	
-<#
+    <#
 .SYNOPSIS
 Requests a live mount for an MSSQL database, make sure you use a unique TargetDBName everytime to avoid conflicts on DB mount or when unmounting.
 
@@ -33,65 +33,67 @@ This example prompts for the RSC URL, user ID and secret, then connects to RSC a
 Author: Joshua Stenhouse
 Date: 10/10/2023
 #>
-################################################
-# Paramater Config
-################################################
-[CmdletBinding()]
-    Param (
-        [Parameter(Mandatory=$true)]
+    ################################################
+    # Paramater Config
+    ################################################
+    [CmdletBinding(SupportsShouldProcess = $true)]
+    param (
+        [Parameter(Mandatory = $true)]
         [string]$DBID,
-        [Parameter(Mandatory=$true)]
+        [Parameter(Mandatory = $true)]
         [string]$TargetInstanceID,
-        [Parameter(Mandatory=$true)]
+        [Parameter(Mandatory = $true)]
         [string]$TargetDBName
     )
-################################################
-# Importing Module & Running Required Functions
-################################################
-# Importing module
-Import-Module RSCReporting
-# Checking connectivity, exiting function with error if not
-Test-RSCConnection
-# Getting list of instances
-$SQLInstanceList = Get-RSCMSSQLInstances
-# Getting list of databases
-$SQLDatabaseList = Get-RSCMSSQLDatabases
-# Validating DBID
-IF($SQLDatabaseList.DBID -match $DBID){$DBIDFound = $TRUE}ELSE{$DBIDFound = $FALSE;Write-Warning "Specified DBID $DBID not found on Get-MSSQLDatabases"}
-# Validating TargetInstanceID
-IF($SQLDatabaseList.InstanceID -match $TargetInstanceID){$TargetInstanceIDFound = $TRUE}ELSE{$TargetInstanceIDFound = $FALSE;Write-Warning "Specified TargetInstanceID $TargetInstanceID not found on Get-MSSQLInstances"}
-# Getting latest recovery point for the DB
-IF($DBIDFound -eq $TRUE){$SQLDBRecoveryPoint = Get-RSCMSSQLDatabaseRecoveryPoints -DBID $DBID -RecoveryPointOnly | Select-Object -ExpandProperty RecoveryPoint}
-# Showing error if no recovery point
-IF($SQLDBRecoveryPoint -eq $null){Write-Warning "No valid RecoveryPoint found for DBID $DBID using Get-MSSQLDatabaseRecoveryPoints, ensure the DB is actually protected and being succesfully backed up"}
-################################################
-# Requesting Live Mount IF Valid Settings
-################################################
-# $DBID = "71c0820a-3fbd-5e91-878f-42da723aa371"
-# $TargetInstanceID = "b9aa64d6-5967-5c4c-80aa-938db39857f0"
-# $TargetDBName = "LateNightJSDemo"
-# RP: 2023-10-10T07:45:36.000Z
-IF(($DBIDFound -eq $TRUE) -and ($TargetInstanceIDFound -eq $TRUE) -and ($SQLDBRecoveryPoint -ne $null))
-{
-# Getting DB friendly name
-$DBName = $SQLDatabaseList | Where-Object {$_.DBID -eq $DBID} | Select-Object -ExpandProperty DB
-# Building GraphQL query
-$RSCGraphQL = @{"operationName" = "MssqlDatabaseMountMutation";
+    begin {}
+    process {
+        if ($pscmdlet.ShouldProcess("databsed - $DBID")) {
+            ################################################
+            # Importing Module & Running Required Functions
+            ################################################
+            # Importing module
+            Import-Module RSCReporting
+            # Checking connectivity, exiting function with error if not
+            Test-RSCConnection
+            # Getting list of instances
+            $SQLInstanceList = Get-RSCMSSQLInstances
+            # Getting list of databases
+            $SQLDatabaseList = Get-RSCMSSQLDatabases
+            # Validating DBID
+            if ($SQLDatabaseList.DBID -match $DBID) { $DBIDFound = $TRUE }else { $DBIDFound = $FALSE; Write-Warning "Specified DBID $DBID not found on Get-MSSQLDatabases" }
+            # Validating TargetInstanceID
+            if ($SQLDatabaseList.InstanceID -match $TargetInstanceID) { $TargetInstanceIDFound = $TRUE }else { $TargetInstanceIDFound = $FALSE; Write-Warning "Specified TargetInstanceID $TargetInstanceID not found on Get-MSSQLInstances" }
+            # Getting latest recovery point for the DB
+            if ($DBIDFound -eq $TRUE) { $SQLDBRecoveryPoint = Get-RSCMSSQLDatabaseRecoveryPoints -DBID $DBID -RecoveryPointOnly | Select-Object -ExpandProperty RecoveryPoint }
+            # Showing error if no recovery point
+            if ($SQLDBRecoveryPoint -eq $null) { Write-Warning "No valid RecoveryPoint found for DBID $DBID using Get-MSSQLDatabaseRecoveryPoints, ensure the DB is actually protected and being succesfully backed up" }
+            ################################################
+            # Requesting Live Mount IF Valid Settings
+            ################################################
+            # $DBID = "71c0820a-3fbd-5e91-878f-42da723aa371"
+            # $TargetInstanceID = "b9aa64d6-5967-5c4c-80aa-938db39857f0"
+            # $TargetDBName = "LateNightJSDemo"
+            # RP: 2023-10-10T07:45:36.000Z
+            if (($DBIDFound -eq $TRUE) -and ($TargetInstanceIDFound -eq $TRUE) -and ($SQLDBRecoveryPoint -ne $null)) {
+                # Getting DB friendly name
+                $DBName = $SQLDatabaseList | Where-Object { $_.DBID -eq $DBID } | Select-Object -ExpandProperty DB
+                # Building GraphQL query
+                $RSCGraphQL = @{"operationName" = "MssqlDatabaseMountMutation";
 
-"variables" = @{
-    "input" = @{
-        "id" = "$DBID"
-        "config" = @{
-               "targetInstanceId" = "$TargetInstanceID"
-               "mountedDatabaseName" = "$TargetDBName"
-               "recoveryPoint" = @{
-                                "date" = "$SQLDBRecoveryPoint"
-                                 }
-                    }
-                }
-};
+                    "variables"                 = @{
+                        "input" = @{
+                            "id"     = "$DBID"
+                            "config" = @{
+                                "targetInstanceId"    = "$TargetInstanceID"
+                                "mountedDatabaseName" = "$TargetDBName"
+                                "recoveryPoint"       = @{
+                                    "date" = "$SQLDBRecoveryPoint"
+                                }
+                            }
+                        }
+                    };
 
-"query" = "mutation MssqlDatabaseMountMutation(`$input: CreateMssqlLiveMountInput!) {
+                    "query"                     = "mutation MssqlDatabaseMountMutation(`$input: CreateMssqlLiveMountInput!) {
   createMssqlLiveMount(input: `$input) {
     id
     links {
@@ -102,42 +104,44 @@ $RSCGraphQL = @{"operationName" = "MssqlDatabaseMountMutation";
     __typename
   }
 }"
-}
-# Querying API
-Try
-{
-$RSCResponse = Invoke-RestMethod -Method POST -Uri $RSCGraphqlURL -Body $($RSCGraphQL | ConvertTo-JSON -Depth 20) -Headers $RSCSessionHeader
-$RequestStatus = "SUCCESS"
-}
-Catch
-{
-$RequestStatus = "FAILED"
-}
-# Checking for permission errors
-IF($RSCResponse.errors.message){$RSCResponse.errors.message}
-# Getting response
-$JobURL = $RSCResponse.data.createMssqlLiveMount.links.href
-$JobID = $RSCResponse.data.createMssqlLiveMount.id
-################################################
-# Returing Job Info
-################################################
-# Adding To Array
-$Object = New-Object PSObject
-$Object | Add-Member -MemberType NoteProperty -Name "RSCInstance" -Value $RSCInstance
-$Object | Add-Member -MemberType NoteProperty -Name "Mutation" -Value "MssqlDatabaseMountMutation"
-$Object | Add-Member -MemberType NoteProperty -Name "RequestStatus" -Value $RSCRequest
-$Object | Add-Member -MemberType NoteProperty -Name "DBID" -Value $DBID
-$Object | Add-Member -MemberType NoteProperty -Name "TargetInstanceID" -Value $TargetInstanceID
-$Object | Add-Member -MemberType NoteProperty -Name "TargetDBName" -Value $TargetDBName
-$Object | Add-Member -MemberType NoteProperty -Name "RecoveryPoint" -Value $SQLDBRecoveryPoint
-$Object | Add-Member -MemberType NoteProperty -Name "RequestStatus" -Value $RequestStatus
-$Object | Add-Member -MemberType NoteProperty -Name "JobID" -Value $JobID
-$Object | Add-Member -MemberType NoteProperty -Name "ErrorMessage" -Value $RSCResponse.errors.message
-# Returning array
-Return $Object
-# Not returning anything if didn't pass validation below
-}
-# Not returning anything if didn't pass validation above
+                }
+                # Querying API
+                try {
+                    $RSCResponse = Invoke-RestMethod -Method POST -Uri $RSCGraphqlURL -Body $($RSCGraphQL | ConvertTo-Json -Depth 20) -Headers $RSCSessionHeader
+                    $RequestStatus = "SUCCESS"
+                }
+                catch {
+                    $RequestStatus = "FAILED"
+                }
+                # Checking for permission errors
+                if ($RSCResponse.errors.message) { $RSCResponse.errors.message }
+                # Getting response
+                $JobURL = $RSCResponse.data.createMssqlLiveMount.links.href
+                $JobID = $RSCResponse.data.createMssqlLiveMount.id
+                ################################################
+                # Returing Job Info
+                ################################################
+                # Adding To Array
+                $Object = New-Object PSObject
+                $Object | Add-Member -MemberType NoteProperty -Name "RSCInstance" -Value $RSCInstance
+                $Object | Add-Member -MemberType NoteProperty -Name "Mutation" -Value "MssqlDatabaseMountMutation"
+                $Object | Add-Member -MemberType NoteProperty -Name "RequestStatus" -Value $RSCRequest
+                $Object | Add-Member -MemberType NoteProperty -Name "DBID" -Value $DBID
+                $Object | Add-Member -MemberType NoteProperty -Name "TargetInstanceID" -Value $TargetInstanceID
+                $Object | Add-Member -MemberType NoteProperty -Name "TargetDBName" -Value $TargetDBName
+                $Object | Add-Member -MemberType NoteProperty -Name "RecoveryPoint" -Value $SQLDBRecoveryPoint
+                $Object | Add-Member -MemberType NoteProperty -Name "RequestStatus" -Value $RequestStatus
+                $Object | Add-Member -MemberType NoteProperty -Name "JobID" -Value $JobID
+                $Object | Add-Member -MemberType NoteProperty -Name "ErrorMessage" -Value $RSCResponse.errors.message
+                # Returning array
+                return $Object
+                # Not returning anything if didn't pass validation below
+            }
+            # Not returning anything if didn't pass validation above
 
-# End of function
+            # End of function
+        }
+    }
 }
+end {}
+

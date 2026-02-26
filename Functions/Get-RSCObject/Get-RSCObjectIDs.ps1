@@ -1,9 +1,9 @@
 ################################################
 # Function - Get-RSCObjectIDs - Getting all object IDs visible to the RSC instance
 ################################################
-Function Get-RSCObjectIDs {
+function Get-RSCObjectID {
 
-<#
+    <#
 .SYNOPSIS
 A Rubrik Security Cloud (RSC) Reporting Module Function returning a list of every protectable object in RSC. Useful for obtaining ObjectIDs.
 
@@ -24,39 +24,41 @@ This example returns an array of all the information returned by the GraphQL end
 Author: Joshua Stenhouse
 Date: 08/21/2024
 #>
-################################################
-# Paramater Config
-################################################
-Param
+    ################################################
+    # Paramater Config
+    ################################################
+    [CmdletBinding()]
+    [Alias('Get-RSCObjectIDs')]
+    param
     (
-        [Parameter(Mandatory=$false)]$ObjectQueryLimit
+        [Parameter(Mandatory = $false)]$ObjectQueryLimit
     )
 
-################################################
-# Importing Module & Running Required Functions
-################################################
-# Importing the module is it needs other modules
-Import-Module RSCReporting
-# Checking connectivity, exiting function with error if not connected
-Test-RSCConnection
-################################################
-# Getting All Objects 
-################################################
-# Setting first value if null
-IF($ObjectQueryLimit -eq $null){$ObjectQueryLimit = 1000}
-# Creating array for objects
-$RSCObjectsList = @()
-# Building GraphQL query
-$RSCGraphQL = @{"operationName" = "snappableConnection";
+    ################################################
+    # Importing Module & Running Required Functions
+    ################################################
+    # Importing the module is it needs other modules
+    Import-Module RSCReporting
+    # Checking connectivity, exiting function with error if not connected
+    Test-RSCConnection
+    ################################################
+    # Getting All Objects 
+    ################################################
+    # Setting first value if null
+    if ($ObjectQueryLimit -eq $null) { $ObjectQueryLimit = 1000 }
+    # Creating array for objects
+    $RSCObjectsList = @()
+    # Building GraphQL query
+    $RSCGraphQL = @{"operationName" = "snappableConnection";
 
-"variables" = @{
-"first" = $ObjectQueryLimit
-"filter" = @{
-        "objectType" = $ObjectType
-        }
-};
+        "variables"                 = @{
+            "first"  = $ObjectQueryLimit
+            "filter" = @{
+                "objectType" = $ObjectType
+            }
+        };
 
-"query" = "query snappableConnection(`$after: String, `$filter: SnappableFilterInput) {
+        "query"                     = "query snappableConnection(`$after: String, `$filter: SnappableFilterInput) {
   snappableConnection(after: `$after, filter: `$filter) {
     edges {
       node {
@@ -77,41 +79,41 @@ $RSCGraphQL = @{"operationName" = "snappableConnection";
   }
 }
 "
-}
-# Converting to JSON
-$RSCJSON = $RSCGraphQL | ConvertTo-Json -Depth 32
-# Converting back to PS object for editing of variables
-$RSCJSONObject = $RSCJSON | ConvertFrom-Json
-################################################
-# API Call To RSC GraphQL URI
-################################################
-# Querying API
-$RSCObjectsResponse = Invoke-RestMethod -Method POST -Uri $RSCGraphqlURL -Body $($RSCJSONObject | ConvertTo-JSON -Depth 20) -Headers $RSCSessionHeader
-# Setting variable
-$RSCObjectsList += $RSCObjectsResponse.data.snappableConnection.edges.node
-# Counters
-$ObjectCount = 0
-$ObjectCounter = $ObjectCount + $ObjectQueryLimit
-# Getting all results from paginations
-While ($RSCObjectsResponse.data.snappableConnection.pageInfo.hasNextPage) 
-{
-# Logging
-Write-Host "GettingObjects: $ObjectCount-$ObjectCounter"
-# Getting next set
-$RSCGraphQL.variables.after = $RSCObjectsResponse.data.snappableConnection.pageInfo.endCursor
-$RSCObjectsResponse = Invoke-RestMethod -Method POST -Uri $RSCGraphqlURL -Body $($RSCGraphQL | ConvertTo-JSON -Depth 20) -Headers $RSCSessionHeader
-$RSCObjectsList += $RSCObjectsResponse.data.snappableConnection.edges.node
-# Incrementing
-$ObjectCount = $ObjectCount + $ObjectQueryLimit
-$ObjectCounter = $ObjectCounter + $ObjectQueryLimit
-}
-# Correcting column names
-$RSCObjectIDs = $RSCObjectsList | Select-Object @{Name="ObjectID"; Expression = {$_.'fid'}},@{Name="Object"; Expression = {$_.'name'}},@{Name="Type"; Expression = {$_.'objectType'}},@{Name="ProtectionStatus"; Expression = {$_.'protectionStatus'}},@{Name="TotalSnapshots"; Expression = {$_.'totalSnapshots'}},@{Name="PendingFirstFull"; Expression = {$_.'awaitingFirstFull'}}
+    }
+    # Converting to JSON
+    $RSCJSON = $RSCGraphQL | ConvertTo-Json -Depth 32
+    # Converting back to PS object for editing of variables
+    $RSCJSONObject = $RSCJSON | ConvertFrom-Json
+    ################################################
+    # API Call To RSC GraphQL URI
+    ################################################
+    # Querying API
+    $RSCObjectsResponse = Invoke-RestMethod -Method POST -Uri $RSCGraphqlURL -Body $($RSCJSONObject | ConvertTo-Json -Depth 20) -Headers $RSCSessionHeader
+    # Setting variable
+    $RSCObjectsList += $RSCObjectsResponse.data.snappableConnection.edges.node
+    # Counters
+    $ObjectCount = 0
+    $ObjectCounter = $ObjectCount + $ObjectQueryLimit
+    # Getting all results from paginations
+    while ($RSCObjectsResponse.data.snappableConnection.pageInfo.hasNextPage) {
+        # Logging
+        Write-Host "GettingObjects: $ObjectCount-$ObjectCounter"
+        # Getting next set
+        $RSCGraphQL.variables.after = $RSCObjectsResponse.data.snappableConnection.pageInfo.endCursor
+        $RSCObjectsResponse = Invoke-RestMethod -Method POST -Uri $RSCGraphqlURL -Body $($RSCGraphQL | ConvertTo-Json -Depth 20) -Headers $RSCSessionHeader
+        $RSCObjectsList += $RSCObjectsResponse.data.snappableConnection.edges.node
+        # Incrementing
+        $ObjectCount = $ObjectCount + $ObjectQueryLimit
+        $ObjectCounter = $ObjectCounter + $ObjectQueryLimit
+    }
+    # Correcting column names
+    $RSCObjectIDs = $RSCObjectsList | Select-Object @{Name = "ObjectID"; Expression = { $_.'fid' } }, @{Name = "Object"; Expression = { $_.'name' } }, @{Name = "Type"; Expression = { $_.'objectType' } }, @{Name = "ProtectionStatus"; Expression = { $_.'protectionStatus' } }, @{Name = "TotalSnapshots"; Expression = { $_.'totalSnapshots' } }, @{Name = "PendingFirstFull"; Expression = { $_.'awaitingFirstFull' } }
 
-# Setting global variable for use in other functions so they don't have to collect it again
-$Global:RSCGlobalObjectIDs = $RSCObjectIDs
+    # Setting global variable for use in other functions so they don't have to collect it again
+    $Global:RSCGlobalObjectIDs = $RSCObjectIDs
 
-# Returning array
-Return $RSCObjectIDs
-# End of function
+    # Returning array
+    return $RSCObjectIDs
+    # End of function
 }
+

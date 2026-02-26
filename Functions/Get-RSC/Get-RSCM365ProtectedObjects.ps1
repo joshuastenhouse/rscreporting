@@ -1,9 +1,9 @@
 ################################################
 # Function - Get-RSCM365ProtectedObjects - Getting o365 ProtectedObjects connected to RSC
 ################################################
-Function Get-RSCM365ProtectedObjects {
+function Get-RSCM365ProtectedObject {
 
-<#
+    <#
 .SYNOPSIS
 A Rubrik Security Cloud (RSC) Reporting Module Function returning a list of all M365 protected objects.
 
@@ -24,19 +24,22 @@ This example returns an array of all the information returned by the GraphQL end
 Author: Joshua Stenhouse
 Date: 05/11/2023
 #>
-
-################################################
-# Importing Module & Running Required Functions
-################################################
-# Importing the module is it needs other modules
-Import-Module RSCReporting
-# Checking connectivity, exiting function with error if not connected
-Test-RSCConnection
-################################################
-# Getting All o365 Objects 
-################################################
-$o365ProtectObjects = Get-RSCM365Objects | Where-Object {$_.ProtectionStatus -eq "Protected"}
-# Returning array
-Return $o365ProtectObjects
-# End of function
+    [CmdletBinding()]
+    [Alias('Get-RSCM365ProtectedObjects')]
+    param()
+    ################################################
+    # Importing Module & Running Required Functions
+    ################################################
+    # Importing the module is it needs other modules
+    Import-Module RSCReporting
+    # Checking connectivity, exiting function with error if not connected
+    Test-RSCConnection
+    ################################################
+    # Getting All o365 Objects 
+    ################################################
+    $o365ProtectObjects = Get-RSCM365Objects | Where-Object { $_.ProtectionStatus -eq "Protected" }
+    # Returning array
+    return $o365ProtectObjects
+    # End of function
 }
+

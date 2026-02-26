@@ -1,9 +1,9 @@
 ################################################
 # Function - Get-RSCSensitiveDataPolicies - Getting All Sensitive Data Policies in RSC
 ################################################
-Function Get-RSCSensitiveDataPolicies {
+function Get-RSCSensitiveDataPolicy {
 
-<#
+    <#
 .SYNOPSIS
 A Rubrik Security Cloud (RSC) Reporting Module Function returns a list of all sensitive data discovery policies.
 
@@ -24,25 +24,27 @@ This example returns an array of all the information returned by the GraphQL end
 Author: Joshua Stenhouse
 Date: 05/11/2023
 #>
+    [CmdletBinding()]
+    [Alias('Get-RSCSensitiveDataPolicies')]
+    param()
+    ################################################
+    # Importing Module & Running Required Functions
+    ################################################
+    # Importing the module is it needs other modules
+    Import-Module RSCReporting
+    # Checking connectivity, exiting function with error if not connected
+    Test-RSCConnection
+    ################################################
+    # Querying RSC GraphQL API
+    ################################################
+    # Creating array for objects
+    $RSCList = @()
+    # Getting date in correct format
+    $UTCDate = [System.DateTime]::UtcNow.ToString("yyyy-MM-dd")
+    # Building GraphQL query
+    $RSCGraphQL = @{"operationName" = "Policies";
 
-################################################
-# Importing Module & Running Required Functions
-################################################
-# Importing the module is it needs other modules
-Import-Module RSCReporting
-# Checking connectivity, exiting function with error if not connected
-Test-RSCConnection
-################################################
-# Querying RSC GraphQL API
-################################################
-# Creating array for objects
-$RSCList = @()
-# Getting date in correct format
-$UTCDate = [System.DateTime]::UtcNow.ToString("yyyy-MM-dd")
-# Building GraphQL query
-$RSCGraphQL = @{"operationName" = "Policies";
-
-"query" = "query Policies {
+        "query"                     = "query Policies {
   policies {
     count
     nodes {
@@ -106,95 +108,93 @@ $RSCGraphQL = @{"operationName" = "Policies";
     }
   }
 }"
+    }
+    ################################################
+    # API Call To RSC GraphQL URI
+    ################################################
+    # Querying API
+    $RSCObjectListResponse = Invoke-RestMethod -Method POST -Uri $RSCGraphqlURL -Body $($RSCGraphQL | ConvertTo-Json -Depth 20) -Headers $RSCSessionHeader
+    # Setting variable
+    $RSCObjectList += $RSCObjectListResponse.data.policies.nodes
+    ################################################
+    # Processing List
+    ################################################
+    # Creating array
+    $RSCSDDPolicies = [System.Collections.ArrayList]@()
+    $RSCSDDPolicyObjects = [System.Collections.ArrayList]@()
+    $RSCSDDPolicyAnalyzers = [System.Collections.ArrayList]@()
+    # For Each Object Getting Data
+    foreach ($SDDPolicy in $RSCObjectList) {
+        # Setting variables
+        $ID = $SDDPolicy.id
+        $Name = $SDDPolicy.name
+        $Description = $SDDPolicy.description
+        $AnalyzersCount = $SDDPolicy.numAnalyzers
+        $Analyzers = $SDDPolicy.analyzers
+        $TotalObjects = $SDDPolicy.totalObjects
+        $Objects = $SDDPolicy.objectStatuses
+        # Iterating through objects
+        $ObjectsUptoDateCounter = 0
+        foreach ($ObjectID in $Objects) {
+            $ObjectStatus = $ObjectID.policyStatuses | Select-Object -ExpandProperty status -First 1
+            if ($ObjectStatus -eq "UP_TO_DATE") { $ObjectsUptoDateCounter++ }
+            # Adding To Array
+            $Object = New-Object PSObject
+            $Object | Add-Member -MemberType NoteProperty -Name "RSCInstance" -Value $RSCInstance
+            $Object | Add-Member -MemberType NoteProperty -Name "Policy" -Value $Name
+            $Object | Add-Member -MemberType NoteProperty -Name "PolicyID" -Value $ID
+            $Object | Add-Member -MemberType NoteProperty -Name "ObjectID" -Value $ObjectID.id
+            $Object | Add-Member -MemberType NoteProperty -Name "Status" -Value $ObjectStatus
+            # Adding
+            $RSCSDDPolicyObjects.Add($Object) | Out-Null
+        }
+        # Iterating through Analyzers
+        foreach ($Analyzer in $Analyzers) {
+            $AnalyzerID = $Analyzer.id
+            $AnalyzerName = $Analyzer.name
+            $AnalyzerType = $Analyzer.type
+            $AnalyzerRegex = $Analyzer.regex
+            $AnalyzerDictionary = $Analyzer.dictionary
+            $AnalyzerDictionaryCSV = $Analyzer.dictionaryCSV
+            $AnalyzerRiskInstance = $Analyzer.riskInstance
+            # Adding To Array
+            $Object = New-Object PSObject
+            $Object | Add-Member -MemberType NoteProperty -Name "RSCInstance" -Value $RSCInstance
+            $Object | Add-Member -MemberType NoteProperty -Name "Policy" -Value $Name
+            $Object | Add-Member -MemberType NoteProperty -Name "PolicyID" -Value $ID
+            $Object | Add-Member -MemberType NoteProperty -Name "Analyzer" -Value $AnalyzerName
+            $Object | Add-Member -MemberType NoteProperty -Name "AnalyzerID" -Value $AnalyzerID
+            $Object | Add-Member -MemberType NoteProperty -Name "Type" -Value $AnalyzerType
+            $Object | Add-Member -MemberType NoteProperty -Name "Regex" -Value $AnalyzerRegex
+            $Object | Add-Member -MemberType NoteProperty -Name "Dictionary" -Value $AnalyzerDictionary
+            $Object | Add-Member -MemberType NoteProperty -Name "DictionaryCSV" -Value $AnalyzerDictionaryCSV
+            $Object | Add-Member -MemberType NoteProperty -Name "Risk" -Value $AnalyzerRiskInstance
+            # Adding
+            $RSCSDDPolicyAnalyzers.Add($Object) | Out-Null
+        }
+        # Deciding status
+        if ($ObjectsUptoDateCounter -eq $TotalObjects) { $Status = "UP_TO_DATE" }else { $Status = "STALE" }
+        # Getting URL
+        $PolicyURL = Get-RSCObjectURL -ObjectType "SDDPolicy" -ObjectID $ID
+        # Adding To Array
+        $Object = New-Object PSObject
+        $Object | Add-Member -MemberType NoteProperty -Name "RSCInstance" -Value $RSCInstance
+        $Object | Add-Member -MemberType NoteProperty -Name "Policy" -Value $Name
+        $Object | Add-Member -MemberType NoteProperty -Name "PolicyID" -Value $ID
+        $Object | Add-Member -MemberType NoteProperty -Name "Objects" -Value $TotalObjects
+        $Object | Add-Member -MemberType NoteProperty -Name "ObjectsUptoDate" -Value $ObjectsUptoDateCounter
+        $Object | Add-Member -MemberType NoteProperty -Name "Status" -Value $Status
+        $Object | Add-Member -MemberType NoteProperty -Name "Analyzers" -Value $AnalyzersCount
+        $Object | Add-Member -MemberType NoteProperty -Name "Description" -Value $Description
+        $Object | Add-Member -MemberType NoteProperty -Name "URL" -Value $PolicyURL
+        # Adding
+        $RSCSDDPolicies.Add($Object) | Out-Null
+        # End of for each object below
+    }
+    # End of for each object above
+    #
+    # Returning array
+    return $RSCSDDPolicies
+    # End of function
 }
-################################################
-# API Call To RSC GraphQL URI
-################################################
-# Querying API
-$RSCObjectListResponse = Invoke-RestMethod -Method POST -Uri $RSCGraphqlURL -Body $($RSCGraphQL | ConvertTo-JSON -Depth 20) -Headers $RSCSessionHeader
-# Setting variable
-$RSCObjectList += $RSCObjectListResponse.data.policies.nodes
-################################################
-# Processing List
-################################################
-# Creating array
-$RSCSDDPolicies = [System.Collections.ArrayList]@()
-$RSCSDDPolicyObjects = [System.Collections.ArrayList]@()
-$RSCSDDPolicyAnalyzers = [System.Collections.ArrayList]@()
-# For Each Object Getting Data
-ForEach ($SDDPolicy in $RSCObjectList)
-{
-# Setting variables
-$ID = $SDDPolicy.id
-$Name = $SDDPolicy.name
-$Description = $SDDPolicy.description
-$AnalyzersCount = $SDDPolicy.numAnalyzers
-$Analyzers = $SDDPolicy.analyzers
-$TotalObjects = $SDDPolicy.totalObjects
-$Objects = $SDDPolicy.objectStatuses
-# Iterating through objects
-$ObjectsUptoDateCounter = 0
-ForEach($ObjectID in $Objects)
-{
-$ObjectStatus = $ObjectID.policyStatuses | Select-Object -ExpandProperty status -First 1
-IF($ObjectStatus -eq "UP_TO_DATE"){$ObjectsUptoDateCounter++}
-# Adding To Array
-$Object = New-Object PSObject
-$Object | Add-Member -MemberType NoteProperty -Name "RSCInstance" -Value $RSCInstance
-$Object | Add-Member -MemberType NoteProperty -Name "Policy" -Value $Name
-$Object | Add-Member -MemberType NoteProperty -Name "PolicyID" -Value $ID
-$Object | Add-Member -MemberType NoteProperty -Name "ObjectID" -Value $ObjectID.id
-$Object | Add-Member -MemberType NoteProperty -Name "Status" -Value $ObjectStatus
-# Adding
-$RSCSDDPolicyObjects.Add($Object) | Out-Null
-}
-# Iterating through Analyzers
-ForEach($Analyzer in $Analyzers)
-{
-$AnalyzerID = $Analyzer.id
-$AnalyzerName = $Analyzer.name
-$AnalyzerType = $Analyzer.type
-$AnalyzerRegex = $Analyzer.regex
-$AnalyzerDictionary = $Analyzer.dictionary
-$AnalyzerDictionaryCSV = $Analyzer.dictionaryCSV
-$AnalyzerRiskInstance = $Analyzer.riskInstance
-# Adding To Array
-$Object = New-Object PSObject
-$Object | Add-Member -MemberType NoteProperty -Name "RSCInstance" -Value $RSCInstance
-$Object | Add-Member -MemberType NoteProperty -Name "Policy" -Value $Name
-$Object | Add-Member -MemberType NoteProperty -Name "PolicyID" -Value $ID
-$Object | Add-Member -MemberType NoteProperty -Name "Analyzer" -Value $AnalyzerName
-$Object | Add-Member -MemberType NoteProperty -Name "AnalyzerID" -Value $AnalyzerID
-$Object | Add-Member -MemberType NoteProperty -Name "Type" -Value $AnalyzerType
-$Object | Add-Member -MemberType NoteProperty -Name "Regex" -Value $AnalyzerRegex
-$Object | Add-Member -MemberType NoteProperty -Name "Dictionary" -Value $AnalyzerDictionary
-$Object | Add-Member -MemberType NoteProperty -Name "DictionaryCSV" -Value $AnalyzerDictionaryCSV
-$Object | Add-Member -MemberType NoteProperty -Name "Risk" -Value $AnalyzerRiskInstance
-# Adding
-$RSCSDDPolicyAnalyzers.Add($Object) | Out-Null
-}
-# Deciding status
-IF($ObjectsUptoDateCounter -eq $TotalObjects){$Status = "UP_TO_DATE"}ELSE{$Status = "STALE"}
-# Getting URL
-$PolicyURL = Get-RSCObjectURL -ObjectType "SDDPolicy" -ObjectID $ID
-# Adding To Array
-$Object = New-Object PSObject
-$Object | Add-Member -MemberType NoteProperty -Name "RSCInstance" -Value $RSCInstance
-$Object | Add-Member -MemberType NoteProperty -Name "Policy" -Value $Name
-$Object | Add-Member -MemberType NoteProperty -Name "PolicyID" -Value $ID
-$Object | Add-Member -MemberType NoteProperty -Name "Objects" -Value $TotalObjects
-$Object | Add-Member -MemberType NoteProperty -Name "ObjectsUptoDate" -Value $ObjectsUptoDateCounter
-$Object | Add-Member -MemberType NoteProperty -Name "Status" -Value $Status
-$Object | Add-Member -MemberType NoteProperty -Name "Analyzers" -Value $AnalyzersCount
-$Object | Add-Member -MemberType NoteProperty -Name "Description" -Value $Description
-$Object | Add-Member -MemberType NoteProperty -Name "URL" -Value $PolicyURL
-# Adding
-$RSCSDDPolicies.Add($Object) | Out-Null
-# End of for each object below
-}
-# End of for each object above
-#
-# Returning array
-Return $RSCSDDPolicies
-# End of function
-}
+

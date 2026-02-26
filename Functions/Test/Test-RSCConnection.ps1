@@ -1,9 +1,9 @@
 ################################################
 # Function - Test-RSCConnection - Testing RSC Connectivity, writing error if not connected
 ################################################
-Function Test-RSCConnection {
+function Test-RSCConnection {
 
-<#
+    <#
 .SYNOPSIS
 A function used by all other functions to verify an RSC session has been established on the global variable RSCSessionStatus.
 
@@ -19,17 +19,16 @@ Author: Joshua Stenhouse
 Date: 05/11/2023
 #>
 
-################################################
-# Breaking if no session connected
-################################################
-IF($RSCSessionStatus -ne "Connected")
-{
-Write-Error "ERROR: RSC is not connected, run Connect-RSCReporting and try again.."
-Start-Sleep 2
-Break
-}
+    ################################################
+    # Breaking if no session connected
+    ################################################
+    if ($RSCSessionStatus -ne "Connected") {
+        Write-Error "ERROR: RSC is not connected, run Connect-RSCReporting and try again.."
+        Start-Sleep 2
+        break
+    }
 
-# Returning null
-Return $null
-# End of function
+    # Returning null
+    return $null
+    # End of function
 }

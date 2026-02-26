@@ -1,9 +1,9 @@
 ################################################
 # Function - Get-RSCObjectsPendingFirstFull - Getting all objects waiting for a first full backup
 ################################################
-Function Get-RSCObjectsPendingFirstFull {
+function Get-RSCObjectsPendingFirstFull {
 
-<#
+    <#
 .SYNOPSIS
 A Rubrik Security Cloud (RSC) Reporting Module Function returning all objects pending a first full backup.
 
@@ -25,29 +25,28 @@ Author: Joshua Stenhouse
 Date: 08/06/2024
 #>
 
-################################################
-# Importing Module & Running Required Functions
-################################################
-# Importing the module is it needs other modules
-Import-Module RSCReporting
-# Checking connectivity, exiting function with error if not connected
-Test-RSCConnection
-################################################
-# Getting All Objects Pending First Full
-################################################
-# Getting objects list if not already pulled as a global variable in this session
-IF($RSCGlobalObjects -eq $null)
-{
-$RSCObjects = Get-RSCObjects
-}
-ELSE
-{
-$RSCObjects = $RSCGlobalObjects
-}
-# Filtering for where PendingFirstFull is TRUE
-$RSCObjectsFiltered = $RSCObjects | Where-Object {(($_.PendingFirstFull -eq $TRUE) -and ($_.ProtectionStatus -eq "Protected"))}
+    ################################################
+    # Importing Module & Running Required Functions
+    ################################################
+    # Importing the module is it needs other modules
+    Import-Module RSCReporting
+    # Checking connectivity, exiting function with error if not connected
+    Test-RSCConnection
+    ################################################
+    # Getting All Objects Pending First Full
+    ################################################
+    # Getting objects list if not already pulled as a global variable in this session
+    if ($RSCGlobalObjects -eq $null) {
+        $RSCObjects = Get-RSCObjects
+    }
+    else {
+        $RSCObjects = $RSCGlobalObjects
+    }
+    # Filtering for where PendingFirstFull is TRUE
+    $RSCObjectsFiltered = $RSCObjects | Where-Object { (($_.PendingFirstFull -eq $TRUE) -and ($_.ProtectionStatus -eq "Protected")) }
 
-# Returning array
-Return $RSCObjectsFiltered
-# End of function
+    # Returning array
+    return $RSCObjectsFiltered
+    # End of function
 }
+

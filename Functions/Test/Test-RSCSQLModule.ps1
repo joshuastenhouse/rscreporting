@@ -1,9 +1,9 @@
 ################################################
 # Function - Test-RSCSQLModule - Testing SQL module exists on system
 ################################################
-Function Test-RSCSQLModule {
+function Test-RSCSQLModule {
 
-<#
+    <#
 .SYNOPSIS
 This function verifies a valid SQL server PowerShell module is installed on this host..
 
@@ -25,24 +25,23 @@ Author: Joshua Stenhouse
 Date: 05/11/2023
 #>
 
-################################################
-# Breaking if no Sqlserver module installed
-################################################
-$PSModules = Get-Module -ListAvailable | Select-Object -ExpandProperty Name
-$PSModuleCounter = 0
-# Checking for SQLPS
-IF($PSModules -contains "SQLPS"){$PSModuleCounter++}
-# Checking for SqlServer
-IF($PSModules -contains "SqlServer"){$PSModuleCounter++}
-# Breaking if nothing found
-IF($PSModuleCounter -eq 0)
-{
-Write-Error "ERROR: SqlServer module not installed and is needed to run this function. As administrator type Install-Module Sqlserver and try again.."
-Start-Sleep 2
-Break
-}
+    ################################################
+    # Breaking if no Sqlserver module installed
+    ################################################
+    $PSModules = Get-Module -ListAvailable | Select-Object -ExpandProperty Name
+    $PSModuleCounter = 0
+    # Checking for SQLPS
+    if ($PSModules -contains "SQLPS") { $PSModuleCounter++ }
+    # Checking for SqlServer
+    if ($PSModules -contains "SqlServer") { $PSModuleCounter++ }
+    # Breaking if nothing found
+    if ($PSModuleCounter -eq 0) {
+        Write-Error "ERROR: SqlServer module not installed and is needed to run this function. As administrator type Install-Module Sqlserver and try again.."
+        Start-Sleep 2
+        break
+    }
 
-# Returning null
-Return $null
-# End of function
+    # Returning null
+    return $null
+    # End of function
 }

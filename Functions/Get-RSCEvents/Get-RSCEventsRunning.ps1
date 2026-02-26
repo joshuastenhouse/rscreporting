@@ -1,9 +1,9 @@
 ################################################
 # Function - Get-RSCEventsRunning - Getting all RSC Running events
 ################################################
-Function Get-RSCEventsRunning {
+function Get-RSCEventsRunning {
 
-<#
+    <#
 .SYNOPSIS
 A Rubrik Security Cloud (RSC) Reporting Module Function for currently running events.
 
@@ -36,38 +36,39 @@ Author: Joshua Stenhouse
 Date: 05/11/2023
 #>
 
-################################################
-# Paramater Config
-################################################
-	Param
+    ################################################
+    # Paramater Config
+    ################################################
+    param
     (
-        $ObjectType,$ObjectID,$DaysToCapture
+        $ObjectType, $ObjectID, $DaysToCapture
     )
 
-################################################
-# Importing Module & Running Required Functions
-################################################
-# Importing the module is it needs other modules
-Import-Module RSCReporting
-# Checking connectivity, exiting function with error if not connected
-Test-RSCConnection
+    ################################################
+    # Importing Module & Running Required Functions
+    ################################################
+    # Importing the module is it needs other modules
+    Import-Module RSCReporting
+    # Checking connectivity, exiting function with error if not connected
+    Test-RSCConnection
 
-# Setting default days to capture if not set
-IF($DaysToCapture -eq $null){$DaysToCapture = 1}
+    # Setting default days to capture if not set
+    if ($DaysToCapture -eq $null) { $DaysToCapture = 1 }
 
-# Using existing Get-RSCEvents function
-$RSCEventsRunning = Get-RSCEvents -DaysToCapture $DaysToCapture -LastActivityStatus "RUNNING"
+    # Using existing Get-RSCEvents function
+    $RSCEventsRunning = Get-RSCEvents -DaysToCapture $DaysToCapture -LastActivityStatus "RUNNING"
 
-# Removing task failures, appear as running status even though they aren't!
-$RSCEventsRunning = $RSCEventsRunning | Where-Object {$_.Status -eq "RUNNING"}
+    # Removing task failures, appear as running status even though they aren't!
+    $RSCEventsRunning = $RSCEventsRunning | Where-Object { $_.Status -eq "RUNNING" }
 
-# Filtering for object type if set
-IF($ObjectType -ne $null){$RSCEventsRunning = $RSCEventsRunning | Where-Object {$_.ObjectType -eq $ObjectType}}
+    # Filtering for object type if set
+    if ($ObjectType -ne $null) { $RSCEventsRunning = $RSCEventsRunning | Where-Object { $_.ObjectType -eq $ObjectType } }
 
-# Filtering for object ID if set
-IF($ObjectID -ne $null){$RSCEventsRunning = $RSCEventsRunning | Where-Object {$_.ObjectID -eq $ObjectID}}
+    # Filtering for object ID if set
+    if ($ObjectID -ne $null) { $RSCEventsRunning = $RSCEventsRunning | Where-Object { $_.ObjectID -eq $ObjectID } }
 
-# Returning array
-Return $RSCEventsRunning
-# End of function
+    # Returning array
+    return $RSCEventsRunning
+    # End of function
 }
+

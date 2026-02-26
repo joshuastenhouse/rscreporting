@@ -1,9 +1,10 @@
 ################################################
 # Function - Get-RSCM365UnProtectedObjects - Getting o365 UnProtectedObjects connected to RSC
 ################################################
-Function Get-RSCM365UnProtectedObjects {
-
-<#
+function Get-RSCM365UnProtectedObject {
+    [CmdletBinding()]
+    [Alias('Get-RSCM365UnProtectedObjects')]
+    param()<#
 .SYNOPSIS
 A Rubrik Security Cloud (RSC) Reporting Module Function returning a list of all M365 unprotected objects.
 
@@ -26,18 +27,19 @@ Author: Joshua Stenhouse
 Date: 05/11/2023
 #>
 
-################################################
-# Importing Module & Running Required Functions
-################################################
-# Importing the module is it needs other modules
-Import-Module RSCReporting
-# Checking connectivity, exiting function with error if not connected
-Test-RSCConnection
-################################################
-# Getting All o365 Objects 
-################################################
-$o365UnProtectedObjects = Get-RSCM365Objects | Where-Object {$_.ProtectionStatus -eq "NoSla"}
-# Returning array
-Return $o365UnProtectedObjects
-# End of function
+    ################################################
+    # Importing Module & Running Required Functions
+    ################################################
+    # Importing the module is it needs other modules
+    Import-Module RSCReporting
+    # Checking connectivity, exiting function with error if not connected
+    Test-RSCConnection
+    ################################################
+    # Getting All o365 Objects 
+    ################################################
+    $o365UnProtectedObjects = Get-RSCM365Objects | Where-Object { $_.ProtectionStatus -eq "NoSla" }
+    # Returning array
+    return $o365UnProtectedObjects
+    # End of function
 }
+

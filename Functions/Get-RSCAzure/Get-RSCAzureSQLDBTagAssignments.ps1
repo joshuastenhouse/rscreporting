@@ -1,9 +1,9 @@
 ################################################
 # Function - Get-RSCAzureSQLDBTagAssignments - Getting Azure Tags assigned to SQLDBs visible to RSC
 ################################################
-Function Get-RSCAzureSQLDBTagAssignments {
+function Get-RSCAzureSQLDBTagAssignment {
 
-<#
+    <#
 .SYNOPSIS
 A Rubrik Security Cloud (RSC) Reporting Module Function a list of all Azure SQL tag assignments.
 
@@ -24,52 +24,53 @@ This example returns an array of all the information returned by the GraphQL end
 Author: Joshua Stenhouse
 Date: 07/09/2024
 #>
+    [CmdletBinding()]
+    [Alias('Get-RSCAzureSQLDBTagAssignments')]
+    param()
+    ################################################
+    # Importing Module & Running Required Functions
+    ################################################
+    # Importing the module is it needs other modules
+    Import-Module RSCReporting
+    # Checking connectivity, exiting function with error if not connected
+    Test-RSCConnection
+    # Getting all Azure subscriptions
+    $AzureSQLDatabases = Get-RSCAzureSQLDBs
+    ################################################
+    # Processing
+    ################################################
+    # Creating array
+    $RSCTagAssignments = [System.Collections.ArrayList]@()
+    # For Each Object Getting Data
+    foreach ($AzureSQLDatabase in $AzureSQLDatabases) {
+        # Setting variables
+        $Account = $AzureStorageAccount.Account
+        $AccountID = $AzureStorageAccount.AccountID
+        $Name = $AzureStorageAccount.StorageAccount
+        $ID = $AzureStorageAccount.StorageAccountID
+        $Tags = $AzureStorageAccount.Tags
+        # Adding To Array for Each tag
+        foreach ($Tag in $Tags) {
+            $Object = New-Object PSObject
+            $Object | Add-Member -MemberType NoteProperty -Name "RSCInstance" -Value $RSCInstance
+            $Object | Add-Member -MemberType NoteProperty -Name "Cloud" -Value "Azure"
+            $Object | Add-Member -MemberType NoteProperty -Name "Tag" -Value $Tag.value
+            $Object | Add-Member -MemberType NoteProperty -Name "TagKey" -Value $Tag.key
+            $Object | Add-Member -MemberType NoteProperty -Name "StorageAccount" -Value $Name
+            $Object | Add-Member -MemberType NoteProperty -Name "StorageAccountID" -Value $ID
+            $Object | Add-Member -MemberType NoteProperty -Name "Subscription" -Value $Account
+            $Object | Add-Member -MemberType NoteProperty -Name "SubscriptionID" -Value $AccountID
+            # Adding
+            $RSCTagAssignments.Add($Object) | Out-Null
+            # End of for each tag assignment below
+        }
+        # End of for each tag assignment above
+        #
+        # End of for each object below
+    }
+    # End of for each object above
+    # Returning array
+    return $RSCTagAssignments
+    # End of function
+}
 
-################################################
-# Importing Module & Running Required Functions
-################################################
-# Importing the module is it needs other modules
-Import-Module RSCReporting
-# Checking connectivity, exiting function with error if not connected
-Test-RSCConnection
-# Getting all Azure subscriptions
-$AzureSQLDatabases = Get-RSCAzureSQLDBs
-################################################
-# Processing
-################################################
-# Creating array
-$RSCTagAssignments = [System.Collections.ArrayList]@()
-# For Each Object Getting Data
-ForEach ($AzureSQLDatabase in $AzureSQLDatabases)
-{
-# Setting variables
-$Account = $AzureStorageAccount.Account
-$AccountID = $AzureStorageAccount.AccountID
-$Name = $AzureStorageAccount.StorageAccount
-$ID = $AzureStorageAccount.StorageAccountID
-$Tags = $AzureStorageAccount.Tags
-# Adding To Array for Each tag
-ForEach($Tag in $Tags)
-{
-$Object = New-Object PSObject
-$Object | Add-Member -MemberType NoteProperty -Name "RSCInstance" -Value $RSCInstance
-$Object | Add-Member -MemberType NoteProperty -Name "Cloud" -Value "Azure"
-$Object | Add-Member -MemberType NoteProperty -Name "Tag" -Value $Tag.value
-$Object | Add-Member -MemberType NoteProperty -Name "TagKey" -Value $Tag.key
-$Object | Add-Member -MemberType NoteProperty -Name "StorageAccount" -Value $Name
-$Object | Add-Member -MemberType NoteProperty -Name "StorageAccountID" -Value $ID
-$Object | Add-Member -MemberType NoteProperty -Name "Subscription" -Value $Account
-$Object | Add-Member -MemberType NoteProperty -Name "SubscriptionID" -Value $AccountID
-# Adding
-$RSCTagAssignments.Add($Object) | Out-Null
-# End of for each tag assignment below
-}
-# End of for each tag assignment above
-#
-# End of for each object below
-}
-# End of for each object above
-# Returning array
-Return $RSCTagAssignments
-# End of function
-}

@@ -1,9 +1,9 @@
 ################################################
 # Function - Get-RSCAWSEC2TagAssignments - Getting All RSCAWSEC2TagAssignments connected to RSC
 ################################################
-Function Get-RSCAWSEC2TagAssignments {
+function Get-RSCAWSEC2TagAssignment {
 
-<#
+    <#
 .SYNOPSIS
 A Rubrik Security Cloud (RSC) Reporting Module Function returning a list of all EC2 tags assigned in all AWS accounts.
 
@@ -24,31 +24,33 @@ This example returns an array of all the information returned by the GraphQL end
 Author: Joshua Stenhouse
 Date: 05/11/2023
 #>
+    [CmdletBinding()]
+    [Alias('Get-RSCAWSEC2TagAssignments')]
+    param()
+    ################################################
+    # Importing Module & Running Required Functions
+    ################################################
+    # Importing the module is it needs other modules
+    Import-Module RSCReporting
+    # Checking connectivity, exiting function with error if not connected
+    Test-RSCConnection
+    ################################################
+    # Creating Array
+    ################################################
+    $RSCTagAssignments = [System.Collections.ArrayList]@()
+    ################################################
+    # Getting All AWS EC2 instances
+    ################################################
+    # Creating array for objects
+    $CloudVMList = @()
+    # Building GraphQL query
+    $RSCGraphQL = @{"operationName" = "EC2InstancesListQuery";
 
-################################################
-# Importing Module & Running Required Functions
-################################################
-# Importing the module is it needs other modules
-Import-Module RSCReporting
-# Checking connectivity, exiting function with error if not connected
-Test-RSCConnection
-################################################
-# Creating Array
-################################################
-$RSCTagAssignments = [System.Collections.ArrayList]@()
-################################################
-# Getting All AWS EC2 instances
-################################################
-# Creating array for objects
-$CloudVMList = @()
-# Building GraphQL query
-$RSCGraphQL = @{"operationName" = "EC2InstancesListQuery";
+        "variables"                 = @{
+            "first" = 1000
+        };
 
-"variables" = @{
-"first" = 1000
-};
-
-"query" = "query EC2InstancesListQuery(`$first: Int, `$after: String, `$sortBy: AwsNativeEc2InstanceSortFields, `$sortOrder: SortOrder, `$filters: AwsNativeEc2InstanceFilters, `$descendantTypeFilters: [HierarchyObjectTypeEnum!], `$isMultitenancyEnabled: Boolean = false) {
+        "query"                     = "query EC2InstancesListQuery(`$first: Int, `$after: String, `$sortBy: AwsNativeEc2InstanceSortFields, `$sortOrder: SortOrder, `$filters: AwsNativeEc2InstanceFilters, `$descendantTypeFilters: [HierarchyObjectTypeEnum!], `$isMultitenancyEnabled: Boolean = false) {
   awsNativeEc2Instances(first: `$first, after: `$after, sortBy: `$sortBy, sortOrder: `$sortOrder, ec2InstanceFilters: `$filters, descendantTypeFilter: `$descendantTypeFilters) {
     edges {
       cursor
@@ -200,72 +202,70 @@ fragment AppTypeFragment on PhysicalHost {
   }
   __typename
 }"
+    }
+    ################################################
+    # API Call To RSC GraphQL URI
+    ################################################
+    # Querying API
+    $CloudVMListResponse = Invoke-RestMethod -Method POST -Uri $RSCGraphqlURL -Body $($RSCGraphQL | ConvertTo-Json -Depth 20) -Headers $RSCSessionHeader
+    # Setting variable
+    $CloudVMList += $CloudVMListResponse.data.awsNativeEc2Instances.edges.node
+    # Getting all results from paginations
+    while ($CloudVMListResponse.data.awsNativeEc2Instances.pageInfo.hasNextPage) {
+        # Getting next set
+        $RSCGraphQL.variables.after = $CloudVMListResponse.data.awsNativeEc2Instances.pageInfo.endCursor
+        $CloudVMListResponse = Invoke-RestMethod -Method POST -Uri $RSCGraphqlURL -Body $($RSCGraphQL | ConvertTo-Json -Depth 20) -Headers $RSCSessionHeader
+        $CloudVMList += $CloudVMListResponse.data.awsNativeEc2Instances.edges.node
+    }
+    ################################################
+    # Processing AWS EC2 Instances
+    ################################################
+    # For Each Object Getting Data
+    foreach ($CloudVM in $CloudVMList) {
+        # Setting variables
+        $VMName = $CloudVM.instanceName
+        $VMID = $CloudVM.id
+        $VMNativeID = $CloudVM.instanceNativeId
+        $VMType = $CloudVM.instanceType
+        $VMNetwork = $CloudVM.vpcName
+        $VMRegion = $CloudVM.region
+        $VMZone = $null
+        $VMIsRelic = $CloudVM.isRelic
+        $VMSLAInfo = $CloudVM.effectiveSlaDomain
+        $VMSLADomain = $VMSLAInfo.name
+        $VMSLADomainID = $VMSLAInfo.id
+        $VMSLAAssignment = $CloudVM.slaAssignment
+        $VMAccountInfo = $CloudVM.awsNativeAccount
+        $VMAccountID = $VMAccountInfo.id
+        $VMAccountName = $VMAccountInfo.name
+        $VMAccountNativeID = $VMAccountInfo.id
+        $VMAccountStatus = $VMAccountInfo.status
+        $VMTags = $CloudVM.tags | Select-Object Key, value
+        # Adding To Array for Each tag
+        foreach ($VMTag in $VMTags) {
+            $Object = New-Object PSObject
+            $Object | Add-Member -MemberType NoteProperty -Name "RSCInstance" -Value $RSCInstance
+            $Object | Add-Member -MemberType NoteProperty -Name "Cloud" -Value "AWSEC2"
+            $Object | Add-Member -MemberType NoteProperty -Name "Tag" -Value $VMTag.value
+            $Object | Add-Member -MemberType NoteProperty -Name "TagKey" -Value $VMTag.key
+            $Object | Add-Member -MemberType NoteProperty -Name "VM" -Value $VMName
+            $Object | Add-Member -MemberType NoteProperty -Name "VMID" -Value $VMID
+            $Object | Add-Member -MemberType NoteProperty -Name "VMNativeID" -Value $VMNativeID
+            $Object | Add-Member -MemberType NoteProperty -Name "Account" -Value $VMAccountName
+            $Object | Add-Member -MemberType NoteProperty -Name "AccountID" -Value $VMAccountID
+            $Object | Add-Member -MemberType NoteProperty -Name "AccountNativeID" -Value $VMAccountNativeID
+            # Adding
+            $RSCTagAssignments.Add($Object) | Out-Null
+            # End of for each tag assignment below
+        }
+        # End of for each tag assignment above
+        #
+        # End of for each object below
+    }
+    # End of for each object above
+    #
+    # Returning array
+    return $RSCTagAssignments
+    # End of function
 }
-################################################
-# API Call To RSC GraphQL URI
-################################################
-# Querying API
-$CloudVMListResponse = Invoke-RestMethod -Method POST -Uri $RSCGraphqlURL -Body $($RSCGraphQL | ConvertTo-JSON -Depth 20) -Headers $RSCSessionHeader
-# Setting variable
-$CloudVMList += $CloudVMListResponse.data.awsNativeEc2Instances.edges.node
-# Getting all results from paginations
-While ($CloudVMListResponse.data.awsNativeEc2Instances.pageInfo.hasNextPage) 
-{
-# Getting next set
-$RSCGraphQL.variables.after = $CloudVMListResponse.data.awsNativeEc2Instances.pageInfo.endCursor
-$CloudVMListResponse = Invoke-RestMethod -Method POST -Uri $RSCGraphqlURL -Body $($RSCGraphQL | ConvertTo-JSON -Depth 20) -Headers $RSCSessionHeader
-$CloudVMList += $CloudVMListResponse.data.awsNativeEc2Instances.edges.node
-}
-################################################
-# Processing AWS EC2 Instances
-################################################
-# For Each Object Getting Data
-ForEach ($CloudVM in $CloudVMList)
-{
-# Setting variables
-$VMName = $CloudVM.instanceName
-$VMID = $CloudVM.id
-$VMNativeID = $CloudVM.instanceNativeId
-$VMType = $CloudVM.instanceType
-$VMNetwork = $CloudVM.vpcName
-$VMRegion = $CloudVM.region
-$VMZone = $null
-$VMIsRelic = $CloudVM.isRelic
-$VMSLAInfo = $CloudVM.effectiveSlaDomain
-$VMSLADomain = $VMSLAInfo.name
-$VMSLADomainID = $VMSLAInfo.id
-$VMSLAAssignment = $CloudVM.slaAssignment
-$VMAccountInfo = $CloudVM.awsNativeAccount
-$VMAccountID = $VMAccountInfo.id
-$VMAccountName = $VMAccountInfo.name
-$VMAccountNativeID = $VMAccountInfo.id
-$VMAccountStatus = $VMAccountInfo.status
-$VMTags = $CloudVM.tags | Select-Object Key,value
-# Adding To Array for Each tag
-ForEach($VMTag in $VMTags)
-{
-$Object = New-Object PSObject
-$Object | Add-Member -MemberType NoteProperty -Name "RSCInstance" -Value $RSCInstance
-$Object | Add-Member -MemberType NoteProperty -Name "Cloud" -Value "AWSEC2"
-$Object | Add-Member -MemberType NoteProperty -Name "Tag" -Value $VMTag.value
-$Object | Add-Member -MemberType NoteProperty -Name "TagKey" -Value $VMTag.key
-$Object | Add-Member -MemberType NoteProperty -Name "VM" -Value $VMName
-$Object | Add-Member -MemberType NoteProperty -Name "VMID" -Value $VMID
-$Object | Add-Member -MemberType NoteProperty -Name "VMNativeID" -Value $VMNativeID
-$Object | Add-Member -MemberType NoteProperty -Name "Account" -Value $VMAccountName
-$Object | Add-Member -MemberType NoteProperty -Name "AccountID" -Value $VMAccountID
-$Object | Add-Member -MemberType NoteProperty -Name "AccountNativeID" -Value $VMAccountNativeID
-# Adding
-$RSCTagAssignments.Add($Object) | Out-Null
-# End of for each tag assignment below
-}
-# End of for each tag assignment above
-#
-# End of for each object below
-}
-# End of for each object above
-#
-# Returning array
-Return $RSCTagAssignments
-# End of function
-}
+

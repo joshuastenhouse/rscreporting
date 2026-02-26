@@ -1,9 +1,9 @@
 ################################################
 # Creating the Get-Get-RSCObjectOldestSnapshot function
 ################################################
-Function Get-RSCObjectOldestSnapshot {
+function Get-RSCObjectOldestSnapshot {
 
-<#
+    <#
 .SYNOPSIS
 A Rubrik Security Cloud (RSC) Reporting Module Function that returns the oldest snapshot of the object ID specified.
 
@@ -28,41 +28,41 @@ This example returns the oldest snapshots for the ObjectID specified.
 Author: Joshua Stenhouse
 Date: 01/07/2025
 #>
-################################################
-# Paramater Config
-################################################
-[CmdletBinding(DefaultParameterSetName = "List")]
-Param(
-      [Parameter(
-          ParameterSetName = "ObjectID",
-          Mandatory = $true, 
-          ValueFromPipelineByPropertyName = $true
-      )]
-      [String]$ObjectID,$MaxSnapshots,[switch]$Detailed
-  )
+    ################################################
+    # Paramater Config
+    ################################################
+    [CmdletBinding(DefaultParameterSetName = "List")]
+    param(
+        [Parameter(
+            ParameterSetName = "ObjectID",
+            Mandatory = $true, 
+            ValueFromPipelineByPropertyName = $true
+        )]
+        [String]$ObjectID, $MaxSnapshots, [switch]$Detailed
+    )
 
-################################################
-# Importing Module & Running Required Functions
-################################################
-# Importing the module is it needs other modules
-Import-Module RSCReporting
-# Checking connectivity, exiting function with error if not connected
-Test-RSCConnection
-# Setting $MaxSnapshots to default if null
-IF($MaxSnapshots -eq $null){$MaxSnapshots = 1}
-################################################
-# Running Main Function
-################################################
-# Note: for "sortOrder" = use ASC for oldest snapshots first, DESC for newest snapshots first 
-$RSCGraphQL = @{"operationName" = "SnapshotOfASnappableConnection";
+    ################################################
+    # Importing Module & Running Required Functions
+    ################################################
+    # Importing the module is it needs other modules
+    Import-Module RSCReporting
+    # Checking connectivity, exiting function with error if not connected
+    Test-RSCConnection
+    # Setting $MaxSnapshots to default if null
+    if ($MaxSnapshots -eq $null) { $MaxSnapshots = 1 }
+    ################################################
+    # Running Main Function
+    ################################################
+    # Note: for "sortOrder" = use ASC for oldest snapshots first, DESC for newest snapshots first 
+    $RSCGraphQL = @{"operationName" = "SnapshotOfASnappableConnection";
 
-"variables" = @{
-"workloadId" = "$ObjectID"
-"sortOrder" = "ASC"
-"first" = $MaxSnapshots
-};
+        "variables"                 = @{
+            "workloadId" = "$ObjectID"
+            "sortOrder"  = "ASC"
+            "first"      = $MaxSnapshots
+        };
 
-"query" = "query SnapshotOfASnappableConnection(`$workloadId: String!, `$first: Int, `$sortOrder: SortOrder) {
+        "query"                     = "query SnapshotOfASnappableConnection(`$workloadId: String!, `$first: Int, `$sortOrder: SortOrder) {
   snapshotOfASnappableConnection(workloadId: `$workloadId, first: `$first, sortOrder: `$sortOrder) {
     nodes {
       ... on CdmSnapshot {
@@ -80,19 +80,18 @@ $RSCGraphQL = @{"operationName" = "SnapshotOfASnappableConnection";
     }
   }
 }"
-}
-# Override if extended
-IF($Detailed)
-{
-$RSCGraphQL = @{"operationName" = "SnapshotOfASnappableConnection";
+    }
+    # Override if extended
+    if ($Detailed) {
+        $RSCGraphQL = @{"operationName" = "SnapshotOfASnappableConnection";
 
-"variables" = @{
-"workloadId" = "$ObjectID"
-"sortOrder" = "ASC"
-"first" = $MaxSnapshots
-};
+            "variables"                 = @{
+                "workloadId" = "$ObjectID"
+                "sortOrder"  = "ASC"
+                "first"      = $MaxSnapshots
+            };
 
-"query" = "query SnapshotOfASnappableConnection(`$workloadId: String!, `$first: Int, `$sortOrder: SortOrder) {
+            "query"                     = "query SnapshotOfASnappableConnection(`$workloadId: String!, `$first: Int, `$sortOrder: SortOrder) {
   snapshotOfASnappableConnection(workloadId: `$workloadId, first: `$first, sortOrder: `$sortOrder) {
     nodes {
       ... on CdmSnapshot {
@@ -154,89 +153,83 @@ $RSCGraphQL = @{"operationName" = "SnapshotOfASnappableConnection";
     }
   }
 }"
-}
-}
-################################################
-# API Call To RSC GraphQL URI
-################################################
-# Querying API
-Try
-{
-$ObjectSnapshotsResponse = Invoke-RestMethod -Method POST -Uri $RSCGraphqlURL -Headers $RSCSessionHeader -Body $($RSCGraphQL | ConvertTo-JSON -Depth 10)
-$ObjectSnapshotsToProcess = $ObjectSnapshotsResponse.data.snapshotOfASnappableConnection.nodes
-}
-Catch
-{
-$ErrorMessage = $_.ErrorDetails; "ERROR: $ErrorMessage"
-}
-# Creating array
-$ObjectSnapshots = [System.Collections.ArrayList]@()
-# Processing snapshots
-ForEach ($ObjectSnapshot in $ObjectSnapshotsToProcess)
-{
-# Getting snapshot data
-$SnapshotDateUNIX = $ObjectSnapshot.date
-$SnapshotID = $ObjectSnapshot.id
-# Converting
-$SnapshotDateUTC = Convert-RSCUNIXTime $SnapshotDateUNIX
-# Calculating hours since each snapshot
-$UTCDateTime = [System.DateTime]::UtcNow
-IF($SnapshotDateUTC -ne $null)
-{
-$SnapshotDateTimespan = New-TimeSpan -Start $SnapshotDateUTC -End $UTCDateTime
-$SnapshotHoursSince = $SnapshotDateTimespan | Select-Object -ExpandProperty TotalHours
-$SnapshotHoursSince = [Math]::Round($SnapshotHoursSince,1)
-$SnapshotDaysSince = $SnapshotDateTimespan | Select-Object -ExpandProperty TotalDays
-$SnapshotDaysSince = [Math]::Round($SnapshotDaysSince,1)
-}
-ELSE
-{
-$SnapshotHoursSince = $null
-$SnapshotDaysSince = $null
-}
-# Adding
-$Object = New-Object PSObject
-$Object | Add-Member -MemberType NoteProperty -Name "RSCInstance" -Value $RSCInstance
-$Object | Add-Member -MemberType NoteProperty -Name "DateUTC" -Value $SnapshotDateUTC
-$Object | Add-Member -MemberType NoteProperty -Name "HoursSince" -Value $SnapshotHoursSince
-$Object | Add-Member -MemberType NoteProperty -Name "SnapshotDaysSince" -Value $SnapshotDaysSince
-$Object | Add-Member -MemberType NoteProperty -Name "SnapshotID" -Value $SnapshotID
-$Object | Add-Member -MemberType NoteProperty -Name "ObjectID" -Value $ObjectID
-# Detailed section
-IF($Detailed)
-{
-# Getting detailed info
-$ArchivalInfo = $ObjectSnapshot.snapshotRetentionInfo.archivalInfos
-$ReplicationInfo = $ObjectSnapshot.snapshotRetentionInfo.replicationInfos
-$LocalInfo = $ObjectSnapshot.snapshotRetentionInfo.localInfo
-# Archival info
-$ArchiveName = $ArchivalInfo.Name
-$ArchiveExpiration = $ArchivalInfo.expirationTime
-IF($ArchiveExpiration -ne $null){$ArchiveExpirationUTC = Convert-RSCUNIXTime $ArchiveExpiration}ELSE{$ArchiveExpirationUTC = $null}
-# Replication info
-$ReplicaName = $ReplicationInfo.Name
-$ReplicaExpiration = $ReplicationInfo.expirationTime
-IF($ReplicaExpiration -ne $null){$ReplicaExpirationUTC = Convert-RSCUNIXTime $ReplicaExpiration}ELSE{$ReplicaExpirationUTC = $null}
-# Local info
-$IsLocal = $LocalInfo.isSnapshotPresent
-$RubrikCluster = $LocalInfo.name
-$LocalExpiration = $LocalInfo.expirationTime
-IF($LocalExpiration -ne $null){$LocalExpirationUTC = Convert-RSCUNIXTime $LocalExpiration}ELSE{$LocalExpirationUTC = $null}
-# Setting opposite if null
-IF($IsLocal -eq $null){$IsLocal = $False}
-# Adding additional fields
-$Object | Add-Member -MemberType NoteProperty -Name "OnSourceCluster" -Value $IsLocal
-$Object | Add-Member -MemberType NoteProperty -Name "RubrikCluster" -Value $RubrikCluster
-$Object | Add-Member -MemberType NoteProperty -Name "LocalExpirationUTC" -Value $LocalExpirationUTC
-$Object | Add-Member -MemberType NoteProperty -Name "Replica" -Value $ReplicaName
-$Object | Add-Member -MemberType NoteProperty -Name "ReplicaExpirationUTC" -Value $ReplicaExpirationUTC
-$Object | Add-Member -MemberType NoteProperty -Name "Archive" -Value $ArchiveName
-$Object | Add-Member -MemberType NoteProperty -Name "ArchiveExpirationUTC" -Value $ArchiveExpirationUTC
-}
-# Adding to the array
-$ObjectSnapshots.Add($Object) | Out-Null
-}
+        }
+    }
+    ################################################
+    # API Call To RSC GraphQL URI
+    ################################################
+    # Querying API
+    try {
+        $ObjectSnapshotsResponse = Invoke-RestMethod -Method POST -Uri $RSCGraphqlURL -Headers $RSCSessionHeader -Body $($RSCGraphQL | ConvertTo-Json -Depth 10)
+        $ObjectSnapshotsToProcess = $ObjectSnapshotsResponse.data.snapshotOfASnappableConnection.nodes
+    }
+    catch {
+        $ErrorMessage = $_.ErrorDetails; "ERROR: $ErrorMessage"
+    }
+    # Creating array
+    $ObjectSnapshots = [System.Collections.ArrayList]@()
+    # Processing snapshots
+    foreach ($ObjectSnapshot in $ObjectSnapshotsToProcess) {
+        # Getting snapshot data
+        $SnapshotDateUNIX = $ObjectSnapshot.date
+        $SnapshotID = $ObjectSnapshot.id
+        # Converting
+        $SnapshotDateUTC = Convert-RSCUNIXTime $SnapshotDateUNIX
+        # Calculating hours since each snapshot
+        $UTCDateTime = [System.DateTime]::UtcNow
+        if ($SnapshotDateUTC -ne $null) {
+            $SnapshotDateTimespan = New-TimeSpan -Start $SnapshotDateUTC -End $UTCDateTime
+            $SnapshotHoursSince = $SnapshotDateTimespan | Select-Object -ExpandProperty TotalHours
+            $SnapshotHoursSince = [Math]::Round($SnapshotHoursSince, 1)
+            $SnapshotDaysSince = $SnapshotDateTimespan | Select-Object -ExpandProperty TotalDays
+            $SnapshotDaysSince = [Math]::Round($SnapshotDaysSince, 1)
+        }
+        else {
+            $SnapshotHoursSince = $null
+            $SnapshotDaysSince = $null
+        }
+        # Adding
+        $Object = New-Object PSObject
+        $Object | Add-Member -MemberType NoteProperty -Name "RSCInstance" -Value $RSCInstance
+        $Object | Add-Member -MemberType NoteProperty -Name "DateUTC" -Value $SnapshotDateUTC
+        $Object | Add-Member -MemberType NoteProperty -Name "HoursSince" -Value $SnapshotHoursSince
+        $Object | Add-Member -MemberType NoteProperty -Name "SnapshotDaysSince" -Value $SnapshotDaysSince
+        $Object | Add-Member -MemberType NoteProperty -Name "SnapshotID" -Value $SnapshotID
+        $Object | Add-Member -MemberType NoteProperty -Name "ObjectID" -Value $ObjectID
+        # Detailed section
+        if ($Detailed) {
+            # Getting detailed info
+            $ArchivalInfo = $ObjectSnapshot.snapshotRetentionInfo.archivalInfos
+            $ReplicationInfo = $ObjectSnapshot.snapshotRetentionInfo.replicationInfos
+            $LocalInfo = $ObjectSnapshot.snapshotRetentionInfo.localInfo
+            # Archival info
+            $ArchiveName = $ArchivalInfo.Name
+            $ArchiveExpiration = $ArchivalInfo.expirationTime
+            if ($ArchiveExpiration -ne $null) { $ArchiveExpirationUTC = Convert-RSCUNIXTime $ArchiveExpiration }else { $ArchiveExpirationUTC = $null }
+            # Replication info
+            $ReplicaName = $ReplicationInfo.Name
+            $ReplicaExpiration = $ReplicationInfo.expirationTime
+            if ($ReplicaExpiration -ne $null) { $ReplicaExpirationUTC = Convert-RSCUNIXTime $ReplicaExpiration }else { $ReplicaExpirationUTC = $null }
+            # Local info
+            $IsLocal = $LocalInfo.isSnapshotPresent
+            $RubrikCluster = $LocalInfo.name
+            $LocalExpiration = $LocalInfo.expirationTime
+            if ($LocalExpiration -ne $null) { $LocalExpirationUTC = Convert-RSCUNIXTime $LocalExpiration }else { $LocalExpirationUTC = $null }
+            # Setting opposite if null
+            if ($IsLocal -eq $null) { $IsLocal = $False }
+            # Adding additional fields
+            $Object | Add-Member -MemberType NoteProperty -Name "OnSourceCluster" -Value $IsLocal
+            $Object | Add-Member -MemberType NoteProperty -Name "RubrikCluster" -Value $RubrikCluster
+            $Object | Add-Member -MemberType NoteProperty -Name "LocalExpirationUTC" -Value $LocalExpirationUTC
+            $Object | Add-Member -MemberType NoteProperty -Name "Replica" -Value $ReplicaName
+            $Object | Add-Member -MemberType NoteProperty -Name "ReplicaExpirationUTC" -Value $ReplicaExpirationUTC
+            $Object | Add-Member -MemberType NoteProperty -Name "Archive" -Value $ArchiveName
+            $Object | Add-Member -MemberType NoteProperty -Name "ArchiveExpirationUTC" -Value $ArchiveExpirationUTC
+        }
+        # Adding to the array
+        $ObjectSnapshots.Add($Object) | Out-Null
+    }
 
-# Returning Result
-Return $ObjectSnapshots
+    # Returning Result
+    return $ObjectSnapshots
 }
