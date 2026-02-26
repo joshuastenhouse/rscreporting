@@ -35,7 +35,7 @@ Date: 08/20/24
 ################################################
 # Paramater Config
 ################################################
-[CmdletBinding()]
+[CmdletBinding(SupportsShouldProcess=$true)]
     Param (
         [Parameter(ValueFromPipeline=$true)]
         [array]$PipelineArray,
@@ -48,6 +48,9 @@ Date: 08/20/24
         [Parameter(ParameterSetName="User")]
         [switch]$ForceOracleFull
     )
+begin{}
+process{
+if ($pscmdlet.ShouldProcess("ObjectID - $ObjectID")){
 ################################################
 # Importing Module & Running Required Functions
 ################################################
@@ -786,3 +789,6 @@ $Object | Add-Member -MemberType NoteProperty -Name "ErrorMessage" -Value $RSCRe
 Return $Object
 # End of function
 }
+}
+}
+end{}

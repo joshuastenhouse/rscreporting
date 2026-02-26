@@ -30,11 +30,14 @@ Date: 10/10/2023
 ################################################
 # Paramater Config
 ################################################
-[CmdletBinding()]
+[CmdletBinding(SupportsShouldProcess=$true)]
     Param (
         [Parameter(Mandatory=$true)]
         [string]$LiveMountID
     )
+begin{}
+process{
+if ($pscmdlet.ShouldProcess("LiveMountID - $LiveMountID")){
 ################################################
 # Importing Module & Running Required Functions
 ################################################
@@ -116,3 +119,6 @@ Return $Object
 
 # End of function
 }
+}
+}
+end{}

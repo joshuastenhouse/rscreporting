@@ -1,7 +1,7 @@
 ﻿################################################
 # Function - New-RSCReport02MultiDayStrikes - Create RSC Report in the directory specified
 ################################################
-Function New-RSCReport02MultiDayStrikes {
+Function New-RSCReport02MultiDayStrike {
 
 <#
 .SYNOPSIS
@@ -66,6 +66,8 @@ Date: 05/11/2023
 ################################################
 # Paramater Config
 ################################################
+[CmdletBinding(SupportsShouldProcess=$true)]
+[Alias('New-RSCReport02MultiDayStrikes')]
 Param
     (
         $DaysToReport,$ReportName,$Directory,$ObjectType,$BackupWindowStartHour,$BackupWindowStartMinutes,$ExcludeObjectType,$SLADomain,
@@ -78,8 +80,9 @@ Param
         [Parameter(ParameterSetName="User")][switch]$SampleFirst100Objects,
         [Parameter(ParameterSetName="User")][switch]$ExportReportHTML
     )
-
-
+begin{}
+process{
+if ($pscmdlet.ShouldProcess("multi-day strikes and backups across all protected projects ")){
 # Reportname subject
 IF($ReportName -eq $null){$ReportName = "Rubrik Multi-Day Strikes"}
 
@@ -401,3 +404,6 @@ Return $EmailStatus
 ###############################################
 # End of script
 ###############################################
+}
+}
+end{}

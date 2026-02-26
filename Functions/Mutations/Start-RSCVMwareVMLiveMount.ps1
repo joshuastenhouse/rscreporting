@@ -32,7 +32,7 @@ Date: 10/23/2023
 ################################################
 # Paramater Config
 ################################################
-[CmdletBinding()]
+[CmdletBinding(SupportsShouldProcess=$true)]
     Param (
         [Parameter(Mandatory=$true)]
         $VMID,
@@ -45,6 +45,9 @@ Date: 10/23/2023
         [Parameter(Mandatory=$false)]
         $SnapshotID
     )
+begin{}
+process{
+if ($pscmdlet.ShouldProcess("VM - $VMID")){
 ################################################
 # Importing Module & Running Required Functions
 ################################################
@@ -163,3 +166,6 @@ Return $Object
 
 # End of function
 }
+}
+}
+end{}

@@ -52,6 +52,7 @@ Date: 05/11/2023
 ################################################
 # Paramater Config
 ################################################
+[CmdletBinding(SupportsShouldProcess=$true)]
 Param 
   (
   [Parameter(Mandatory=$true)]
@@ -72,7 +73,9 @@ Param
   $MaxMatchesPerSnapshot,
   $FileInclude
   )
-
+begin{}
+process{
+if ($pscmdlet.ShouldProcess("ObjectID - $ObjectIDs")){
 # Setting defaults if null
 IF($FileExclude -eq $null){$FileExclude = ""}
 IF($FileException -eq $null){$FileException = ""}
@@ -237,3 +240,6 @@ $Object | Add-Member -MemberType NoteProperty -Name "Errors" -Value $RSCResponse
 Return $Object
 # End of function
 }
+}
+}
+end{}

@@ -1,7 +1,7 @@
 ﻿################################################
 # Function - Send-RSCReport02MultiDayStrikes - Sending RSC Report
 ################################################
-Function Send-RSCReport02MultiDayStrikes {
+Function Send-RSCReport02MultiDayStrike {
 
 <#
 .SYNOPSIS
@@ -72,6 +72,8 @@ Date: 05/11/2023
 ################################################
 # Paramater Config
 ################################################
+[CmdletBinding()]
+[Alias('Send-RSCReport02MultiDayStrikes')]
 Param
     (
         $DaysToReport,$EmailTo,$EmailFrom,$EmailSubject,$SMTPServer,$ObjectType,$BackupWindowStartHour,$BackupWindowStartMinutes,$ExcludeObjectType,$SLADomain,

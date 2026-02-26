@@ -36,7 +36,7 @@ Date: 10/10/2023
 ################################################
 # Paramater Config
 ################################################
-[CmdletBinding()]
+[CmdletBinding(SupportsShouldProcess=$true)]
     Param (
         [Parameter(Mandatory=$true)]
         [string]$DBID,
@@ -45,6 +45,9 @@ Date: 10/10/2023
         [Parameter(Mandatory=$true)]
         [string]$TargetDBName
     )
+begin{}
+process{
+if ($pscmdlet.ShouldProcess("databsed - $DBID")){
 ################################################
 # Importing Module & Running Required Functions
 ################################################
@@ -141,3 +144,6 @@ Return $Object
 
 # End of function
 }
+}
+}
+end{}

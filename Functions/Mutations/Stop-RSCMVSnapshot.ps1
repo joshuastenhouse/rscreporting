@@ -36,7 +36,7 @@ Date: 08/16/2023
 ################################################
 # Paramater Config
 ################################################
-[CmdletBinding()]
+[CmdletBinding(SupportsShouldProcess=$true)]
     Param (
         [Parameter(ValueFromPipeline=$true)]
         [array]$PipelineArray,
@@ -45,7 +45,9 @@ Date: 08/16/2023
         [Parameter(Mandatory=$false)]
         [string]$SLADomainID
     )
-
+begin{}
+process{
+if ($pscmdlet.ShouldProcess("ManagedVolumeID $ObjectID")){
 ################################################
 # Importing Module & Running Required Functions
 ################################################
@@ -154,3 +156,6 @@ $Object | Add-Member -MemberType NoteProperty -Name "ErrorMessage" -Value $RSCRe
 Return $Object
 # End of function
 }
+}
+}
+end{}

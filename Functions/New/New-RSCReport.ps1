@@ -38,12 +38,14 @@ Date: 06/19/2024
 ################################################
 # Paramater Config
 ################################################
-[CmdletBinding(DefaultParameterSetName = "List")]
+[CmdletBinding(DefaultParameterSetName = "List",SupportsShouldProcess=$true)]
 Param([Parameter(Mandatory=$true)]
 	  $Array,$ReportName,$Directory,$SortByColumnName,$ColumnOrder,[switch]$SSLRequired,[switch]$SortDescending
   )
 # Note: you can only sort by 1 column, but column order can be many I.E "VM,VMID"
-
+begin{}
+process{
+if ($pscmdlet.ShouldProcess("array data")){
 ################################################
 # Importing Module & Running Required Functions
 ################################################
@@ -248,3 +250,6 @@ Return $null
 ###############################################
 # End of script
 ###############################################
+}
+}
+end{}

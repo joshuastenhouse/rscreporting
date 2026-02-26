@@ -34,14 +34,16 @@ Date: 08/16/2023
 ################################################
 # Paramater Config
 ################################################
-[CmdletBinding()]
+[CmdletBinding(SupportsShouldProcess=$true)]
     Param (
         [Parameter(ValueFromPipeline=$true)]
         [array]$PipelineArray,
         [Parameter(Mandatory=$false)]
         [string]$ObjectID
     )
-
+begin{}
+process{
+if ($pscmdlet.ShouldProcess("ManagedModuleID $ObjectID")){
 ################################################
 # Importing Module & Running Required Functions
 ################################################
@@ -127,3 +129,6 @@ $Object | Add-Member -MemberType NoteProperty -Name "ErrorMessage" -Value $RSCRe
 Return $Object
 # End of function
 }
+}
+}
+end{}
