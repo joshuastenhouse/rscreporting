@@ -704,6 +704,93 @@ $RSCTagAssignments.Add($Object) | Out-Null
 }
 # End of for each object above
 #
+################################################
+# Getting S3 Tag Assignments
+################################################
+# Getting all S3 buckets
+$AWSS3Buckets = Get-RSCAWSS3Buckets
+# For Each Object Getting Data
+ForEach ($AWSS3Bucket in $AWSS3Buckets)
+{
+# Setting variables
+$Account = $AWSS3Bucket.Account
+$AccountID = $AWSS3Bucket.AccountID
+$Name = $AWSS3Bucket.S3Bucket
+$ID = $AWSS3Bucket.S3BucketID
+$Tags = $AWSS3Bucket.Tags
+# Filtering tags if variable supplied
+IF($TagFilter -ne $null)
+{
+$Tags = $Tags | Where-Object {$_.value -match $TagFilter}
+}
+# Adding To Array for Each tag
+ForEach($Tag in $Tags)
+{
+$Object = New-Object PSObject
+$Object | Add-Member -MemberType NoteProperty -Name "RSCInstance" -Value $RSCInstance
+$Object | Add-Member -MemberType NoteProperty -Name "Cloud" -Value "AWS"
+$Object | Add-Member -MemberType NoteProperty -Name "Tag" -Value $Tag.value
+$Object | Add-Member -MemberType NoteProperty -Name "TagKey" -Value $Tag.key
+$Object | Add-Member -MemberType NoteProperty -Name "ObjectType" -Value "S3"
+$Object | Add-Member -MemberType NoteProperty -Name "Object" -Value $Name
+$Object | Add-Member -MemberType NoteProperty -Name "ObjectID" -Value $ID
+$Object | Add-Member -MemberType NoteProperty -Name "Account" -Value $Account
+$Object | Add-Member -MemberType NoteProperty -Name "AccountID" -Value $AccountID
+$Object | Add-Member -MemberType NoteProperty -Name "AccountNativeID" -Value $AccountID
+# Adding
+$RSCTagAssignments.Add($Object) | Out-Null
+# End of for each tag assignment below
+}
+# End of for each tag assignment above
+#
+# End of for each object below
+}
+# End of for each object above
+
+Get-RSCAWSS3BucketTagAssignments
+
+################################################
+# Getting DynamoDB Tag Assignments
+################################################
+# Getting all DynamoDBs
+$AWSDynamoDBs = Get-RSCAWSDynamoDBs
+# For Each Object Getting Data
+ForEach ($AWSDynamoDB in $AWSDynamoDBs)
+{
+# Setting variables
+$Account = $AWSDynamoDB.Account
+$AccountID = $AWSDynamoDB.AccountID
+$Name = $AWSDynamoDB.DB
+$ID = $AWSDynamoDB.DBID
+$Tags = $AWSDynamoDB.Tags
+# Filtering tags if variable supplied
+IF($TagFilter -ne $null)
+{
+$Tags = $Tags | Where-Object {$_.value -match $TagFilter}
+}
+# Adding To Array for Each tag
+ForEach($Tag in $Tags)
+{
+$Object = New-Object PSObject
+$Object | Add-Member -MemberType NoteProperty -Name "RSCInstance" -Value $RSCInstance
+$Object | Add-Member -MemberType NoteProperty -Name "Cloud" -Value "AWS"
+$Object | Add-Member -MemberType NoteProperty -Name "Tag" -Value $Tag.value
+$Object | Add-Member -MemberType NoteProperty -Name "TagKey" -Value $Tag.key
+$Object | Add-Member -MemberType NoteProperty -Name "ObjectType" -Value "DynamoDB"
+$Object | Add-Member -MemberType NoteProperty -Name "Object" -Value $Name
+$Object | Add-Member -MemberType NoteProperty -Name "ObjectID" -Value $ID
+$Object | Add-Member -MemberType NoteProperty -Name "Account" -Value $Account
+$Object | Add-Member -MemberType NoteProperty -Name "AccountID" -Value $AccountID
+$Object | Add-Member -MemberType NoteProperty -Name "AccountNativeID" -Value $AccountID
+# Adding
+$RSCTagAssignments.Add($Object) | Out-Null
+# End of for each tag assignment below
+}
+# End of for each tag assignment above
+#
+# End of for each object below
+}
+# End of for each object above
 # Returning array
 Return $RSCTagAssignments
 # End of function

@@ -32,11 +32,11 @@ Date: 07/09/2024
 Import-Module RSCReporting
 # Checking connectivity, exiting function with error if not connected
 Test-RSCConnection
-# Getting all Azure subscriptions
+################################################
+# Processing Tags
+################################################
+# Getting all S3 buckets
 $AWSS3Buckets = Get-RSCAWSS3Buckets
-################################################
-# Processing
-################################################
 # Creating array
 $RSCTagAssignments = [System.Collections.ArrayList]@()
 # For Each Object Getting Data
@@ -53,7 +53,7 @@ ForEach($Tag in $Tags)
 {
 $Object = New-Object PSObject
 $Object | Add-Member -MemberType NoteProperty -Name "RSCInstance" -Value $RSCInstance
-$Object | Add-Member -MemberType NoteProperty -Name "Cloud" -Value "Azure"
+$Object | Add-Member -MemberType NoteProperty -Name "Cloud" -Value "AWS"
 $Object | Add-Member -MemberType NoteProperty -Name "Tag" -Value $Tag.value
 $Object | Add-Member -MemberType NoteProperty -Name "TagKey" -Value $Tag.key
 $Object | Add-Member -MemberType NoteProperty -Name "S3Bucket" -Value $Name
