@@ -8,7 +8,13 @@ Import the module into your current session:
 
 The current build is: 
 
-```1.2.4```
+```1.2.5```
+
+Changes in 1.2.5 updated 03/06/2026:
+
+    - Added new functions for Get-RSCAWSDynamoDBs and Get-RSCAWSDynamoDBsTagAssignments
+    - Added Get-RSCAWSDynamoDBsTagAssignments and Get-RSCAWSS3BucketTagAssignments to Get-RSCAWSTagAssignments which in turn also adds both to Write-RSCAWSTagAssignments
+    - Removed URLs in Get-RSCObjectURL and also added URL generation for AWSDynamoDB
 
 Changes in 1.2.4 updated 01/23/2026:
 
