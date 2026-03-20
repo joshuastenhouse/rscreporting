@@ -221,8 +221,8 @@ $RSCAWSS3Buckets = [System.Collections.ArrayList]@()
 ForEach ($Storage in $RSCList)
 {
 # Setting variables
-$Name = $Storage.id
-$ID = $Storage.name
+$Name = $Storage.name
+$ID = $Storage.id
 $Region = $Storage.region
 $NativeID = $Storage.cloudNativeId
 $AccessTier = $Storage.accessTier
