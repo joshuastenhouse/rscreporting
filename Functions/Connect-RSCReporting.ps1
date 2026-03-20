@@ -187,6 +187,8 @@ $PSVersion = $PSVersionTable.values | Sort-Object Major -Desc | Where-Object {$_
 IF($PSVersion -lt 6)
 {
 [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.SecurityProtocolType]'Ssl3,Tls12'
+# Bugfix 03/19/26: Forcing Pwsh 5.1 to use command window for creds to prevent hanging on no pop up
+Set-ItemProperty "HKLM:\SOFTWARE\Microsoft\PowerShell\1\ShellIds" -Name "ConsolePrompting" -Value $True
 }
 ###############################################
 # Accepting Credentials Object Workflow - Added 08/05/2025
@@ -253,6 +255,7 @@ IF ($RSCCredentialsFileTest -eq $False)
 # Only prompting if credentials object doesn't already exist (could've been created by importing the JSON)
 IF ($RSCCredentials -eq $null)
 {
+# Prompting for credentials
 $RSCCredentials = Get-Credential -Message "Enter RSC client ID in user (without client|) and client secret in password"
 }
 $RSCCredentials.Username | Out-File $RSCCredentialsFile -Force
