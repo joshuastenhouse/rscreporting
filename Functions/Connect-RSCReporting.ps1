@@ -188,7 +188,11 @@ IF($PSVersion -lt 6)
 {
 [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.SecurityProtocolType]'Ssl3,Tls12'
 # Bugfix 03/19/26: Forcing Pwsh 5.1 to use command window for creds to prevent hanging on no pop up
+$ConsolePrompting = Get-ItemProperty "HKLM:\SOFTWARE\Microsoft\PowerShell\1\ShellIds" -Name "ConsolePrompting" | Select-Object -ExpandProperty ConsolePrompting
+IF($ConsolePrompting -ne $True)
+{
 Set-ItemProperty "HKLM:\SOFTWARE\Microsoft\PowerShell\1\ShellIds" -Name "ConsolePrompting" -Value $True
+}
 }
 ###############################################
 # Accepting Credentials Object Workflow - Added 08/05/2025
