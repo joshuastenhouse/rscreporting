@@ -8,7 +8,12 @@ Import the module into your current session:
 
 The current build is: 
 
-```1.2.5```
+```1.2.6```
+
+Changes in 1.2.56 updated 03/19/2026:
+
+    - Fixed bug in Get-RSCAWSS3Buckets where S3Bucket and S3BucketID where inverted, resulting in any function associated returning them incorrectly too, inc Get-RSCAWSS3BucketTagAssignments, Get-RSCAWSTagAssignments and Write-RSCAWSTagAssignments
+    - Fixed bug in Connect-RSCReporting with Powershell 5.1 whereby it would hang on prompting for credentials as the pop-up window is seemingly now blocked (in Windows 11 anyways), so it now runs a check on "HKLM:\SOFTWARE\Microsoft\PowerShell\1\ShellIds" to verify it is true and if not sets it so, but does require admin on 1st run of Connect-RSCReporting to allow this, or just switch to the latest version of powershell...
 
 Changes in 1.2.5 updated 03/06/2026:
 
