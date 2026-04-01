@@ -57,9 +57,6 @@ $RSCGraphQL = @{"operationName" = "AwsInventoryTableQuery";
           name
           isRelic
           slaAssignment
-          ...EffectiveSlaColumnFragment
-          ...AwsSlaAssignmentColumnFragment
-          ...SecurityMetadataColumnFragment @include(if: `$includeSecurityMetadata)
           ... on AwsNativeS3Bucket {
             creationTime
             isExocomputeConfigured
@@ -117,85 +114,6 @@ $RSCGraphQL = @{"operationName" = "AwsInventoryTableQuery";
     }
     __typename
   }
-}
-
-fragment EffectiveSlaColumnFragment on HierarchyObject {
-  id
-  effectiveSlaDomain {
-    ...EffectiveSlaDomainFragment
-    ... on GlobalSlaReply {
-      description
-      __typename
-    }
-    __typename
-  }
-  ... on CdmHierarchyObject {
-    pendingSla {
-      ...SLADomainFragment
-      __typename
-    }
-    __typename
-  }
-  __typename
-}
-
-fragment EffectiveSlaDomainFragment on SlaDomain {
-  id
-  name
-  ... on GlobalSlaReply {
-    isRetentionLockedSla
-    retentionLockMode
-    __typename
-  }
-  ... on ClusterSlaDomain {
-    fid
-    cluster {
-      id
-      name
-      __typename
-    }
-    isRetentionLockedSla
-    retentionLockMode
-    __typename
-  }
-  __typename
-}
-
-fragment SLADomainFragment on SlaDomain {
-  id
-  name
-  ... on ClusterSlaDomain {
-    fid
-    cluster {
-      id
-      name
-      __typename
-    }
-    __typename
-  }
-  __typename
-}
-
-fragment AwsSlaAssignmentColumnFragment on HierarchyObject {
-  effectiveSlaSourceObject {
-    fid
-    name
-    objectType
-    __typename
-  }
-  slaAssignment
-  __typename
-}
-
-fragment SecurityMetadataColumnFragment on HierarchyObject {
-  securityMetadata {
-    sensitivityStatus
-    highSensitiveHits
-    mediumSensitiveHits
-    lowSensitiveHits
-    __typename
-  }
-  __typename
 }"
 }
 ################################################
@@ -212,13 +130,15 @@ $RSCGraphQL.variables.after = $RSCResponse.data.awsNativeRoot.objectTypeDescenda
 $RSCResponse = Invoke-RestMethod -Method POST -Uri $RSCGraphqlURL -Body $($RSCGraphQL | ConvertTo-JSON -Depth 20) -Headers $RSCSessionHeader
 $RSCList += $RSCResponse.data.awsNativeRoot.objectTypeDescendantConnection.edges.node
 }
+# Removing nulls
+$RSCListFiltered = $RSCList.Where({ $null -ne $_ })
 ################################################
 # Processing Objects
 ################################################
 # Creating array
 $RSCAWSS3Buckets = [System.Collections.ArrayList]@()
 # For Each Object Getting Data
-ForEach ($Storage in $RSCList)
+ForEach ($Storage in $RSCListFiltered)
 {
 # Setting variables
 $Name = $Storage.name
@@ -271,7 +191,6 @@ $Object | Add-Member -MemberType NoteProperty -Name "URL" -Value $URL
 $RSCAWSS3Buckets.Add($Object) | Out-Null
 # End of for each object below
 }
-# End of for each object above
 #
 # Returning array
 Return $RSCAWSS3Buckets
