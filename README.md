@@ -8,7 +8,15 @@ Import the module into your current session:
 
 The current build is: 
 
-```1.2.7```
+```1.2.8```
+
+Changes in 1.2.8 updated 05/04/2026:
+
+    -Fixed cluster disk id being changed to diskId on graphql api in RSC which was breaking Get-RSCClusters, Get-RSCClusterDisks, GetRSCCLusterNodes and Get-RSCEventsRunning (as it uses the cluster list for populating the location), thanks to Fari Sah (SahFari) from Sweden for posting the issues
+    - Added support in Write-RSCAWSTagAssignments for switch of OnlyS3Tags, OnlyEC2Tags, OnlyEBSTags, OnlyRDSTags, OnlyDynamoTags to limit scope queried and written to SQL database for large AWS environments, also added same switches to Get-RSCAWSTagAssignments for end to end speed increase
+    - Fixed bug in Get-RSCAWSTagAssignments where it was pulling S3 tags twice, should result in 2x speed improvement
+    - Fixed script directory bug in Pwsh 7.x onward on script directory not showing correctly
+    - Updated all Write functions to try ensure no null values are ever written to the SQL database, please raise an issue if you see one
 
 Changes in 1.2.7 updated 04/01/2026:
 
