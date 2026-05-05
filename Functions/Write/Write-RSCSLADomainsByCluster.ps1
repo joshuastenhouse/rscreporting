@@ -199,6 +199,9 @@ Test-RSCConnection
 # Getting RSC SLA Domains
 Write-Host "QueryingSLADomains.."
 $RSCSLADomainsList = Get-RSCSLADomainsByCluster
+# Removing nulls from the array
+$RSCSLADomainsList = $RSCSLADomainsList | Where-Object { -not [string]::IsNullOrWhiteSpace($_) }
+# Counting
 $RSCSLADomainCount = $RSCSLADomainsList | Measure-Object | Select-Object -ExpandProperty Count
 Write-Host "ClusterSLADomainsFound: $RSCSLADomainCount"
 # Logging

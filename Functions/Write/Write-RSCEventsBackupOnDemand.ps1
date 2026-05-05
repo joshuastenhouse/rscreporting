@@ -415,6 +415,8 @@ IF($ExcludeRunningJobs)
 {
 $RSCEventsList = $RSCEventsList | Where-Object {$_.lastActivityStatus -ne "Running"}
 }
+# Removing nulls from the array
+$RSCEventsList = $RSCEventsList | Where-Object { -not [string]::IsNullOrWhiteSpace($_) }
 # Counting
 $RSCEventsCount = $RSCEventsList | Measure-Object | Select-Object -ExpandProperty Count
 $RSCObjectsList = $RSCEventsList | Select-Object ObjectId -Unique

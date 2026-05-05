@@ -322,6 +322,8 @@ $RSCObjectsList += $RSCObjectsResponse.data.snappableConnection.edges.node
 $ObjectCount = $ObjectCount + $ObjectQueryLimit
 $ObjectCounter = $ObjectCounter + $ObjectQueryLimit
 }
+# Removing nulls from the array
+$RSCObjectsList = $RSCObjectsList | Where-Object { -not [string]::IsNullOrWhiteSpace($_) }
 ################################################
 # Processing All Objects 
 ################################################

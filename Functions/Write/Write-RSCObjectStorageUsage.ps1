@@ -328,6 +328,8 @@ $RSCJSONObject.variables | Add-Member -MemberType NoteProperty "after" -Value $O
 $ObjectStorageResponse = Invoke-RestMethod -Method POST -Uri $RSCGraphqlURL -Body $($RSCJSONObject | ConvertTo-JSON -Depth 20) -Headers $RSCSessionHeader
 $ObjectStorageList += $ObjectStorageResponse.data.snappableConnection.edges.node
 }
+# Removing nulls from the array
+$ObjectStorageList = $ObjectStorageList | Where-Object { -not [string]::IsNullOrWhiteSpace($_) }
 # Counting
 $ObjectStorageListCount = $ObjectStorageList | Measure-Object | Select-Object -ExpandProperty Count
 $ObjectStorageListCounter = 0

@@ -46,6 +46,11 @@ Date: 05/11/2023
 	Param
     (
         [Parameter(Mandatory=$true)]$SQLInstance,[Parameter(Mandatory=$true)]$SQLDB,$SQLTable,$TagFilter,
+        [switch]$OnlyS3Tags,
+        [switch]$OnlyEC2Tags,     
+        [switch]$OnlyEBSTags,
+        [switch]$OnlyRDSTags, 
+        [switch]$OnlyDynamoTags,
         [switch]$DropExistingRows,
         [switch]$DontUseTempDB
     )
@@ -191,9 +196,19 @@ DeletingExistingRowsIn: $SQLTable"
 $ScriptStart = "{0:yyyy-MM-dd HH:mm:ss}" -f (Get-Date)
 $UTCDateTime = [System.DateTime]::UtcNow
 ################################################
-# Getting tags assigned to all AWS objects
+# Getting tags assigned to all AWS objects or specific objects if parameters configured
 ################################################
-$RSCTagAssignments = Get-RSCAWSTagAssignments -TagFilter $TagFilter
+$RSCTagAssignments = $null
+$RSCPullAllTags = $TRUE
+IF($OnlyS3Tags){$RSCTagAssignments = Get-RSCAWSTagAssignments -TagFilter $TagFilter -OnlyS3Tags;$RSCPullAllTags = $FALSE;Write-Host "Getting S3 Tags ONLY"}
+IF($OnlyEC2Tags){$RSCTagAssignments = Get-RSCAWSTagAssignments -TagFilter $TagFilter -OnlyEC2Tags;$RSCPullAllTags = $FALSE;Write-Host "Getting EC2 Tags ONLY"}
+IF($OnlyEBSTags){$RSCTagAssignments = Get-RSCAWSTagAssignments -TagFilter $TagFilter -OnlyEBSTags;$RSCPullAllTags = $FALSE;Write-Host "Getting EBS Tags ONLY"}
+IF($OnlyRDSTags){$RSCTagAssignments = Get-RSCAWSTagAssignments -TagFilter $TagFilter -OnlyRDSTags;$RSCPullAllTags = $FALSE;Write-Host "Getting RDS Tags ONLY"}
+IF($OnlyDynamoTags){$RSCTagAssignments = Get-RSCAWSTagAssignments -TagFilter $TagFilter -OnlyDynamoTags;$RSCPullAllTags = $FALSE;Write-Host "Getting Dynamo Tags ONLY"}
+# Pulling all tags if not set by switch to pull specific
+IF($RSCPullAllTags -eq $TRUE){$RSCTagAssignments = Get-RSCAWSTagAssignments -TagFilter $TagFilter;Write-Host "Getting ALL AWS Tags"}
+# Removing nulls from the array
+$RSCTagAssignments = $RSCTagAssignments | Where-Object { -not [string]::IsNullOrWhiteSpace($_) }
 ################################################
 # Processing Tag Assignments
 ################################################

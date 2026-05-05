@@ -286,6 +286,8 @@ $RSCEventsGraphQL.variables.after = $RSCEventsResponse.data.userAuditConnection.
 $RSCEventsResponse = Invoke-RestMethod -Method POST -Uri $RSCGraphqlURL -Body $($RSCEventsGraphQL | ConvertTo-JSON -Depth 20) -Headers $RSCSessionHeader
 $RSCEventsList += $RSCEventsResponse.data.userAuditConnection.edges.node
 }
+# Removing nulls from the array
+$RSCEventsList = $RSCEventsList | Where-Object { -not [string]::IsNullOrWhiteSpace($_) }
 # Counting
 $RSCEventsCount = $RSCEventsList | Measure-Object | Select-Object -ExpandProperty Count
 # Logging
