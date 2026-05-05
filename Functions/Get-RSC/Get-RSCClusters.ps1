@@ -89,7 +89,7 @@ $RSCGraphQL = @{"query" = "query clusterConnection {
             capacityBytes
             clusterId
             diskType
-            id
+            diskId
             isEncrypted
             nodeId
             path

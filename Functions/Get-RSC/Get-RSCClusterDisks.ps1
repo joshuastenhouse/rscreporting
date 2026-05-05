@@ -79,7 +79,7 @@ $RSCGraphQL = @{"operationName" = "clusterConnection";
             capacityBytes
             clusterId
             diskType
-            id
+            diskId
             isEncrypted
             nodeId
             path
@@ -183,7 +183,7 @@ ForEach ($ClusterDisk in $ClusterDisks)
 $ClusterDiskFullNodeID = $ClusterDisk.nodeId
 $ClusterDiskStatus = $ClusterDisk.status
 $ClusterDiskType = $ClusterDisk.diskType
-$ClusterDiskID = $ClusterDisk.id
+$ClusterDiskID = $ClusterDisk.diskid
 $ClusterDiskEncryption = $ClusterDisk.isEncrypted
 # Getting shorthand node ID
 $ClusterDiskNodeID = $ClusterDiskFullNodeID.Replace("cluster:::","")
