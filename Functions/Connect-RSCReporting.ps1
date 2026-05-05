@@ -113,6 +113,9 @@ IF ($IsLinux -eq $TRUE)
 IF($LastScriptDirectoryChar -ne "/"){$ScriptDirectory += "/"}
 }
 $LastScriptDirectoryChar = $ScriptDirectory.Substring($ScriptDirectory.Length - 1)
+# Ensuring script directory doesn't contain a double path
+$ScriptDirectory = $ScriptDirectory.Replace("//","/")
+$ScriptDirectory = $ScriptDirectory.Replace("\\","\")
 ##################################
 # Handling if no RSC URL is specificed
 ##################################
@@ -396,6 +399,8 @@ IF($Global:RscConnectionClient -ne $null)
 {
 $RSCErrorMessage = "Connected using XML file from Rubrik Security Cloud SDK Set-RSCServiceAccountFile function"
 }
+# Getting Module version
+$ModuleVersion = (Get-Module -Name "RSCReporting" -ListAvailable).Version.ToString()
 ##########################
 # Returning All Data Unless Quiet Switch
 ##########################
@@ -417,6 +422,7 @@ $Return | Add-Member -MemberType NoteProperty -Name "ScriptDirectory" -Value $Sc
 $Return | Add-Member -MemberType NoteProperty -Name "CredentialsFile" -Value $RSCCredentialsFile
 $Return | Add-Member -MemberType NoteProperty -Name "URLFile" -Value $RSCURLFile
 $Return | Add-Member -MemberType NoteProperty -Name "PowerShellVersion" -Value $PSVersion
+$Return | Add-Member -MemberType NoteProperty -Name "RSCReportingVersion" -Value $ModuleVersion
 $Return | Add-Member -MemberType NoteProperty -Name "UseParallel" -Value $UseParallel
 $Return | Add-Member -MemberType NoteProperty -Name "GlobalVariableForRSCInstance" -Value "RSCInstance"
 $Return | Add-Member -MemberType NoteProperty -Name "GlobalVariableForSessionStatus" -Value "RSCSessionStatus"
