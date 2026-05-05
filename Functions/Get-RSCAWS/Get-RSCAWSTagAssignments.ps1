@@ -30,7 +30,12 @@ Date: 10/29/2025
 ################################################
 	Param
     (
-        [Parameter(Mandatory=$false)]$TagFilter
+        [Parameter(Mandatory=$false)]$TagFilter,
+        [switch]$OnlyS3Tags,
+        [switch]$OnlyEC2Tags,     
+        [switch]$OnlyEBSTags,
+        [switch]$OnlyRDSTags, 
+        [switch]$OnlyDynamoTags
     )
 ################################################
 # Importing Module & Running Required Functions
@@ -43,9 +48,18 @@ Test-RSCConnection
 # Creating Array
 ################################################
 $RSCTagAssignments = [System.Collections.ArrayList]@()
+# Disabling all tag collection if only specified
+$RSCAllTagCollection = $TRUE
+IF($OnlyS3Tags){$RSCAllTagCollection = $FALSE}
+IF($OnlyEC2Tags){$RSCAllTagCollection = $FALSE}
+IF($OnlyEBSTags){$RSCAllTagCollection = $FALSE}
+IF($OnlyRDSTags){$RSCAllTagCollection = $FALSE}
+IF($OnlyDynamoTags){$RSCAllTagCollection = $FALSE}
 ################################################
 # Getting All AWS RDS instances
 ################################################
+IF(($RSCAllTagCollection -eq $TRUE) -or ($OnlyRDSTags))
+{
 # Creating array for objects
 $CloudDBList = @()
 # Building GraphQL query
@@ -247,9 +261,12 @@ $RSCTagAssignments.Add($Object) | Out-Null
 # End of for each object below
 }
 # End of for each object above
+}
 ################################################
 # Getting All AWS EC2 instances
 ################################################
+IF(($RSCAllTagCollection -eq $TRUE) -or ($OnlyEC2Tags))
+{
 # Creating array for objects
 $CloudVMList = @()
 # Building GraphQL query
@@ -476,9 +493,12 @@ $RSCTagAssignments.Add($Object) | Out-Null
 # End of for each object below
 }
 # End of for each object above
+}
 ################################################
 # Processing AWS EBS Volumes 
 ################################################
+IF(($RSCAllTagCollection -eq $TRUE) -or ($OnlyEBSTags))
+{
 # Creating array for objects
 $CloudDiskList = @()
 # Building GraphQL query
@@ -683,6 +703,7 @@ $VolumeTags = $VolumeTags | Where-Object {$_.value -match $TagFilter}
 # Adding To Array for Each tag
 ForEach($VolumeTag in $VolumeTags)
 {
+# Adding to array 
 $Object = New-Object PSObject
 $Object | Add-Member -MemberType NoteProperty -Name "RSCInstance" -Value $RSCInstance
 $Object | Add-Member -MemberType NoteProperty -Name "Cloud" -Value "AWS"
@@ -694,7 +715,6 @@ $Object | Add-Member -MemberType NoteProperty -Name "ObjectID" -Value $VolumeID
 $Object | Add-Member -MemberType NoteProperty -Name "Account" -Value $VolumeAccountName
 $Object | Add-Member -MemberType NoteProperty -Name "AccountID" -Value $VolumeAccountID
 $Object | Add-Member -MemberType NoteProperty -Name "AccountNativeID" -Value $VolumeAccountNativeID
-# Adding
 $RSCTagAssignments.Add($Object) | Out-Null
 # End of for each tag assignment below
 }
@@ -703,10 +723,12 @@ $RSCTagAssignments.Add($Object) | Out-Null
 # End of for each object below
 }
 # End of for each object above
-#
+}
 ################################################
 # Getting S3 Tag Assignments
 ################################################
+IF(($RSCAllTagCollection -eq $TRUE) -or ($OnlyS3Tags))
+{
 # Getting all S3 buckets
 $AWSS3Buckets = Get-RSCAWSS3Buckets
 # For Each Object Getting Data
@@ -746,12 +768,12 @@ $RSCTagAssignments.Add($Object) | Out-Null
 # End of for each object below
 }
 # End of for each object above
-
-Get-RSCAWSS3BucketTagAssignments
-
+}
 ################################################
 # Getting DynamoDB Tag Assignments
 ################################################
+IF(($RSCAllTagCollection -eq $TRUE) -or ($OnlyDynamoTags))
+{
 # Getting all DynamoDBs
 $AWSDynamoDBs = Get-RSCAWSDynamoDBs
 # For Each Object Getting Data
@@ -787,10 +809,12 @@ $RSCTagAssignments.Add($Object) | Out-Null
 # End of for each tag assignment below
 }
 # End of for each tag assignment above
+}
 #
 # End of for each object below
 }
 # End of for each object above
+#
 # Returning array
 Return $RSCTagAssignments
 # End of function
