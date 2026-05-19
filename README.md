@@ -8,7 +8,12 @@ Import the module into your current session:
 
 The current build is: 
 
-```1.2.8```
+```1.2.9```
+
+Changes in 1.2.9 updated 05/19/2026:
+
+    - Added support for multiple switches in the Write-RSCAWSTagAssignments function so now you can do multiple combinations of OnlyS3Tags, OnlyEC2Tags, OnlyEBSTags, OnlyRDSTags, OnlyDynamoTags rather than just 1
+    - Tested running Write-RSCAWSTagAssignments with no Only switches and all tags are being pulled correctly
 
 Changes in 1.2.8 updated 05/04/2026:
 
