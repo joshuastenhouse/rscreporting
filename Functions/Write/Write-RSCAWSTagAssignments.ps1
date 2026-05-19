@@ -198,13 +198,13 @@ $UTCDateTime = [System.DateTime]::UtcNow
 ################################################
 # Getting tags assigned to all AWS objects or specific objects if parameters configured
 ################################################
-$RSCTagAssignments = $null
+$RSCTagAssignments = @()
 $RSCPullAllTags = $TRUE
-IF($OnlyS3Tags){$RSCTagAssignments = Get-RSCAWSTagAssignments -TagFilter $TagFilter -OnlyS3Tags;$RSCPullAllTags = $FALSE;Write-Host "Getting S3 Tags ONLY"}
-IF($OnlyEC2Tags){$RSCTagAssignments = Get-RSCAWSTagAssignments -TagFilter $TagFilter -OnlyEC2Tags;$RSCPullAllTags = $FALSE;Write-Host "Getting EC2 Tags ONLY"}
-IF($OnlyEBSTags){$RSCTagAssignments = Get-RSCAWSTagAssignments -TagFilter $TagFilter -OnlyEBSTags;$RSCPullAllTags = $FALSE;Write-Host "Getting EBS Tags ONLY"}
-IF($OnlyRDSTags){$RSCTagAssignments = Get-RSCAWSTagAssignments -TagFilter $TagFilter -OnlyRDSTags;$RSCPullAllTags = $FALSE;Write-Host "Getting RDS Tags ONLY"}
-IF($OnlyDynamoTags){$RSCTagAssignments = Get-RSCAWSTagAssignments -TagFilter $TagFilter -OnlyDynamoTags;$RSCPullAllTags = $FALSE;Write-Host "Getting Dynamo Tags ONLY"}
+IF($OnlyS3Tags){$RSCTagAssignmentsToAdd = Get-RSCAWSTagAssignments -TagFilter $TagFilter -OnlyS3Tags;$RSCPullAllTags = $FALSE;$RSCTagAssignments += $RSCTagAssignmentsToAdd;Write-Host "Getting S3 Tags"}
+IF($OnlyEC2Tags){$RSCTagAssignmentsToAdd = Get-RSCAWSTagAssignments -TagFilter $TagFilter -OnlyEC2Tags;$RSCPullAllTags = $FALSE;$RSCTagAssignments += $RSCTagAssignmentsToAdd;Write-Host "Getting EC2 Tags"}
+IF($OnlyEBSTags){$RSCTagAssignmentsToAdd = Get-RSCAWSTagAssignments -TagFilter $TagFilter -OnlyEBSTags;$RSCPullAllTags = $FALSE;$RSCTagAssignments += $RSCTagAssignmentsToAdd;Write-Host "Getting EBS Tags"}
+IF($OnlyRDSTags){$RSCTagAssignmentsToAdd = Get-RSCAWSTagAssignments -TagFilter $TagFilter -OnlyRDSTags;$RSCPullAllTags = $FALSE;$RSCTagAssignments += $RSCTagAssignmentsToAdd;Write-Host "Getting RDS Tags"}
+IF($OnlyDynamoTags){$RSCTagAssignmentsToAdd = Get-RSCAWSTagAssignments -TagFilter $TagFilter -OnlyDynamoTags;$RSCPullAllTags = $FALSE;$RSCTagAssignments += $RSCTagAssignmentsToAdd;Write-Host "Getting Dynamo Tags"}
 # Pulling all tags if not set by switch to pull specific
 IF($RSCPullAllTags -eq $TRUE){$RSCTagAssignments = Get-RSCAWSTagAssignments -TagFilter $TagFilter;Write-Host "Getting ALL AWS Tags"}
 # Removing nulls from the array
