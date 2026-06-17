@@ -8,7 +8,16 @@ Import the module into your current session:
 
 The current build is: 
 
-```1.2.9```
+```1.3.0```
+
+Changes in 1.3.0 updated 06/17/2026:
+
+    - Updated the default SQL table structure in Write-RSCEventsReplication for the Target column to be [varchar](max) rather than the previous [varchar](50) which was causing some issues with existing customers, you will need to manually update your existing table structure to get this fix or simply have the function create a new table
+    - Fixed bug in Write-RSCEventsRecovery on SQl insert which was trying to insert values on LogicalSizeMB and LogicalSizeBytes which don’t exist in the table, removed them from the function
+    - Fixed Convert-RSCUNIXTime bug in Get-RSCEventsArchive
+    - Could not recreate bug reported with Write-RSCEventsArchive on the line: IF($EventSnapshot -ne $null){$EventSnapshot = $EventSnapshot.Replace("'","")}
+    Most likely due to lack of same range of events in test lab, changed the code to the below to be sure it’s not trying to remove the illegal SQL character if it’s not there anwyays:
+    IF(($EventSnapshot -ne $null) -and ($EventSnapshot -match "'")){$EventSnapshot = $EventSnapshot.Replace("'","")} 
 
 Changes in 1.2.9 updated 05/19/2026:
 
