@@ -456,7 +456,7 @@ $EventParams = $EventCDMInfo.params
 $EventSnapshot = $EventParams.'${timestamp}'
 $EventTarget = $EventParams.'${locationName}'
 # Converting event times
-$EventDateUTC = Convert-RSCUNIXTime $EventDateUNIX
+IF($EventDateUNIX -ne $null){$EventDateUTC = Convert-RSCUNIXTime $EventDateUNIX}
 IF($EventStartUNIX -ne $null){$EventStartUTC = Convert-RSCUNIXTime $EventStartUNIX}ELSE{$EventStartUTC = $null}
 IF($EventEndUNIX -ne $null){$EventEndUTC = Convert-RSCUNIXTime $EventEndUNIX}ELSE{$EventEndUTC = $null}
 # Calculating timespan if not null
@@ -475,12 +475,12 @@ $EventSeconds = $null
 $EventDuration = $null
 }
 # Removing illegal SQL characters from object or message
-IF($EventSnapshot -ne $null){$EventSnapshot = $EventSnapshot.Replace("'","")}
-IF($EventObject -ne $null){$EventObject = $EventObject.Replace("'","")}
-IF($EventLocation -ne $null){$EventLocation = $EventLocation.Replace("'","")}
-IF($EventMessage -ne $null){$EventMessage = $EventMessage.Replace("'","")}
-IF($EventErrorMessage -ne $null){$EventErrorMessage = $EventErrorMessage.Replace("'","")}
-IF($EventErrorReason -ne $null){$EventErrorReason = $EventErrorReason.Replace("'","")}
+IF(($EventSnapshot -ne $null) -and ($EventSnapshot -match "'")){$EventSnapshot = $EventSnapshot.Replace("'","")}
+IF(($EventObject -ne $null) -and ($EventObject -match "'")){$EventObject = $EventObject.Replace("'","")}
+IF(($EventLocation -ne $null) -and ($EventLocation -match "'")){$EventLocation = $EventLocation.Replace("'","")}
+IF(($EventMessage -ne $null) -and ($EventMessage -match "'")){$EventMessage = $EventMessage.Replace("'","")}
+IF(($EventErrorMessage -ne $null) -and ($EventErrorMessage -match "'")){$EventErrorMessage = $EventErrorMessage.Replace("'","")}
+IF(($EventErrorReason -ne $null) -and ($EventErrorReason -match "'")){$EventErrorReason = $EventErrorReason.Replace("'","")}
 # Deciding if on-demand or not
 IF($EventMessage -match "on demand"){$IsOnDemand = $TRUE}ELSE{$IsOnDemand = $FALSE}
 # Resetting to default not, only changing to yes if term matches the 2 variations

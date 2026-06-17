@@ -577,7 +577,7 @@ VALUES(
 '$EventStartUTC', '$EventEndUTC', '$EventDuration', '$EventSeconds',
 
 -- Job metrics
-'$EventLogicalSizeMB', '$EventTransferredMB', '$EventThroughputMB', '$EventLogicalSizeBytes', '$EventTransferredBytes', '$EventThroughputBytes',
+'$EventTransferredMB', '$EventThroughputMB', '$EventTransferredBytes', '$EventThroughputBytes',
 
 -- Job export default
 'FALSE');"
@@ -611,7 +611,7 @@ DateUTC, Type, Status, Message,
 JobStartUTC, JobEndUTC, Duration, DurationSeconds,
 
 -- Job metrics
-LogicalSizeMB, TransferredMB, ThroughputMB, LogicalSizeBytes, TransferredBytes, ThroughputBytes,
+TransferredMB, ThroughputMB, TransferredBytes, ThroughputBytes,
 
 -- Job error info, if failure, on-demand 
 Exported)
@@ -629,7 +629,7 @@ VALUES(
 '$EventStartUTC', '$EventEndUTC', '$EventDuration', '$EventSeconds',
 
 -- Job metrics
-'$EventLogicalSizeMB', '$EventTransferredMB', '$EventThroughputMB', '$EventLogicalSizeBytes', '$EventTransferredBytes', '$EventThroughputBytes',
+'$EventTransferredMB', '$EventThroughputMB', '$EventTransferredBytes', '$EventThroughputBytes',
 
 -- Job export default
 'FALSE');"

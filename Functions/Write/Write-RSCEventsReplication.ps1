@@ -150,7 +150,7 @@ CREATE TABLE [dbo].[$SQLTable](
 	[ObjectCDMID] [varchar](max) NULL,
 	[ObjectType] [varchar](max) NULL,
     [Snapshot] [varchar](50) NULL,
-	[Target] [varchar](50) NULL,
+	[Target] [varchar](max) NULL,
 	[DateUTC] [datetime] NULL,
 	[Type] [varchar](max) NULL,
 	[Status] [varchar](50) NULL,
