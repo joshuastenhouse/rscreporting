@@ -308,7 +308,7 @@ $EventParams = $EventCDMInfo.params
 $EventSnapshot = $EventParams.'${timestamp}'
 $EventTarget = $EventParams.'${locationName}'
 # Converting event times
-$EventDateUTC = Convert-RSCUNIXTime $EventDateUNIX
+IF($EventDateUNIX -ne $null){$EventDateUTC = Convert-RSCUNIXTime $EventDateUNIX}
 IF($EventStartUNIX -ne $null){$EventStartUTC = Convert-RSCUNIXTime $EventStartUNIX}ELSE{$EventStartUTC = $null}
 IF($EventEndUNIX -ne $null){$EventEndUTC = Convert-RSCUNIXTime $EventEndUNIX}ELSE{$EventEndUTC = $null}
 # Calculating timespan if not null
