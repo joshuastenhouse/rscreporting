@@ -37,7 +37,7 @@ Test-RSCConnection
 ################################################
 $RSCCloudDBs = [System.Collections.ArrayList]@()
 ################################################
-# Getting All AWS RDS instances
+# Getting All AWS Dynamo DBs (AWS_NATIVE_DYNAMODB_TABLE)
 ################################################
 # Creating array for objects
 $CloudDBList = @()
@@ -45,22 +45,13 @@ $CloudDBList = @()
 $RSCGraphQL = @{"operationName" = "AwsInventoryTableQuery";
 
 "variables" = @{
-    "objectTypeFilter" = "AWS_NATIVE_DYNAMODB_TABLE"
-    "sortBy" = "NAME"
-    "sortOrder" = "DESC"
-    "includeSecurityMetadata" = $true
-    "includeRscNativeObjectPendingSla" = $true
-    "first" = 500};
+"first" = 1000
+"objectTypeFilter" = "AWS_NATIVE_DYNAMODB_TABLE"
+};
 
-"query" = "query AwsInventoryTableQuery(`$objectTypeFilter: HierarchyObjectTypeEnum!, `$first: Int, `$sortBy: HierarchySortByField, `$sortOrder: SortOrder, `$includeSecurityMetadata: Boolean!, `$includeRscNativeObjectPendingSla: Boolean!) {
+"query" = "query AwsInventoryTableQuery(`$objectTypeFilter: HierarchyObjectTypeEnum!, `$first: Int, `$after: String, `$sortBy: HierarchySortByField, `$sortOrder: SortOrder) {
   awsNativeRoot {
-    objectTypeDescendantConnection(
-      objectTypeFilter: `$objectTypeFilter
-      first: `$first
-      sortBy: `$sortBy
-      sortOrder: `$sortOrder
-      includeSecurityMetadata: `$includeSecurityMetadata
-    ) {
+    objectTypeDescendantConnection(objectTypeFilter: `$objectTypeFilter, first: `$first, after: `$after, sortBy: `$sortBy, sortOrder: `$sortOrder) {
       edges {
         cursor
         node {
@@ -74,29 +65,6 @@ $RSCGraphQL = @{"operationName" = "AwsInventoryTableQuery";
           region
           ...EffectiveSlaColumnFragment
           ...AwsSlaAssignmentColumnFragment
-          ...SecurityMetadataColumnFragment @include(if: `$includeSecurityMetadata)
-          ... on AwsNativeS3Bucket {
-            authorizedOperations
-            creationTime
-            isExocomputeConfigured
-            isProtectable
-            numberOfObjects
-            bucketSizeBytes
-            isOnboarding
-            awsNativeAccountDetails {
-              id
-              name
-              status
-              enabledFeatures {
-                featureName
-                lastRefreshedAt
-                status
-                __typename
-              }
-              __typename
-            }
-            __typename
-          }
           ... on AwsNativeDynamoDbTable {
             authorizedOperations
             awsNativeAccountDetails {
@@ -160,13 +128,6 @@ fragment EffectiveSlaColumnFragment on HierarchyObject {
     }
     __typename
   }
-  ... on PolarisHierarchyObject {
-    rscNativeObjectPendingSla @include(if: `$includeRscNativeObjectPendingSla) {
-      ...CompactSLADomainFragment
-      __typename
-    }
-    __typename
-  }
   __typename
 }
 
@@ -211,12 +172,6 @@ fragment SLADomainFragment on SlaDomain {
   __typename
 }
 
-fragment CompactSLADomainFragment on CompactSlaDomain {
-  id
-  name
-  __typename
-}
-
 fragment AwsSlaAssignmentColumnFragment on HierarchyObject {
   effectiveSlaSourceObject {
     fid
@@ -225,25 +180,6 @@ fragment AwsSlaAssignmentColumnFragment on HierarchyObject {
     __typename
   }
   slaAssignment
-  __typename
-}
-
-fragment SecurityMetadataColumnFragment on HierarchyObject {
-  securityMetadata {
-    isLaminarEnabled
-    sensitivityStatus
-    highSensitiveHits
-    mediumSensitiveHits
-    lowSensitiveHits
-    dataTypeResults {
-      id
-      name
-      totalHits
-      totalViolatedHits
-      __typename
-    }
-    __typename
-  }
   __typename
 }"
 }

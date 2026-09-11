@@ -23,6 +23,7 @@ This example returns an array of all the information returned by the GraphQL end
 .NOTES
 Author: Joshua Stenhouse
 Date: 10/29/2025
+Updated: 09/11/26
 #>
 
 ################################################
@@ -35,7 +36,8 @@ Date: 10/29/2025
         [switch]$OnlyEC2Tags,     
         [switch]$OnlyEBSTags,
         [switch]$OnlyRDSTags, 
-        [switch]$OnlyDynamoTags
+        [switch]$OnlyDynamoTags,
+        [switch]$Logging
     )
 ################################################
 # Importing Module & Running Required Functions
@@ -60,6 +62,7 @@ IF($OnlyDynamoTags){$RSCAllTagCollection = $FALSE}
 ################################################
 IF(($RSCAllTagCollection -eq $TRUE) -or ($OnlyRDSTags))
 {
+IF($Logging){Write-Host "QueringAPI:RDSInstancesListQuery"}
 # Creating array for objects
 $CloudDBList = @()
 # Building GraphQL query
@@ -267,6 +270,7 @@ $RSCTagAssignments.Add($Object) | Out-Null
 ################################################
 IF(($RSCAllTagCollection -eq $TRUE) -or ($OnlyEC2Tags))
 {
+IF($Logging){Write-Host "QueringAPI:EC2InstancesListQuery"}
 # Creating array for objects
 $CloudVMList = @()
 # Building GraphQL query
@@ -499,6 +503,7 @@ $RSCTagAssignments.Add($Object) | Out-Null
 ################################################
 IF(($RSCAllTagCollection -eq $TRUE) -or ($OnlyEBSTags))
 {
+IF($Logging){Write-Host "QueringAPI:AWSEbsVolumesListQuery"}
 # Creating array for objects
 $CloudDiskList = @()
 # Building GraphQL query
@@ -729,6 +734,7 @@ $RSCTagAssignments.Add($Object) | Out-Null
 ################################################
 IF(($RSCAllTagCollection -eq $TRUE) -or ($OnlyS3Tags))
 {
+IF($Logging){Write-Host "QueringAPI:AwsInventoryTableQuery(objectTypeFilter:AWS_NATIVE_S3_BUCKET)"}
 # Getting all S3 buckets
 $AWSS3Buckets = Get-RSCAWSS3Buckets
 # For Each Object Getting Data
@@ -774,6 +780,7 @@ $RSCTagAssignments.Add($Object) | Out-Null
 ################################################
 IF(($RSCAllTagCollection -eq $TRUE) -or ($OnlyDynamoTags))
 {
+IF($Logging){Write-Host "QueringAPI:AwsInventoryTableQuery(objectTypeFilter:AWS_NATIVE_DYNAMODB_TABLE)"}
 # Getting all DynamoDBs
 $AWSDynamoDBs = Get-RSCAWSDynamoDBs
 # For Each Object Getting Data
