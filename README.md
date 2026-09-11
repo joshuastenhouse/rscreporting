@@ -8,7 +8,11 @@ Import the module into your current session:
 
 The current build is: 
 
-```1.3.0```
+```1.3.1```
+
+Changes in 1.3.1 updated 09/11/2026:
+
+    - Fixed a bug in Get-RSCAWSDynamoDBs and Get-RSCAWSDynamoDBTagAssignments which in turn was also causing Get-RSCAWSTagAssignments to hang and fail to collect any tags. The graphql query was extremley complex for Dynamo DBs (copied from the RSC UI) and something must have changed Sep 5th as it was now just hanging and not throwing an error. I simplified the API query by stripping it back to the minimum required and it's working fine again.
 
 Changes in 1.3.0 updated 06/17/2026:
 
